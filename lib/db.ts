@@ -141,6 +141,27 @@ export async function importStarterVehicles(): Promise<{ error?: string; count?:
   return { error: error?.message, count: rows.length };
 }
 
+// Pull inventory from the Google Sheet (via our API) and upsert into Supabase
+// using the current admin session.
+export async function syncFromSheet(): Promise<{ error?: string; count?: number; warnings?: string[] }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  let payload: any;
+  try {
+    const res = await fetch('/api/sheet-inventory', { cache: 'no-store' });
+    payload = await res.json();
+    if (!res.ok) return { error: payload?.error || `Sheet read failed (${res.status})` };
+  } catch (e: any) {
+    return { error: e?.message || 'Failed to reach the sheet' };
+  }
+  const vehicles: AdminVehicle[] = payload.vehicles || [];
+  if (vehicles.length === 0) return { error: (payload.warnings || []).join(' ') || 'No vehicles found in the sheet.' };
+  const rows = vehicles.map((v, i) => ({ ...vehicleToRow(v), sort_order: i }));
+  const { error } = await sb.from('vehicles').upsert(rows);
+  if (error) return { error: error.message };
+  return { count: rows.length, warnings: payload.warnings };
+}
+
 // ───────────────────────── Settings ─────────────────────────
 
 export async function getSettings(): Promise<SiteSettings> {

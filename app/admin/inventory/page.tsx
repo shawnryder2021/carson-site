@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { fmtPrice, fmtMiles } from '@/lib/format';
-import { listVehicles, deleteVehicle, importStarterVehicles, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
+import { listVehicles, deleteVehicle, importStarterVehicles, syncFromSheet, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
 
 export default function AdminInventory() {
   const router = useRouter();
@@ -38,6 +38,15 @@ export default function AdminInventory() {
     load();
   };
 
+  const syncSheet = async () => {
+    setBusy(true);
+    const { error, count, warnings } = await syncFromSheet();
+    setBusy(false);
+    if (error) return alert('Sync failed: ' + error);
+    alert(`Synced ${count} vehicles from the Google Sheet.` + (warnings && warnings.length ? `\n\nNotes:\n- ${warnings.join('\n- ')}` : ''));
+    load();
+  };
+
   const filtered = vehicles.filter(v => `${v.year} ${v.make} ${v.model}`.toLowerCase().includes(q.toLowerCase()));
 
   const statusColor: Record<string, string> = { available: '#0F6B2D', sold: '#A8232C', hidden: '#8A8A8A' };
@@ -49,6 +58,9 @@ export default function AdminInventory() {
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={importStarter} disabled={busy || !isSupabaseConfigured} className="btn btn-ghost btn-sm">
             <Icon name="arrowRight" size={13} /> Import starter inventory
+          </button>
+          <button onClick={syncSheet} disabled={busy || !isSupabaseConfigured} className="btn btn-dark btn-sm">
+            <Icon name="sparkles" size={14} /> {busy ? 'Working…' : 'Sync from Google Sheet'}
           </button>
           <button onClick={() => router.push('/admin/inventory/new')} className="btn btn-primary btn-sm">
             <Icon name="car" size={14} /> Add vehicle
