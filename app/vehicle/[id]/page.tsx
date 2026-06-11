@@ -35,10 +35,6 @@ export default function VehiclePage({ params }: { params: { id: string } }) {
     })();
   }, [params.id]);
 
-  if (vehicle === undefined) {
-    return <div className="page fade-in" style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--muted)' }}>Loading…</div>;
-  }
-
   const [tab, setTab] = useState<'overview' | 'specs' | 'history' | 'inspection'>('overview');
   const [activeImage, setActiveImage] = useState(0);
   const [aiQuestion, setAiQuestion] = useState('');
@@ -86,6 +82,11 @@ export default function VehiclePage({ params }: { params: { id: string } }) {
       setDeliveryZip(''); setDeliveryDistance(null);
     }, 1800);
   };
+
+  // NOTE: keep all early returns BELOW every hook call (rules of hooks).
+  if (vehicle === undefined) {
+    return <div className="page fade-in" style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--muted)' }}>Loading…</div>;
+  }
 
   if (!vehicle) {
     return (
