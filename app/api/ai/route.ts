@@ -1,10 +1,17 @@
 import { OpenAI } from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Never statically evaluate this route at build time.
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return Response.json({ reply: 'AI is not configured. Set OPENAI_API_KEY.' }, { status: 503 });
+  }
+
+  // Instantiate lazily, inside the handler — so a missing key doesn't break the build.
+  const openai = new OpenAI({ apiKey });
+
   const { prompt, messages } = await req.json();
 
   try {
