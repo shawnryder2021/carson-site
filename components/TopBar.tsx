@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from './Icon';
 import { useSaved } from '@/context/SavedContext';
-import { listNav, DEFAULT_NAV, NavItem } from '@/lib/db';
+import { listNav, listVehicles, DEFAULT_NAV, NavItem, AdminVehicle } from '@/lib/db';
+import { vehicleImageURL } from '@/data/vehicleImage';
+import { fmtPrice } from '@/lib/format';
 
 const BODY_CATEGORIES = [
   { label: 'SUVs', body: 'SUV' },
@@ -14,18 +16,40 @@ const BODY_CATEGORIES = [
   { label: 'Wagons', body: 'Wagon' },
 ];
 
+function vehiclePhoto(v: AdminVehicle): string {
+  return (v as any).images?.[0] || vehicleImageURL(v, { size: 200 });
+}
+
 export function TopBar({ onAIClick }: { onAIClick: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { saved } = useSaved();
   const [nav, setNav] = useState<NavItem[]>(DEFAULT_NAV);
+  const [vehicles, setVehicles] = useState<AdminVehicle[]>([]);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-  useEffect(() => { listNav().then(setNav); }, []);
+  useEffect(() => {
+    listNav().then(setNav);
+    listVehicles().then(setVehicles);
+  }, []);
 
   const go = (href: string) => { setOpenMenu(null); router.push(href); };
 
   const hasDropdown = (item: NavItem) => item.autoCategories || (item.children && item.children.length > 0);
+
+  // One representative (photo-bearing if possible) vehicle per body type.
+  const categoryThumb = (body: string): AdminVehicle | undefined => {
+    const ofType = vehicles.filter(v => v.body === body && (v as any).status !== 'sold');
+    return ofType.find(v => (v as any).images?.length) || ofType[0];
+  };
+
+  // Featured column: prefer admin-flagged featured, then newest with photos.
+  const featuredVehicles = (() => {
+    const avail = vehicles.filter(v => (v as any).status !== 'sold' && (v as any).status !== 'hidden');
+    const flagged = avail.filter(v => (v as any).featured);
+    const withPhotos = avail.filter(v => (v as any).images?.length && !(v as any).featured);
+    return [...flagged, ...withPhotos, ...avail].filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
+  })();
 
   return (
     <header className="topbar">
@@ -57,28 +81,83 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
                 </button>
 
                 {dropdown && openMenu === key && (
-                  <div style={{
-                    position: 'absolute', top: '100%', left: 0, paddingTop: 8, zIndex: 60,
-                  }}>
+                  <div style={{ position: 'absolute', top: '100%', left: item.autoCategories ? -120 : 0, paddingTop: 8, zIndex: 60 }}>
                     <div style={{
-                      background: 'white', border: '1px solid var(--line)', borderRadius: 12,
-                      boxShadow: '0 12px 32px rgba(0,0,0,0.12)', padding: 8, minWidth: 200,
+                      background: 'white', border: '1px solid var(--line)', borderRadius: 14,
+                      boxShadow: '0 16px 44px rgba(0,0,0,0.14)', padding: 14,
+                      minWidth: item.autoCategories ? 560 : 200,
+                      display: item.autoCategories ? 'grid' : 'block',
+                      gridTemplateColumns: item.autoCategories ? '1.1fr 1fr' : undefined,
+                      gap: item.autoCategories ? 16 : undefined,
                     }}>
                       {item.autoCategories && (
                         <>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', padding: '6px 12px 4px' }}>Browse by type</div>
-                          {BODY_CATEGORIES.map(c => (
-                            <button key={c.body} onClick={() => go(`/inventory?body=${c.body}`)} className="nav-drop-item">
-                              <Icon name="car" size={15} style={{ color: 'var(--teal)' }} /> {c.label}
+                          {/* Left: categories with photo thumbnails */}
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', padding: '2px 10px 8px' }}>Browse by type</div>
+                            {BODY_CATEGORIES.map(c => {
+                              const thumb = categoryThumb(c.body);
+                              const count = vehicles.filter(v => v.body === c.body && (v as any).status !== 'sold' && (v as any).status !== 'hidden').length;
+                              return (
+                                <button key={c.body} onClick={() => go(`/inventory?body=${c.body}`)} className="nav-drop-item" style={{ padding: '7px 10px' }}>
+                                  <span style={{ width: 56, height: 38, borderRadius: 8, overflow: 'hidden', background: 'var(--bg-soft)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    {thumb && (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={vehiclePhoto(thumb)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                                    )}
+                                  </span>
+                                  <span style={{ flex: 1 }}>
+                                    <span style={{ display: 'block', fontWeight: 600 }}>{c.label}</span>
+                                    {count > 0 && <span style={{ display: 'block', fontSize: 11.5, color: 'var(--muted)' }}>{count} available</span>}
+                                  </span>
+                                  <Icon name="arrowRight" size={13} style={{ color: 'var(--muted)' }} />
+                                </button>
+                              );
+                            })}
+                            <button onClick={() => go('/inventory')} className="nav-drop-item" style={{ fontWeight: 600, marginTop: 2 }}>
+                              <Icon name="arrowRight" size={15} style={{ color: 'var(--teal)' }} /> View all inventory
                             </button>
-                          ))}
-                          <button onClick={() => go('/inventory')} className="nav-drop-item" style={{ fontWeight: 600 }}>
-                            <Icon name="arrowRight" size={15} style={{ color: 'var(--teal)' }} /> View all inventory
-                          </button>
-                          {item.children && item.children.length > 0 && <div style={{ height: 1, background: 'var(--line)', margin: '6px 4px' }} />}
+                          </div>
+
+                          {/* Right: fresh on the lot */}
+                          <div style={{ borderLeft: '1px solid var(--line)', paddingLeft: 16 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', padding: '2px 0 8px' }}>Fresh on the lot</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {featuredVehicles.map(v => (
+                                <button key={v.id} onClick={() => go(`/vehicle/${v.id}`)} style={{
+                                  display: 'flex', gap: 10, alignItems: 'center', width: '100%', textAlign: 'left',
+                                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                                  padding: 6, borderRadius: 10,
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-soft)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                                >
+                                  <span style={{ width: 76, height: 52, borderRadius: 8, overflow: 'hidden', background: 'var(--bg-soft)', flexShrink: 0 }}>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={vehiclePhoto(v)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                                  </span>
+                                  <span>
+                                    <span style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--ink)', lineHeight: 1.25 }}>{v.year} {v.make} {v.model}</span>
+                                    <span style={{ display: 'block', fontSize: 12.5, fontWeight: 700, color: 'var(--teal-2)', marginTop: 2 }}>{fmtPrice(v.price)}</span>
+                                  </span>
+                                </button>
+                              ))}
+                              {featuredVehicles.length === 0 && (
+                                <div style={{ fontSize: 12.5, color: 'var(--muted)', padding: 6 }}>New arrivals coming soon.</div>
+                              )}
+                            </div>
+                          </div>
+
+                          {item.children && item.children.length > 0 && (
+                            <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--line)', paddingTop: 6 }}>
+                              {item.children.map((c, j) => (
+                                <button key={c.id || j} onClick={() => go(c.href)} className="nav-drop-item">{c.label}</button>
+                              ))}
+                            </div>
+                          )}
                         </>
                       )}
-                      {item.children?.map((c, j) => (
+                      {!item.autoCategories && item.children?.map((c, j) => (
                         <button key={c.id || j} onClick={() => go(c.href)} className="nav-drop-item">{c.label}</button>
                       ))}
                     </div>
