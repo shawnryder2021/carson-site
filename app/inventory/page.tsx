@@ -10,6 +10,7 @@ import { fmtPrice } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
 import { PriceModeToggle } from '@/context/PriceModeContext';
+import { listVehicles, AdminVehicle } from '@/lib/db';
 
 type Filters = {
   body: string[];
@@ -58,6 +59,9 @@ function InventoryContent() {
   const aiQuery = searchParams.get('aiQuery');
   const bodyParam = searchParams.get('body');
 
+  const [inventory, setInventory] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
+  useEffect(() => { listVehicles().then(v => { if (v.length) setInventory(v); }); }, []);
+
   const [filters, setFilters] = useState<Filters>({
     ...DEFAULT_FILTERS,
     body: bodyParam ? [bodyParam] : [],
@@ -74,7 +78,7 @@ function InventoryContent() {
 
     const prompt = `Parse this car shopping query into JSON filters. Reply ONLY with JSON:
 Query: "${aiQuery}"
-{"body":["Sedan"|"Coupe"|"SUV"|"Truck"|"Wagon"],"fuel":["Gas"|"Hybrid"|"Electric"],"drive":["FWD"|"RWD"|"AWD"],"priceMax":<number or 100000>,"milesMax":<number or 100000>,"insight":"1 friendly sentence about what you understood and your top pick approach.","topPickId":"vehicle id from this list: ${INVENTORY.map(v => v.id + '=' + v.year + ' ' + v.make + ' ' + v.model + ' $' + v.price).slice(0, 24).join(', ')}"}
+{"body":["Sedan"|"Coupe"|"SUV"|"Truck"|"Wagon"],"fuel":["Gas"|"Hybrid"|"Electric"],"drive":["FWD"|"RWD"|"AWD"],"priceMax":<number or 100000>,"milesMax":<number or 100000>,"insight":"1 friendly sentence about what you understood and your top pick approach.","topPickId":"vehicle id from this list: ${inventory.map(v => v.id + '=' + v.year + ' ' + v.make + ' ' + v.model + ' $' + v.price).slice(0, 24).join(', ')}"}
 
 Only fill arrays if the query specifically mentions that filter. Return empty arrays for unmentioned filters.`;
 
@@ -100,7 +104,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
 
   // Apply filters
   const filtered = useMemo(() => {
-    let results = INVENTORY.filter(v => {
+    let results = inventory.filter(v => {
       if (filters.body.length && !filters.body.includes(v.body)) return false;
       if (filters.fuel.length && !filters.fuel.includes(v.fuel)) return false;
       if (filters.drive.length && !filters.drive.includes(v.drive)) return false;
@@ -153,7 +157,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
             {aiQuery ? `${filtered.length} matches` : 'Browse our inventory'}
           </h1>
           <p style={{ fontSize: 15, color: 'var(--muted)', margin: 0 }}>
-            {INVENTORY.length} vehicles · Live market pricing · 142-point inspected
+            {inventory.length} vehicles · Live market pricing · 142-point inspected
           </p>
 
           {aiThinking && (
@@ -247,7 +251,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div style={{ fontSize: 14, color: 'var(--muted)' }}>
-                Showing <strong style={{ color: 'var(--ink)' }}>{filtered.length}</strong> of {INVENTORY.length} vehicles
+                Showing <strong style={{ color: 'var(--ink)' }}>{filtered.length}</strong> of {inventory.length} vehicles
               </div>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 <PriceModeToggle />

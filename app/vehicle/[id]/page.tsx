@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
@@ -11,6 +11,7 @@ import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
+import { getVehicleById, listVehicles, createLead, AdminVehicle } from '@/lib/db';
 
 const PRESET_QUESTIONS = [
   'Is this a fair price?',
@@ -22,8 +23,21 @@ const PRESET_QUESTIONS = [
 export default function VehiclePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { saved, toggleSave } = useSaved();
-  const vehicle = INVENTORY.find(v => v.id === params.id);
+  const [vehicle, setVehicle] = useState<AdminVehicle | null | undefined>(undefined);
+  const [allVehicles, setAllVehicles] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   const isSaved = saved.includes(params.id);
+
+  useEffect(() => {
+    (async () => {
+      const [v, all] = await Promise.all([getVehicleById(params.id), listVehicles()]);
+      setVehicle(v);
+      if (all.length) setAllVehicles(all);
+    })();
+  }, [params.id]);
+
+  if (vehicle === undefined) {
+    return <div className="page fade-in" style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--muted)' }}>Loading…</div>;
+  }
 
   const [tab, setTab] = useState<'overview' | 'specs' | 'history' | 'inspection'>('overview');
   const [activeImage, setActiveImage] = useState(0);
@@ -52,6 +66,17 @@ export default function VehiclePage({ params }: { params: { id: string } }) {
   const [otdState, setOtdState] = useState('CA');
 
   const finishModal = () => {
+    // Capture the lead based on which modal is open
+    if (vehicle && modal) {
+      const veh = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+      if (modal === 'testdrive') {
+        createLead({ type: 'testdrive', name: tdName, phone: tdPhone, vehicleId: vehicle.id, payload: { vehicle: veh, date: tdDate, time: tdTime } });
+      } else if (modal === 'video') {
+        createLead({ type: 'video', email: videoEmail, vehicleId: vehicle.id, payload: { vehicle: veh, focus: videoFocus, notes: videoNotes } });
+      } else if (modal === 'delivery') {
+        createLead({ type: 'delivery', vehicleId: vehicle.id, payload: { vehicle: veh, zip: deliveryZip, distance: deliveryDistance } });
+      }
+    }
     setSubmitted(true);
     setTimeout(() => {
       setModal(null);
@@ -74,7 +99,7 @@ export default function VehiclePage({ params }: { params: { id: string } }) {
     );
   }
 
-  const similar = INVENTORY.filter(v => v.id !== vehicle.id && (v.body === vehicle.body || v.fuel === vehicle.fuel)).slice(0, 4);
+  const similar = allVehicles.filter(v => v.id !== vehicle.id && (v.body === vehicle.body || v.fuel === vehicle.fuel)).slice(0, 4);
 
   // Fair price estimate
   const marketLow = Math.round(vehicle.price * 0.96);

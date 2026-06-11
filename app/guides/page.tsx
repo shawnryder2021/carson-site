@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
+import { useEffect } from 'react';
 import { GUIDES, Guide } from '@/data/guides';
+import { listGuides } from '@/lib/db';
 
 const CATEGORIES = ['All', 'Buying', 'Financing', 'Ownership', 'Trade-in', 'EV & Hybrid'] as const;
 
@@ -19,8 +21,10 @@ const catColor: Record<Guide['category'], string> = {
 export default function GuidesPage() {
   const router = useRouter();
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>('All');
+  const [guides, setGuides] = useState<Guide[]>(GUIDES);
+  useEffect(() => { listGuides().then(g => { if (g.length) setGuides(g as Guide[]); }); }, []);
 
-  const filtered = cat === 'All' ? GUIDES : GUIDES.filter(g => g.category === cat);
+  const filtered = cat === 'All' ? guides : guides.filter(g => g.category === cat);
   const featured = filtered[0];
   const rest = filtered.slice(1);
 

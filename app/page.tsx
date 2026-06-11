@@ -2,22 +2,33 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
 import { HeroMedia } from '@/components/HeroMedia';
 import { INVENTORY } from '@/data/inventory';
-import { useHeroConfig } from '@/context/HeroConfigContext';
+import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
+import { listVehicles, getSettings, AdminVehicle } from '@/lib/db';
 
 export default function Home() {
   const router = useRouter();
-  const { hero } = useHeroConfig();
   const [query, setQuery] = useState('');
+  const [hero, setHero] = useState<HeroConfig>(DEFAULT_HERO);
+  const [vehicles, setVehicles] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
+
+  useEffect(() => {
+    (async () => {
+      const [s, v] = await Promise.all([getSettings(), listVehicles()]);
+      setHero(s);
+      if (v.length) setVehicles(v);
+    })();
+  }, []);
 
   const search = () => {
     if (query) router.push(`/inventory?aiQuery=${encodeURIComponent(query)}`);
   };
 
-  const featured = INVENTORY.slice(0, 8);
+  const featured = vehicles.slice(0, 8);
 
   return (
     <div className="page fade-in">

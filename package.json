@@ -8,10 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.1",
     "next": "14.2.5",
+    "openai": "^4.47.1",
     "react": "^18",
-    "react-dom": "^18",
-    "openai": "^4.47.1"
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@types/node": "^20",

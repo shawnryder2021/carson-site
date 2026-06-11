@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
+import { createLead } from '@/lib/db';
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -14,6 +15,7 @@ export default function ContactPage() {
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
+    createLead({ type: 'contact', name: form.name, email: form.email, phone: form.phone, payload: { subject: form.subject, message: form.message } });
     setSubmitted(true);
     setTimeout(() => setSubmitted(false), 5000);
     setForm({ name: '', email: '', phone: '', subject: '', message: '' });

@@ -1,19 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { DotsAnim } from '@/components/DotsAnim';
-import { getGuide, GUIDES } from '@/data/guides';
+import { Guide, GUIDES } from '@/data/guides';
+import { listGuides, getGuideBySlug } from '@/lib/db';
 import { complete } from '@/lib/ai';
 
 export default function GuidePage({ params }: { params: { slug: string } }) {
   const router = useRouter();
-  const guide = getGuide(params.slug);
+  const [guide, setGuide] = useState<Guide | null | undefined>(undefined);
+  const [allGuides, setAllGuides] = useState<Guide[]>(GUIDES);
 
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const [g, all] = await Promise.all([getGuideBySlug(params.slug), listGuides()]);
+      setGuide(g as Guide | null);
+      if (all.length) setAllGuides(all as Guide[]);
+    })();
+  }, [params.slug]);
+
+  if (guide === undefined) {
+    return <div className="page fade-in" style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--muted)' }}>Loading…</div>;
+  }
 
   if (!guide) {
     return (
@@ -26,8 +40,8 @@ export default function GuidePage({ params }: { params: { slug: string } }) {
     );
   }
 
-  const related = GUIDES.filter(g => g.slug !== guide.slug && g.category === guide.category).slice(0, 2);
-  const fallbackRelated = related.length ? related : GUIDES.filter(g => g.slug !== guide.slug).slice(0, 2);
+  const related = allGuides.filter(g => g.slug !== guide.slug && g.category === guide.category).slice(0, 2);
+  const fallbackRelated = related.length ? related : allGuides.filter(g => g.slug !== guide.slug).slice(0, 2);
 
   const ask = async (q?: string) => {
     const query = q || question;
