@@ -600,7 +600,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
         ) : (
           <div>
             <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 18px', lineHeight: 1.5 }}>
-              We'll bring this {vehicle.make} {vehicle.model} right to your driveway. Free within 100 miles of San Diego — flat-rate beyond.
+              We'll bring this {vehicle.make} {vehicle.model} right to your driveway. Free within 100 km of Dartmouth — flat-rate beyond.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>

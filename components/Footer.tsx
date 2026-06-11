@@ -39,7 +39,7 @@ export function Footer() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
               <button onClick={() => router.push('/contact')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit' }}>Contact</button>
               <a href="tel:(555)234-9090" style={{ color: 'white', textDecoration: 'none' }}>(555) 234-9090</a>
-              <div style={{ fontSize: 12, color: '#9ad' }}>1247 Harbor Drive<br/>San Diego, CA 92101</div>
+              <div style={{ fontSize: 12, color: '#9ad' }}>550 Windmill Rd<br/>Dartmouth, NS B3B 1B3</div>
             </div>
           </div>
         </div>

@@ -32,7 +32,7 @@ export default function FAQPage() {
     },
     {
       q: 'Do you have a physical showroom?',
-      a: 'Yes — we\'re at 1247 Harbor Drive in San Diego. You can browse online and test drive by appointment, or just stop by. We\'re open Mon–Fri 9–7, Sat 10–6, Sun 11–5.'
+      a: 'Yes — we\'re at 550 Windmill Rd in Dartmouth, NS. You can browse online and test drive by appointment, or just stop by. We\'re open Mon–Fri 9–7, Sat 10–6, Sun 11–5.'
     },
     {
       q: 'What if I find the same car cheaper elsewhere?',

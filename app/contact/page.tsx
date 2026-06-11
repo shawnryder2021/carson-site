@@ -70,7 +70,7 @@ export default function ContactPage() {
               <h3 style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-.02em' }}>Find us</h3>
               <div style={{ display: 'grid', gap: 14 }}>
                 {[
-                  { icon: 'location', label: 'Showroom', value: '1247 Harbor Drive, San Diego, CA 92101' },
+                  { icon: 'location', label: 'Showroom', value: '550 Windmill Rd, Dartmouth, NS B3B 1B3' },
                   { icon: 'phone', label: 'Call us', value: '(555) 234-9090' },
                   { icon: 'mail', label: 'Email', value: 'hello@carsonexports.com' },
                 ].map(c => (
@@ -109,6 +109,32 @@ export default function ContactPage() {
               <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>Our AI concierge is available 24/7 to answer questions about cars, financing, trade-ins, and more. No wait, no judgment.</p>
             </div>
           </div>
+        </div>
+
+        {/* Map */}
+        <div style={{ marginTop: 60 }}>
+          <h3 style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-.02em' }}>Visit our showroom</h3>
+          <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid var(--line)', lineHeight: 0 }}>
+            <iframe
+              title="Carson Exports — 550 Windmill Rd, Dartmouth, NS"
+              src="https://www.google.com/maps?q=550+Windmill+Rd,+Dartmouth,+NS+B3B+1B3&output=embed"
+              width="100%"
+              height="420"
+              style={{ border: 0, display: 'block' }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
+          <a
+            href="https://www.google.com/maps/dir/?api=1&destination=550+Windmill+Rd,+Dartmouth,+NS+B3B+1B3"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-ghost btn-sm"
+            style={{ marginTop: 14 }}
+          >
+            <Icon name="location" size={14}/> Get directions
+          </a>
         </div>
       </div>
     </div>
