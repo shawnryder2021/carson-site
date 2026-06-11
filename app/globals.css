@@ -25,6 +25,8 @@ main { flex: 1; }
 .nav-link.active { font-weight: 600; color: var(--teal); }
 .topbar-cta { display: flex; gap: 12px; }
 .icon-btn { background: none; border: none; cursor: pointer; padding: 0; color: var(--ink); font-size: 18px; display: flex; align-items: center; }
+.nav-drop-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: var(--ink); padding: 9px 12px; border-radius: 8px; white-space: nowrap; }
+.nav-drop-item:hover { background: var(--bg-soft); }
 
 .btn { padding: 10px 16px; border-radius: 8px; border: 1px solid; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 200ms; }
 .btn-primary { background: var(--teal); color: white; border-color: var(--teal); }

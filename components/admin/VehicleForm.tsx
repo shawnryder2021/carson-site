@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
-import { saveVehicle, AdminVehicle } from '@/lib/db';
+import { saveVehicle, uploadImage, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
 
 const EMPTY: AdminVehicle = {
   id: '', year: new Date().getFullYear(), make: '', model: '', price: 0, mileage: 0,
@@ -25,6 +25,9 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
   const [v, setV] = useState<AdminVehicle>(initial || EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<AdminVehicle>) => setV(prev => ({ ...prev, ...patch }));
 
   const slugId = () => `cx-${v.make}-${v.model}-${v.year}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
@@ -95,15 +98,61 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
             <textarea className="input" value={v.aiSummary} onChange={e => set({ aiSummary: e.target.value })} placeholder="Reliable sedan, great for daily commute" style={{ ...inputStyle, minHeight: 70, fontFamily: 'inherit', resize: 'vertical' }} />
           </Field>
 
-          <Field label="Image URLs (one per line)">
+          <Field label="Photos">
+            {/* Thumbnails with reorder + delete */}
+            {images.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+                {images.map((url, idx) => (
+                  <div key={idx} style={{ position: 'relative', width: 110, height: 82, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--line)', background: 'var(--bg-soft)' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {idx === 0 && <span style={{ position: 'absolute', top: 4, left: 4, background: 'var(--teal)', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 999 }}>MAIN</span>}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.55)', padding: '2px 4px' }}>
+                      <button type="button" onClick={() => { if (idx === 0) return; const a = [...images]; [a[idx-1], a[idx]] = [a[idx], a[idx-1]]; set({ images: a }); }} disabled={idx === 0} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: idx === 0 ? 0.3 : 1, fontSize: 13 }}>←</button>
+                      <button type="button" onClick={() => set({ images: images.filter((_, j) => j !== idx) })} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: 13 }}>🗑</button>
+                      <button type="button" onClick={() => { if (idx === images.length-1) return; const a = [...images]; [a[idx+1], a[idx]] = [a[idx], a[idx+1]]; set({ images: a }); }} disabled={idx === images.length-1} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: idx === images.length-1 ? 0.3 : 1, fontSize: 13 }}>→</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: 'none' }}
+              onChange={async e => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+                setUploading(true); setUploadErr(null);
+                const added: string[] = [];
+                for (const f of files) {
+                  const { url, error } = await uploadImage(f);
+                  if (error) { setUploadErr(error); break; }
+                  if (url) added.push(url);
+                }
+                if (added.length) set({ images: [...images, ...added] });
+                setUploading(false);
+                if (fileRef.current) fileRef.current.value = '';
+              }}
+            />
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || !isSupabaseConfigured} className="btn btn-ghost btn-sm">
+              <Icon name="sparkles" size={14} /> {uploading ? 'Uploading…' : 'Upload photos'}
+            </button>
+            {!isSupabaseConfigured && <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>Connect Supabase to upload.</span>}
+            {uploadErr && <div style={{ color: '#A8232C', fontSize: 12, marginTop: 6 }}>{uploadErr}</div>}
+
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', margin: '14px 0 6px' }}>…or paste image URLs (one per line)</div>
             <textarea
               className="input"
               value={images.join('\n')}
               onChange={e => set({ images: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
               placeholder="https://…/photo-1.jpg&#10;https://…/photo-2.jpg"
-              style={{ ...inputStyle, minHeight: 70, fontFamily: 'inherit', resize: 'vertical', fontSize: 13 }}
+              style={{ ...inputStyle, minHeight: 60, fontFamily: 'inherit', resize: 'vertical', fontSize: 13 }}
             />
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>Leave blank to use the generated illustration. Paste direct image links.</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>First photo is the main image. Leave empty to use the generated illustration.</div>
           </Field>
         </div>
 

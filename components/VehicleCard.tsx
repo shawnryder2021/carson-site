@@ -12,6 +12,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const router = useRouter();
   const isSaved = saved.includes(vehicle.id);
   const monthly = estMonthly(vehicle.price);
+  const photo = (vehicle as any).images?.[0] as string | undefined;
 
   return (
     <div
@@ -34,7 +35,9 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       onClick={() => router.push(`/vehicle/${vehicle.id}`)}
     >
       <div style={{ position: 'relative', background: 'var(--bg-soft)', aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        <img src={vehicleImageURL(vehicle, { size: 300 })} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+        {photo
+          ? <img src={photo} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <img src={vehicleImageURL(vehicle, { size: 300 })} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />}
         <button
           onClick={(e) => {
             e.stopPropagation();

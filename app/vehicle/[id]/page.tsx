@@ -212,43 +212,51 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
           {/* Left column */}
           <div>
             {/* Gallery */}
-            <div style={{ background: 'var(--bg-soft)', borderRadius: 18, overflow: 'hidden', marginBottom: 12, aspectRatio: '4/3', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              <img
-                src={vehicleImageURL(vehicle, { size: 800 })}
-                alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                style={{ width: '85%', height: '85%', objectFit: 'contain' }}
-              />
-              <button
-                onClick={() => toggleSave(vehicle.id)}
-                style={{
-                  position: 'absolute', top: 20, right: 20, width: 48, height: 48, borderRadius: '50%',
-                  background: 'white', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                }}
-              >
-                <Icon name="heart" size={20} style={{ color: isSaved ? 'var(--teal)' : 'var(--muted)', fill: isSaved ? 'var(--teal)' : 'none' }} />
-              </button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
-              {[0, 1, 2, 3].map(i => (
-                <button
-                  key={i}
-                  onClick={() => setActiveImage(i)}
-                  style={{
-                    background: 'var(--bg-soft)',
-                    border: '2px solid ' + (activeImage === i ? 'var(--teal)' : 'transparent'),
-                    borderRadius: 10,
-                    padding: 8,
-                    cursor: 'pointer',
-                    aspectRatio: '4/3',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <img src={vehicleImageURL(vehicle, { size: 200 })} alt="" style={{ width: '85%', height: '85%', objectFit: 'contain' }} />
-                </button>
-              ))}
-            </div>
+            {(() => {
+              const photos: string[] = (vehicle as any).images || [];
+              const hasPhotos = photos.length > 0;
+              const mainSrc = hasPhotos ? photos[Math.min(activeImage, photos.length - 1)] : vehicleImageURL(vehicle, { size: 800 });
+              return (
+                <>
+                  <div style={{ background: 'var(--bg-soft)', borderRadius: 18, overflow: 'hidden', marginBottom: 12, aspectRatio: '4/3', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <img
+                      src={mainSrc}
+                      alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                      style={hasPhotos ? { width: '100%', height: '100%', objectFit: 'cover' } : { width: '85%', height: '85%', objectFit: 'contain' }}
+                    />
+                    <button
+                      onClick={() => toggleSave(vehicle.id)}
+                      style={{
+                        position: 'absolute', top: 20, right: 20, width: 48, height: 48, borderRadius: '50%',
+                        background: 'white', border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                      }}
+                    >
+                      <Icon name="heart" size={20} style={{ color: isSaved ? 'var(--teal)' : 'var(--muted)', fill: isSaved ? 'var(--teal)' : 'none' }} />
+                    </button>
+                  </div>
+                  {hasPhotos && photos.length > 1 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
+                      {photos.slice(0, 8).map((url, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setActiveImage(i)}
+                          style={{
+                            background: 'var(--bg-soft)',
+                            border: '2px solid ' + (activeImage === i ? 'var(--teal)' : 'transparent'),
+                            borderRadius: 10, overflow: 'hidden', padding: 0, cursor: 'pointer', aspectRatio: '4/3',
+                          }}
+                        >
+                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!hasPhotos && <div style={{ marginBottom: 32 }} />}
+                </>
+              );
+            })()}
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--line)', marginBottom: 24 }}>

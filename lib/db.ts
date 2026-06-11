@@ -272,4 +272,86 @@ export async function importStarterGuides(): Promise<{ error?: string; count?: n
   return { error: error?.message, count: rows.length };
 }
 
+// ───────────────────────── Navigation ─────────────────────────
+
+export type NavChild = { id?: string; label: string; href: string; sortOrder?: number };
+export type NavItem = {
+  id?: string;
+  label: string;
+  href: string;
+  sortOrder?: number;
+  autoCategories?: boolean;
+  children?: NavChild[];
+};
+
+// Default menu used when Supabase has no nav rows (or isn't configured).
+export const DEFAULT_NAV: NavItem[] = [
+  { label: 'Home', href: '/' },
+  { label: 'Inventory', href: '/inventory', autoCategories: true },
+  { label: 'AI Finder', href: '/finder' },
+  { label: 'Trade-in', href: '/tradein' },
+  { label: 'Financing', href: '/finance' },
+  { label: 'Guides', href: '/guides' },
+  { label: 'About', href: '/about', children: [
+    { label: 'About Carson', href: '/about' },
+    { label: 'Reviews', href: '/testimonials' },
+    { label: 'FAQ', href: '/faq' },
+    { label: 'Contact', href: '/contact' },
+  ] },
+];
+
+export async function listNav(): Promise<NavItem[]> {
+  const sb = getBrowserClient();
+  if (!sb) return DEFAULT_NAV;
+  const { data, error } = await sb.from('nav_items').select('*').order('sort_order', { ascending: true });
+  if (error || !data || data.length === 0) return DEFAULT_NAV;
+  const tops = data.filter((r: any) => !r.parent_id);
+  return tops.map((t: any) => ({
+    id: t.id, label: t.label, href: t.href, sortOrder: t.sort_order, autoCategories: t.auto_categories,
+    children: data.filter((c: any) => c.parent_id === t.id)
+      .sort((a: any, b: any) => a.sort_order - b.sort_order)
+      .map((c: any) => ({ id: c.id, label: c.label, href: c.href, sortOrder: c.sort_order })),
+  }));
+}
+
+// Replace the whole nav (simplest reliable save): delete all, re-insert.
+export async function saveNav(items: NavItem[]): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const del = await sb.from('nav_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  if (del.error) return { error: del.error.message };
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const { data, error } = await sb.from('nav_items')
+      .insert({ label: it.label, href: it.href, sort_order: i, auto_categories: !!it.autoCategories })
+      .select('id').single();
+    if (error) return { error: error.message };
+    const parentId = data!.id;
+    const kids = it.children || [];
+    for (let j = 0; j < kids.length; j++) {
+      const { error: cErr } = await sb.from('nav_items')
+        .insert({ label: kids[j].label, href: kids[j].href, parent_id: parentId, sort_order: j });
+      if (cErr) return { error: cErr.message };
+    }
+  }
+  return {};
+}
+
+export async function seedDefaultNav(): Promise<{ error?: string }> {
+  return saveNav(DEFAULT_NAV);
+}
+
+// ───────────────────────── Image upload (Storage) ─────────────────────────
+
+export async function uploadImage(file: File): Promise<{ url?: string; error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `vehicles/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await sb.storage.from('media').upload(path, file, { cacheControl: '3600', upsert: false });
+  if (error) return { error: error.message };
+  const { data } = sb.storage.from('media').getPublicUrl(path);
+  return { url: data.publicUrl };
+}
+
 export { isSupabaseConfigured };
