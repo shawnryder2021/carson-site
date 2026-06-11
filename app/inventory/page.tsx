@@ -228,7 +228,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
                 </div>
 
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>Max miles: {filters.milesMax.toLocaleString()}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>Max kilometres: {filters.milesMax.toLocaleString()}</div>
                   <input type="range" min={5000} max={100000} step={5000} value={filters.milesMax}
                     onChange={e => setFilters(f => ({ ...f, milesMax: +e.target.value }))}
                     style={{ width: '100%', accentColor: 'var(--teal)' }} />
@@ -259,7 +259,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
                 <option value="relevance">Best match</option>
                 <option value="price-asc">Price: Low to high</option>
                 <option value="price-desc">Price: High to low</option>
-                <option value="miles-asc">Lowest miles</option>
+                <option value="miles-asc">Lowest kilometres</option>
                 <option value="year-desc">Newest first</option>
                 </select>
               </div>

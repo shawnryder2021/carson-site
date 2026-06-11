@@ -3,7 +3,7 @@ export function fmtPrice(n: number): string {
 }
 
 export function fmtMiles(n: number): string {
-  return n.toLocaleString() + ' mi';
+  return n.toLocaleString() + ' km';
 }
 
 // Estimated monthly payment using typical terms:

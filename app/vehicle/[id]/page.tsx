@@ -59,7 +59,7 @@ export default function VehiclePage({ params }: { params: { id: string } }) {
   const [deliveryDistance, setDeliveryDistance] = useState<number | null>(null);
 
   // OTD state
-  const [otdState, setOtdState] = useState('CA');
+  const [otdState, setOtdState] = useState('NS');
 
   const finishModal = () => {
     // Capture the lead based on which modal is open
@@ -638,17 +638,21 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Delivery ZIP</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Delivery postal code</div>
                 <input
                   className="input"
-                  placeholder="e.g., 90210"
+                  placeholder="e.g., B3B 1B3"
                   value={deliveryZip}
                   onChange={e => {
-                    const v = e.target.value.replace(/\D/g, '').slice(0, 5);
+                    const v = e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 7);
                     setDeliveryZip(v);
-                    if (v.length === 5) {
-                      const d = 20 + (parseInt(v.slice(0, 3), 10) % 250);
-                      setDeliveryDistance(d);
+                    const compact = v.replace(/\s/g, '');
+                    // Canadian postal code: A1A1A1 (also accept 5-digit US ZIPs)
+                    if (/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(compact) || /^\d{5}$/.test(compact)) {
+                      // Deterministic demo distance from the code's characters
+                      let h = 0;
+                      for (const ch of compact) h = (h * 31 + ch.charCodeAt(0)) % 997;
+                      setDeliveryDistance(15 + (h % 280));
                     } else {
                       setDeliveryDistance(null);
                     }
@@ -660,7 +664,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                 <div style={{ background: 'var(--bg-soft)', borderRadius: 12, padding: '16px 18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontSize: 13, color: 'var(--muted)' }}>Distance from Carson</span>
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{deliveryDistance} mi</span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{deliveryDistance} km</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontSize: 13, color: 'var(--muted)' }}>Estimated arrival</span>
@@ -689,8 +693,21 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
       {/* ── OUT THE DOOR PRICE ── */}
       <Modal open={modal === 'otd'} onClose={() => setModal(null)} title="Your out-the-door price" width={560}>
         {(() => {
-          const taxRates: Record<string, number> = { CA: 0.0775, TX: 0.0625, NY: 0.0875, FL: 0.06, AZ: 0.056, NV: 0.0685, OR: 0.0 };
-          const taxRate = taxRates[otdState] ?? 0.07;
+          // Canadian sales tax on dealer vehicle purchases (HST, or GST + PST).
+          const taxRates: Record<string, { rate: number; label: string }> = {
+            NS: { rate: 0.14,    label: 'Nova Scotia — 14% HST' },
+            NB: { rate: 0.15,    label: 'New Brunswick — 15% HST' },
+            PE: { rate: 0.15,    label: 'Prince Edward Island — 15% HST' },
+            NL: { rate: 0.15,    label: 'Newfoundland & Labrador — 15% HST' },
+            ON: { rate: 0.13,    label: 'Ontario — 13% HST' },
+            QC: { rate: 0.14975, label: 'Quebec — GST + QST (14.975%)' },
+            MB: { rate: 0.12,    label: 'Manitoba — GST + PST (12%)' },
+            SK: { rate: 0.11,    label: 'Saskatchewan — GST + PST (11%)' },
+            AB: { rate: 0.05,    label: 'Alberta — 5% GST' },
+            BC: { rate: 0.12,    label: 'British Columbia — GST + PST (12%)' },
+          };
+          const province = taxRates[otdState] ?? taxRates.NS;
+          const taxRate = province.rate;
           const tax = Math.round(vehicle.price * taxRate);
           const docFee = 85;
           const titleReg = 320;
@@ -700,26 +717,22 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
           return (
             <div>
               <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 18px', lineHeight: 1.5 }}>
-                Real numbers — nothing hidden. Pick your state and we'll show you the all-in price.
+                Real numbers — nothing hidden. Pick your province and we'll show you the all-in price.
               </p>
               <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Registration state</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Registration province</div>
                 <select className="select" value={otdState} onChange={e => setOtdState(e.target.value)}>
-                  <option value="CA">California (7.75%)</option>
-                  <option value="TX">Texas (6.25%)</option>
-                  <option value="NY">New York (8.75%)</option>
-                  <option value="FL">Florida (6.00%)</option>
-                  <option value="AZ">Arizona (5.60%)</option>
-                  <option value="NV">Nevada (6.85%)</option>
-                  <option value="OR">Oregon (0.00%)</option>
+                  {Object.entries(taxRates).map(([code, p]) => (
+                    <option key={code} value={code}>{p.label}</option>
+                  ))}
                 </select>
               </div>
 
               <div style={{ background: 'var(--bg-soft)', borderRadius: 14, padding: '20px 22px', marginBottom: 16 }}>
                 {[
                   { label: 'Vehicle price', value: fmtPrice(vehicle.price) },
-                  { label: `Sales tax (${(taxRate * 100).toFixed(2)}%)`, value: fmtPrice(tax) },
-                  { label: 'Title & registration', value: fmtPrice(titleReg) },
+                  { label: `Tax (${(taxRate * 100).toFixed(2)}%)`, value: fmtPrice(tax) },
+                  { label: 'Registration & plates', value: fmtPrice(titleReg) },
                   { label: 'Documentation fee', value: fmtPrice(docFee) },
                   { label: 'Pre-delivery inspection', value: 'FREE', highlight: true },
                 ].map(row => (

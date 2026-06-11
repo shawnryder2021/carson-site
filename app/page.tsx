@@ -137,7 +137,7 @@ export default function Home() {
                 {featured[0].make} {featured[0].model}
               </h2>
               <div style={{ display: 'flex', gap: 14, fontSize: 13, color: 'var(--muted)', marginBottom: 18 }}>
-                <span><Icon name="gauge" size={13} style={{ verticalAlign: '-2px' }}/> {featured[0].mileage.toLocaleString()} mi</span>
+                <span><Icon name="gauge" size={13} style={{ verticalAlign: '-2px' }}/> {featured[0].mileage.toLocaleString()} km</span>
                 <span><Icon name="fuel" size={13} style={{ verticalAlign: '-2px' }}/> {featured[0].fuel}</span>
                 <span><Icon name="car" size={13} style={{ verticalAlign: '-2px' }}/> {featured[0].drive}</span>
               </div>
