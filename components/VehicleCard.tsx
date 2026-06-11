@@ -1,0 +1,90 @@
+import { Vehicle } from '@/data/inventory';
+import { vehicleImageURL } from '@/data/vehicleImage';
+import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
+import { Icon } from './Icon';
+import { useSaved } from '@/context/SavedContext';
+import { usePriceMode } from '@/context/PriceModeContext';
+import { useRouter } from 'next/navigation';
+
+export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
+  const { saved, toggleSave } = useSaved();
+  const { mode } = usePriceMode();
+  const router = useRouter();
+  const isSaved = saved.includes(vehicle.id);
+  const monthly = estMonthly(vehicle.price);
+
+  return (
+    <div
+      style={{
+        background: 'white',
+        border: '1px solid var(--line)',
+        borderRadius: 16,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'transform 200ms, box-shadow 200ms',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'scale(1.02)';
+        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+      onClick={() => router.push(`/vehicle/${vehicle.id}`)}
+    >
+      <div style={{ position: 'relative', background: 'var(--bg-soft)', aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        <img src={vehicleImageURL(vehicle, { size: 300 })} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleSave(vehicle.id);
+          }}
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            background: 'white',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
+          <Icon name="heart" size={18} style={{ color: isSaved ? 'var(--teal)' : 'var(--muted)', fill: isSaved ? 'var(--teal)' : 'none' }} />
+        </button>
+      </div>
+      <div style={{ padding: '16px 20px' }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>
+          {vehicle.year} {vehicle.make} {vehicle.model}
+        </div>
+        {mode === 'monthly' ? (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)' }}>
+              ${monthly}<span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}>/mo</span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--muted)' }}>{fmtPrice(vehicle.price)} · est. 72mo @ 7.2% APR</div>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)' }}>
+              {fmtPrice(vehicle.price)}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--muted)' }}>or est. ${monthly}/mo</div>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+          <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}><Icon name="gauge" size={14} />{fmtMiles(vehicle.mileage)}</span>
+          <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}><Icon name="fuel" size={14} />{vehicle.fuel}</span>
+          <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}><Icon name="car" size={14} />{vehicle.drive}</span>
+        </div>
+        <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>{vehicle.aiSummary}</p>
+      </div>
+    </div>
+  );
+}
