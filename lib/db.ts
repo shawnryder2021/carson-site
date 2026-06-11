@@ -27,7 +27,7 @@ export type Lead = {
 
 // ───────────────────────── Mappers ─────────────────────────
 
-function rowToVehicle(r: any): Vehicle & { images?: string[]; status?: string; featured?: boolean } {
+function rowToVehicle(r: any): AdminVehicle {
   return {
     id: r.id,
     year: r.year,
@@ -44,9 +44,14 @@ function rowToVehicle(r: any): Vehicle & { images?: string[]; status?: string; f
     images: Array.isArray(r.images) ? r.images : [],
     status: r.status,
     featured: r.featured,
+    views: r.views ?? 0,
+    hiddenOverride: r.hidden_override ?? false,
+    createdAt: r.created_at,
   };
 }
 
+// Deliberately omits views / hidden_override / created_at: upserts (admin save,
+// sheet sync) must never reset counters, the hide flag, or the arrival date.
 export function vehicleToRow(v: Partial<Vehicle> & { images?: string[]; status?: string; featured?: boolean }) {
   return {
     id: v.id,
@@ -98,7 +103,16 @@ export function guideToRow(g: Partial<Guide> & { published?: boolean }) {
 
 // ───────────────────────── Vehicles ─────────────────────────
 
-export type AdminVehicle = Vehicle & { images?: string[]; status?: string; featured?: boolean };
+export type AdminVehicle = Vehicle & {
+  images?: string[];
+  status?: string;
+  featured?: boolean;
+  views?: number;
+  // Admin "never show on site" flag. Lives only in the DB — the sheet sync
+  // never writes it, so it survives daily imports.
+  hiddenOverride?: boolean;
+  createdAt?: string;
+};
 
 export async function listVehicles(opts?: { includeHidden?: boolean }): Promise<AdminVehicle[]> {
   const sb = getBrowserClient();
@@ -108,7 +122,37 @@ export async function listVehicles(opts?: { includeHidden?: boolean }): Promise<
   const { data, error } = await q;
   if (error || !data) return INVENTORY as AdminVehicle[];
   if (data.length === 0) return INVENTORY as AdminVehicle[];
-  return data.map(rowToVehicle);
+  const mapped = data.map(rowToVehicle);
+  // Filter the admin hide-override in JS so this works before the migration runs.
+  return opts?.includeHidden ? mapped : mapped.filter(v => !v.hiddenOverride);
+}
+
+// Toggle the persistent hide flag (separate from upserts so syncs can't reset it).
+export async function setVehicleHidden(id: string, hidden: boolean): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('vehicles').update({ hidden_override: hidden }).eq('id', id);
+  return { error: error?.message };
+}
+
+// Fire-and-forget VDP view counter.
+export async function recordVehicleView(id: string): Promise<void> {
+  const sb = getBrowserClient();
+  if (!sb) return;
+  try { await sb.rpc('increment_vehicle_view', { vid: id }); } catch { /* non-critical */ }
+}
+
+export type PricePoint = { price: number; recordedAt: string };
+
+export async function getPriceHistory(vehicleId: string): Promise<PricePoint[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  const { data, error } = await sb.from('price_history')
+    .select('price, recorded_at')
+    .eq('vehicle_id', vehicleId)
+    .order('recorded_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map((r: any) => ({ price: r.price, recordedAt: r.recorded_at }));
 }
 
 export async function getVehicleById(id: string): Promise<AdminVehicle | null> {

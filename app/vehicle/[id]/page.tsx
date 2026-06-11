@@ -11,7 +11,7 @@ import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
-import { getVehicleById, listVehicles, createLead, AdminVehicle } from '@/lib/db';
+import { getVehicleById, listVehicles, createLead, recordVehicleView, AdminVehicle } from '@/lib/db';
 
 const PRESET_QUESTIONS = [
   'Is this a fair price?',
@@ -30,8 +30,17 @@ export default function VehiclePage({ params }: { params: { id: string } }) {
   useEffect(() => {
     (async () => {
       const [v, all] = await Promise.all([getVehicleById(params.id), listVehicles()]);
-      setVehicle(v);
+      // Admin-hidden vehicles are not publicly viewable, even by direct URL.
+      setVehicle(v && (v as any).hiddenOverride ? null : v);
       if (all.length) setAllVehicles(all);
+      // Count one view per vehicle per browser session.
+      if (v && !(v as any).hiddenOverride) {
+        const key = `cx_viewed_${params.id}`;
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, '1');
+          recordVehicleView(params.id);
+        }
+      }
     })();
   }, [params.id]);
 

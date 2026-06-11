@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { fmtPrice, fmtMiles } from '@/lib/format';
-import { listVehicles, deleteVehicle, importStarterVehicles, syncFromSheet, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
+import { listVehicles, deleteVehicle, importStarterVehicles, syncFromSheet, setVehicleHidden, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
 
 export default function AdminInventory() {
   const router = useRouter();
@@ -35,6 +35,14 @@ export default function AdminInventory() {
     setBusy(false);
     if (error) return alert(error);
     alert(`Imported ${count} starter vehicles.`);
+    load();
+  };
+
+  const toggleHide = async (id: string, hidden: boolean) => {
+    setBusy(true);
+    const { error } = await setVehicleHidden(id, hidden);
+    setBusy(false);
+    if (error) return alert(error);
     load();
   };
 
@@ -82,31 +90,45 @@ export default function AdminInventory() {
               <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--line)', color: 'var(--muted)', fontSize: 12 }}>
                 <th style={{ padding: '12px 16px', fontWeight: 700 }}>Vehicle</th>
                 <th style={{ padding: '12px 16px', fontWeight: 700 }}>Price</th>
-                <th style={{ padding: '12px 16px', fontWeight: 700 }}>Miles</th>
+                <th style={{ padding: '12px 16px', fontWeight: 700 }}>Days on lot</th>
+                <th style={{ padding: '12px 16px', fontWeight: 700 }}>Views</th>
                 <th style={{ padding: '12px 16px', fontWeight: 700 }}>Status</th>
                 <th style={{ padding: '12px 16px', fontWeight: 700, textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(v => (
-                <tr key={v.id} style={{ borderBottom: '1px solid var(--line)' }}>
+              {filtered.map(v => {
+                const hidden = !!v.hiddenOverride;
+                const days = v.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(v.createdAt).getTime()) / 86400000)) : null;
+                return (
+                <tr key={v.id} style={{ borderBottom: '1px solid var(--line)', opacity: hidden ? 0.55 : 1 }}>
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ fontWeight: 600 }}>{v.year} {v.make} {v.model}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{v.body} · {v.fuel} · {v.drive}</div>
                   </td>
                   <td style={{ padding: '12px 16px' }}>{fmtPrice(v.price)}</td>
-                  <td style={{ padding: '12px 16px' }}>{fmtMiles(v.mileage)}</td>
+                  <td style={{ padding: '12px 16px', color: days !== null && days >= 60 ? '#A8232C' : days !== null && days >= 30 ? '#8A5400' : 'var(--ink)' }}>
+                    {days === null ? '—' : days === 0 ? 'Today' : `${days}d`}
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>{v.views ?? 0}</td>
                   <td style={{ padding: '12px 16px' }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: statusColor[(v as any).status || 'available'] }}>
-                      {((v as any).status || 'available').toUpperCase()}
-                    </span>
+                    {hidden ? (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#8A8A8A' }}>HIDDEN (admin)</span>
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: statusColor[(v as any).status || 'available'] }}>
+                        {((v as any).status || 'available').toUpperCase()}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button onClick={() => toggleHide(v.id, !hidden)} disabled={busy} className="btn btn-ghost btn-sm" style={{ marginRight: 6 }}>
+                      {hidden ? 'Show' : 'Hide'}
+                    </button>
                     <button onClick={() => router.push(`/admin/inventory/${v.id}`)} className="btn btn-ghost btn-sm" style={{ marginRight: 6 }}>Edit</button>
                     <button onClick={() => remove(v.id, `${v.year} ${v.make} ${v.model}`)} disabled={busy} className="btn btn-ghost btn-sm" style={{ color: '#A8232C' }}>Delete</button>
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         )}

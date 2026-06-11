@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
-import { saveVehicle, uploadImage, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
+import { fmtPrice } from '@/lib/format';
+import { saveVehicle, uploadImage, getPriceHistory, isSupabaseConfigured, AdminVehicle, PricePoint } from '@/lib/db';
 
 const EMPTY: AdminVehicle = {
   id: '', year: new Date().getFullYear(), make: '', model: '', price: 0, mileage: 0,
@@ -28,7 +29,16 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [history, setHistory] = useState<PricePoint[]>([]);
   const set = (patch: Partial<AdminVehicle>) => setV(prev => ({ ...prev, ...patch }));
+
+  useEffect(() => {
+    if (!isNew && initial?.id) getPriceHistory(initial.id).then(setHistory);
+  }, [isNew, initial?.id]);
+
+  const daysOnLot = initial?.createdAt
+    ? Math.max(0, Math.floor((Date.now() - new Date(initial.createdAt).getTime()) / 86400000))
+    : null;
 
   const slugId = () => `cx-${v.make}-${v.model}-${v.year}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 
@@ -53,6 +63,49 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
       <h1 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 24px' }}>
         {isNew ? 'Add vehicle' : `Edit ${v.year} ${v.make} ${v.model}`}
       </h1>
+
+      {/* Performance stats (existing vehicles) */}
+      {!isNew && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+          {[
+            { label: 'Days on lot', value: daysOnLot === null ? '—' : daysOnLot === 0 ? 'Today' : `${daysOnLot}` },
+            { label: 'Page views', value: String(initial?.views ?? 0) },
+            { label: 'Price changes', value: String(Math.max(0, history.length - 1)) },
+          ].map(s => (
+            <div key={s.label} style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 18px' }}>
+              <div style={{ fontFamily: 'var(--display)', fontSize: 26, fontWeight: 700, lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Price history */}
+      {!isNew && history.length > 0 && (
+        <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 10 }}>Price history</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {history.map((p, i) => {
+              const prev = i > 0 ? history[i - 1].price : null;
+              const delta = prev !== null ? p.price - prev : 0;
+              return (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                  <span style={{ color: 'var(--muted)' }}>{new Date(p.recordedAt).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                  <span>
+                    <strong>{fmtPrice(p.price)}</strong>
+                    {prev !== null && delta !== 0 && (
+                      <span style={{ marginLeft: 8, fontWeight: 700, color: delta < 0 ? '#0F6B2D' : '#A8232C' }}>
+                        {delta < 0 ? '▼' : '▲'} {fmtPrice(Math.abs(delta))}
+                      </span>
+                    )}
+                    {i === 0 && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--muted)' }}>listed</span>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 16, padding: '26px 28px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
