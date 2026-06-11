@@ -83,6 +83,29 @@ function coerceDrive(v: string): AdminVehicle['drive'] {
 const toInt = (v: string) => parseInt((v || '').replace(/[^0-9.]/g, ''), 10) || 0;
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+// Turn common Google Drive share links into directly-renderable image URLs.
+export function normalizeImageUrl(raw: string): string | null {
+  let u = (raw || '').trim().replace(/^["']|["']$/g, '');
+  if (!u) return null;
+  // Drive: /file/d/FILEID/...  or  ?id=FILEID  or  open?id=FILEID
+  let id = '';
+  const m1 = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  const m2 = u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m1) id = m1[1];
+  else if (m2 && /drive\.google\.com|docs\.google\.com/.test(u)) id = m2[1];
+  if (id) return `https://lh3.googleusercontent.com/d/${id}`;
+  if (/^https?:\/\//i.test(u)) return u;
+  return null;
+}
+
+// Find every column whose header looks like an image/photo column.
+function imageColumns(headers: string[]): number[] {
+  return headers
+    .map((h, i) => ({ h: h.toLowerCase().replace(/[^a-z0-9]/g, ''), i }))
+    .filter(x => /(image|photo|picture|^img|pic\d|media|thumbnail)/.test(x.h))
+    .map(x => x.i);
+}
+
 export type SheetParseResult = {
   vehicles: AdminVehicle[];
   warnings: string[];
@@ -110,12 +133,15 @@ export function parseSheetToVehicles(csv: string): SheetParseResult {
     exterior: findCol(headers, ['exterior', 'ext color', 'color', 'colour', 'exterior color']),
     interior: findCol(headers, ['interior', 'int color', 'interior color']),
     summary: findCol(headers, ['summary', 'description', 'notes', 'comments', 'details']),
-    images: findCol(headers, ['images', 'image', 'photos', 'photo', 'image url', 'image urls', 'pictures']),
     status: findCol(headers, ['status', 'availability']),
   };
+  const imgCols = imageColumns(headers);
 
   if (col.year === -1 || col.make === -1 || col.model === -1) {
     warnings.push(`Couldn't find Year/Make/Model columns. Found headers: ${headers.join(', ')}`);
+  }
+  if (imgCols.length === 0) {
+    warnings.push(`No image/photo column detected. Headers seen: ${headers.join(', ')}`);
   }
 
   const get = (row: string[], idx: number) => (idx >= 0 && idx < row.length ? (row[idx] || '').trim() : '');
@@ -131,8 +157,16 @@ export function parseSheetToVehicles(csv: string): SheetParseResult {
     const rawId = get(row, col.id) || get(row, col.vin);
     const id = rawId ? `cx-${slug(rawId)}` : `cx-${slug(`${year}-${make}-${model}-${r}`)}`;
 
-    const imagesRaw = get(row, col.images);
-    const images = imagesRaw ? imagesRaw.split(/[\s,;|]+/).filter(u => /^https?:\/\//.test(u)) : [];
+    // Gather images from every image-ish column, split multi-URL cells, normalize.
+    const images: string[] = [];
+    for (const ci of imgCols) {
+      const cell = get(row, ci);
+      if (!cell) continue;
+      for (const part of cell.split(/[\s,;|]+/)) {
+        const url = normalizeImageUrl(part);
+        if (url && !images.includes(url)) images.push(url);
+      }
+    }
 
     const statusRaw = get(row, col.status).toLowerCase();
     const status = /sold/.test(statusRaw) ? 'sold' : /hidden|draft|pending/.test(statusRaw) ? 'hidden' : 'available';
