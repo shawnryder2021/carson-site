@@ -141,8 +141,11 @@ export default function Home() {
                 <span><Icon name="fuel" size={13} style={{ verticalAlign: '-2px' }}/> {featured[0].fuel}</span>
                 <span><Icon name="car" size={13} style={{ verticalAlign: '-2px' }}/> {featured[0].drive}</span>
               </div>
-              <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.55, margin: '0 0 18px' }}>
-                {featured[0].aiSummary}. Carson AI picked this as today's best value for first-time buyers.
+              <p style={{
+                fontSize: 14, color: 'var(--muted)', lineHeight: 1.55, margin: '0 0 18px',
+                display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden',
+              }}>
+                {(featured[0].aiSummary || '').slice(0, 140)}{(featured[0].aiSummary || '').length > 140 ? '…' : ''} Carson AI picked this as today's best value.
               </p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 18 }}>
                 <span style={{ fontFamily: 'var(--display)', fontSize: 32, fontWeight: 700, color: 'var(--ink)' }}>${featured[0].price.toLocaleString()}</span>

@@ -14,6 +14,10 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const monthly = estMonthly(vehicle.price);
   const photo = (vehicle as any).images?.[0] as string | undefined;
 
+  // Cards show a teaser only — full description lives on the vehicle page.
+  const full = vehicle.aiSummary || '';
+  const shortDesc = full.length > 90 ? full.slice(0, 90).replace(/\s+\S*$/, '') + '…' : full;
+
   return (
     <div
       style={{
@@ -86,7 +90,11 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}><Icon name="fuel" size={14} />{vehicle.fuel}</span>
           <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}><Icon name="car" size={14} />{vehicle.drive}</span>
         </div>
-        <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>{vehicle.aiSummary}</p>
+        <p style={{
+          fontSize: 13, color: 'var(--muted)', margin: 0, lineHeight: 1.5,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any,
+          overflow: 'hidden',
+        }}>{shortDesc}</p>
       </div>
     </div>
   );
