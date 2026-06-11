@@ -53,6 +53,25 @@ footer { border-top: 1px solid var(--line); }
 
 .ai-glow { position: relative; background: linear-gradient(135deg, rgba(0,124,146,0.1), rgba(90,138,255,0.05)); }
 
+/* Full-bleed hero background video — scales a 16:9 YouTube iframe to cover */
+.hero-cover-video {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-cover-video iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vw;
+  height: 56.25vw;            /* 16:9 of viewport width */
+  min-height: 100%;
+  min-width: 177.78vh;        /* 16:9 of viewport height */
+  transform: translate(-50%, -50%);
+  border: 0;
+}
+
 /* Sticky mobile CTA bar (vehicle page) */
 .vdp-mobile-cta {
   display: none;

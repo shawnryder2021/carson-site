@@ -21,60 +21,74 @@ export default function Home() {
 
   return (
     <div className="page fade-in">
-      {/* Hero */}
-      <section style={{ padding: '80px 0 120px', background: 'linear-gradient(135deg, rgba(0,124,146,0.05), rgba(90,138,255,0.05))' }}>
-        <div className="container" style={{ maxWidth: 1100 }}>
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(40px, 6vw, 68px)', fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', lineHeight: 1.1 }}>
-              {hero.headline}
-            </h1>
-            <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: 'var(--muted)', margin: 0 }}>
-              {hero.subtext}
-            </p>
-          </div>
+      {/* Hero — full-bleed background video/image with overlaid content */}
+      <section style={{
+        position: 'relative',
+        margin: '0 -20px',
+        minHeight: 'min(82vh, 680px)',
+        display: 'flex',
+        alignItems: 'center',
+        overflow: 'hidden',
+        background: 'var(--ink)',
+      }}>
+        {/* Background media */}
+        <HeroMedia hero={hero} variant="cover" />
+        {/* Scrim for legibility */}
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to bottom, rgba(8,12,18,0.55) 0%, rgba(8,12,18,0.35) 45%, rgba(8,12,18,0.75) 100%)',
+        }} />
 
-          {/* Hero media (video or image) */}
-          <div style={{ maxWidth: 960, margin: '0 auto 36px' }}>
-            <HeroMedia hero={hero} />
-          </div>
+        {/* Overlaid content */}
+        <div className="container" style={{ position: 'relative', maxWidth: 900, width: '100%', textAlign: 'center', color: 'white', padding: '72px 20px' }}>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(40px, 6.5vw, 76px)', fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', lineHeight: 1.05, textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
+            {hero.headline}
+          </h1>
+          <p style={{ fontSize: 'clamp(16px, 2vw, 21px)', color: 'rgba(255,255,255,0.92)', margin: '0 auto 36px', maxWidth: 620, textShadow: '0 1px 12px rgba(0,0,0,0.4)' }}>
+            {hero.subtext}
+          </p>
 
           {/* Search Bar */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 32 }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: 600 }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: 560 }}>
               <div className="ai-glow" style={{ borderRadius: 16 }}>
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && search()}
-                  placeholder="e.g., 'Under $30k, great on gas' or 'SUV for a family with kids'"
-                  style={{ width: '100%', padding: '14px 18px', border: '1px solid var(--line)', borderRadius: 16, fontSize: 14, fontFamily: 'inherit' }}
+                  placeholder="e.g., 'Under $30k, great on gas' or 'SUV for a family'"
+                  style={{ width: '100%', padding: '15px 18px', border: 'none', borderRadius: 16, fontSize: 15, fontFamily: 'inherit', boxShadow: '0 8px 30px rgba(0,0,0,0.25)' }}
                 />
               </div>
             </div>
-            <button onClick={search} className="btn btn-primary btn-lg">
+            <button onClick={search} className="btn btn-primary btn-lg" style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.25)' }}>
               <Icon name="sparkles" size={16} /> Search
             </button>
           </div>
 
           {/* Quick suggestions */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 40 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
             {['SUV under $30k', 'Family-friendly with low miles', 'Best on gas for a long commute', 'Sporty coupe under $50k'].map(s => (
               <button key={s} onClick={() => router.push(`/inventory?aiQuery=${encodeURIComponent(s)}`)} style={{
-                background: 'white', border: '1px solid var(--line)', borderRadius: 999, padding: '8px 14px',
-                fontSize: 13, fontFamily: 'inherit', color: 'var(--ink)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)',
+                borderRadius: 999, padding: '8px 14px', fontSize: 13, fontFamily: 'inherit', color: 'white', cursor: 'pointer',
               }}>
-                <Icon name="sparkles" size={12} style={{ color: 'var(--teal)', verticalAlign: '-1px', marginRight: 4 }} />{s}
+                <Icon name="sparkles" size={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />{s}
               </button>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* Featured Car Hero */}
+      {/* AI's top pick */}
+      <section style={{ padding: '72px 0 0' }}>
+        <div className="container" style={{ maxWidth: 900 }}>
           <div
             onClick={() => router.push(`/vehicle/${featured[0].id}`)}
             style={{
               background: 'white', border: '1px solid var(--line)', borderRadius: 22,
-              padding: 32, maxWidth: 900, margin: '0 auto',
+              padding: 32, margin: '0 auto',
               display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 32, alignItems: 'center',
               cursor: 'pointer', transition: 'transform 200ms, box-shadow 200ms',
             }}
