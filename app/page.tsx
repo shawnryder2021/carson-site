@@ -111,6 +111,7 @@ export default function Home() {
       </section>
 
       {/* AI's top pick */}
+      {featured.length > 0 && (
       <section style={{ padding: '72px 0 0' }}>
         <div className="container" style={{ maxWidth: 900 }}>
           <div
@@ -156,6 +157,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Featured Inventory */}
       <section style={{ padding: '80px 0' }}>

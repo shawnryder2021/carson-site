@@ -128,7 +128,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
     }
 
     return results;
-  }, [filters, sortBy, saved, topPickId]);
+  }, [inventory, filters, sortBy, saved, topPickId]);
 
   const toggleArrayFilter = (key: 'body' | 'fuel' | 'drive', value: string) => {
     setFilters(f => ({
