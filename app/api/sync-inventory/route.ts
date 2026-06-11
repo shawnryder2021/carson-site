@@ -31,11 +31,21 @@ async function run(req: Request) {
     if (vehicles.length === 0) return Response.json({ error: 'No vehicles parsed', warnings }, { status: 422 });
 
     const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-    const rows = vehicles.map((v, i) => ({ ...vehicleToRow(v), sort_order: i }));
+    const byId = new Map(vehicles.map(v => [v.id, v]));
+    const rows = Array.from(byId.values()).map((v, i) => ({ ...vehicleToRow(v), sort_order: i }));
     const { error } = await sb.from('vehicles').upsert(rows);
     if (error) return Response.json({ error: error.message }, { status: 500 });
 
-    return Response.json({ ok: true, count: rows.length, warnings, at: new Date().toISOString() });
+    // Mirror: remove listings no longer in the sheet.
+    let removed = 0;
+    const { data: existing } = await sb.from('vehicles').select('id');
+    if (existing) {
+      const keep = new Set(rows.map(r => r.id));
+      const stale = existing.map((e: any) => e.id).filter((id: string) => !keep.has(id));
+      if (stale.length) { await sb.from('vehicles').delete().in('id', stale); removed = stale.length; }
+    }
+
+    return Response.json({ ok: true, count: rows.length, removed, warnings, at: new Date().toISOString() });
   } catch (e: any) {
     return Response.json({ error: e?.message || 'Sync failed' }, { status: 500 });
   }

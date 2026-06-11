@@ -144,7 +144,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
     { label: 'Drivetrain', value: vehicle.drive },
     { label: 'Exterior', value: vehicle.exterior },
     { label: 'Interior', value: vehicle.interior },
-    { label: 'VIN', value: 'CXN' + vehicle.id.slice(-6).toUpperCase() + 'XXXXXX' },
+    { label: 'VIN', value: 'CXN' + String(vehicle.id || '').slice(-6).toUpperCase() + 'XXXXXX' },
   ];
 
   const history = [
@@ -290,7 +290,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                     <span className="ai-dot" /> Carson AI Overview
                   </div>
                   <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--ink)' }}>
-                    The {vehicle.year} {vehicle.make} {vehicle.model} is {vehicle.aiSummary.toLowerCase()}. With {fmtMiles(vehicle.mileage)} on the clock and a {vehicle.fuel.toLowerCase()} {vehicle.drive} powertrain, it's well-suited for everyday driving. {isBelowMarket ? `At ${fmtPrice(vehicle.price)}, it's priced ${fmtPrice(savings)} below the typical market range for this vehicle in this condition.` : `At ${fmtPrice(vehicle.price)}, it's priced in line with the current market.`}
+                    The {vehicle.year} {vehicle.make} {vehicle.model} is {(vehicle.aiSummary || 'a great find').toLowerCase()}. With {fmtMiles(vehicle.mileage)} on the clock and a {(vehicle.fuel || 'gas').toLowerCase()} {vehicle.drive} powertrain, it's well-suited for everyday driving. {isBelowMarket ? `At ${fmtPrice(vehicle.price)}, it's priced ${fmtPrice(savings)} below the typical market range for this vehicle in this condition.` : `At ${fmtPrice(vehicle.price)}, it's priced in line with the current market.`}
                   </p>
                 </div>
 

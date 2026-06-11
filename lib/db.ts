@@ -156,10 +156,30 @@ export async function syncFromSheet(): Promise<{ error?: string; count?: number;
   }
   const vehicles: AdminVehicle[] = payload.vehicles || [];
   if (vehicles.length === 0) return { error: (payload.warnings || []).join(' ') || 'No vehicles found in the sheet.' };
-  const rows = vehicles.map((v, i) => ({ ...vehicleToRow(v), sort_order: i }));
+
+  // De-dupe by id (sheet can contain accidental duplicates).
+  const byId = new Map<string, AdminVehicle>();
+  vehicles.forEach(v => byId.set(v.id, v));
+  const unique = Array.from(byId.values());
+
+  const rows = unique.map((v, i) => ({ ...vehicleToRow(v), sort_order: i }));
   const { error } = await sb.from('vehicles').upsert(rows);
   if (error) return { error: error.message };
-  return { count: rows.length, warnings: payload.warnings };
+
+  // Mirror the sheet: remove listings that are no longer in it.
+  let removed = 0;
+  const { data: existing } = await sb.from('vehicles').select('id');
+  if (existing) {
+    const keep = new Set(rows.map(r => r.id));
+    const stale = existing.map((e: any) => e.id).filter((id: string) => !keep.has(id));
+    if (stale.length) {
+      const { error: delErr } = await sb.from('vehicles').delete().in('id', stale);
+      if (!delErr) removed = stale.length;
+    }
+  }
+  const warnings = [...(payload.warnings || [])];
+  if (removed) warnings.push(`Removed ${removed} listing(s) no longer in the sheet.`);
+  return { count: rows.length, warnings };
 }
 
 // ───────────────────────── Settings ─────────────────────────

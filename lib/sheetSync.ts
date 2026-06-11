@@ -155,7 +155,10 @@ export function parseSheetToVehicles(csv: string): SheetParseResult {
     if (!make || !model) continue; // skip incomplete rows
 
     const rawId = get(row, col.id) || get(row, col.vin);
-    const id = rawId ? `cx-${slug(rawId)}` : `cx-${slug(`${year}-${make}-${model}-${r}`)}`;
+    // SEO-friendly, deterministic slug: year-make-model[-trim][-stock].
+    // Stable across syncs (depends on the data, not the row position).
+    const trim = col.trim >= 0 ? get(row, col.trim) : '';
+    const id = slug([year || '', make, model, trim, rawId].filter(Boolean).join(' ')) || `vehicle-${r}`;
 
     // Gather images from every image-ish column, split multi-URL cells, normalize.
     const images: string[] = [];
