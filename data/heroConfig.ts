@@ -13,6 +13,10 @@ export type HeroConfig = {
   imageUrl: string;
   headline: string;
   subtext: string;
+  // Show the headline + subtext + search overlay? Turn off for a pure banner.
+  showOverlay: boolean;
+  // Optional: make the whole hero clickable (e.g. a promo banner link).
+  linkUrl: string;
 };
 
 export const DEFAULT_HERO: HeroConfig = {
@@ -21,6 +25,8 @@ export const DEFAULT_HERO: HeroConfig = {
   imageUrl: '',
   headline: 'Find the right car.',
   subtext: 'Let Carson AI find your perfect match in 60 seconds.',
+  showOverlay: true,
+  linkUrl: '',
 };
 
 // Extract a YouTube video ID from a full URL, short URL, or bare ID.

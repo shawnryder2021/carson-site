@@ -33,6 +33,8 @@ create table if not exists public.site_settings (
   hero_image_url  text not null default '',
   hero_headline   text not null default 'Find the right car.',
   hero_subtext    text not null default 'Let Carson AI find your perfect match in 60 seconds.',
+  hero_show_overlay boolean not null default true,
+  hero_link_url   text not null default '',
   contact_address text not null default '550 Windmill Rd, Dartmouth, NS B3B 1B3',
   contact_phone   text not null default '(555) 234-9090',
   contact_email   text not null default 'hello@carsonexports.com',
@@ -41,6 +43,10 @@ create table if not exists public.site_settings (
   constraint single_row check (id = 1)
 );
 insert into public.site_settings (id) values (1) on conflict (id) do nothing;
+
+-- Migrations for existing databases (safe to re-run):
+alter table public.site_settings add column if not exists hero_show_overlay boolean not null default true;
+alter table public.site_settings add column if not exists hero_link_url text not null default '';
 
 -- ---------- LEADS (form submissions) ----------
 create table if not exists public.leads (

@@ -28,68 +28,86 @@ export default function Home() {
     if (query) router.push(`/inventory?aiQuery=${encodeURIComponent(query)}`);
   };
 
+  // Banner mode: clickable hero when the overlay is off and a link is set.
+  const heroClickable = !hero.showOverlay && !!hero.linkUrl;
+  const goToHeroLink = () => {
+    const url = hero.linkUrl.trim();
+    if (!url) return;
+    if (/^https?:\/\//i.test(url)) window.open(url, '_blank', 'noopener');
+    else router.push(url);
+  };
+
   const featured = vehicles.slice(0, 8);
 
   return (
     <div className="page fade-in">
-      {/* Hero — full-bleed background video/image with overlaid content */}
-      <section style={{
-        position: 'relative',
-        margin: '0 -20px',
-        minHeight: 'min(82vh, 680px)',
-        display: 'flex',
-        alignItems: 'center',
-        overflow: 'hidden',
-        background: 'var(--ink)',
-      }}>
+      {/* Hero — full-bleed background video/image. Optional overlay + banner link. */}
+      <section
+        onClick={heroClickable ? goToHeroLink : undefined}
+        style={{
+          position: 'relative',
+          margin: '0 -20px',
+          minHeight: 'min(82vh, 680px)',
+          display: 'flex',
+          alignItems: 'center',
+          overflow: 'hidden',
+          background: 'var(--ink)',
+          cursor: heroClickable ? 'pointer' : 'default',
+        }}
+      >
         {/* Background media */}
         <HeroMedia hero={hero} variant="cover" />
-        {/* Scrim for legibility */}
-        <div aria-hidden style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(to bottom, rgba(8,12,18,0.55) 0%, rgba(8,12,18,0.35) 45%, rgba(8,12,18,0.75) 100%)',
-        }} />
+
+        {/* Scrim — only when the text overlay is shown */}
+        {hero.showOverlay && (
+          <div aria-hidden style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to bottom, rgba(8,12,18,0.55) 0%, rgba(8,12,18,0.35) 45%, rgba(8,12,18,0.75) 100%)',
+          }} />
+        )}
 
         {/* Overlaid content */}
-        <div className="container" style={{ position: 'relative', maxWidth: 900, width: '100%', textAlign: 'center', color: 'white', padding: '72px 20px' }}>
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(40px, 6.5vw, 76px)', fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', lineHeight: 1.05, textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
-            {hero.headline}
-          </h1>
-          <p style={{ fontSize: 'clamp(16px, 2vw, 21px)', color: 'rgba(255,255,255,0.92)', margin: '0 auto 36px', maxWidth: 620, textShadow: '0 1px 12px rgba(0,0,0,0.4)' }}>
-            {hero.subtext}
-          </p>
+        {hero.showOverlay && (
+          <div className="container" style={{ position: 'relative', maxWidth: 900, width: '100%', textAlign: 'center', color: 'white', padding: '72px 20px' }}>
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(40px, 6.5vw, 76px)', fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', lineHeight: 1.05, textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
+              {hero.headline}
+            </h1>
+            <p style={{ fontSize: 'clamp(16px, 2vw, 21px)', color: 'rgba(255,255,255,0.92)', margin: '0 auto 36px', maxWidth: 620, textShadow: '0 1px 12px rgba(0,0,0,0.4)' }}>
+              {hero.subtext}
+            </p>
 
-          {/* Search Bar */}
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: 560 }}>
-              <div className="ai-glow" style={{ borderRadius: 16 }}>
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && search()}
-                  placeholder="e.g., 'Under $30k, great on gas' or 'SUV for a family'"
-                  style={{ width: '100%', padding: '15px 18px', border: 'none', borderRadius: 16, fontSize: 15, fontFamily: 'inherit', boxShadow: '0 8px 30px rgba(0,0,0,0.25)' }}
-                />
+            {/* Search Bar */}
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', width: '100%', maxWidth: 560 }}>
+                <div className="ai-glow" style={{ borderRadius: 16 }}>
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && search()}
+                    placeholder="e.g., 'Under $30k, great on gas' or 'SUV for a family'"
+                    style={{ width: '100%', padding: '15px 18px', border: 'none', borderRadius: 16, fontSize: 15, fontFamily: 'inherit', boxShadow: '0 8px 30px rgba(0,0,0,0.25)' }}
+                  />
+                </div>
               </div>
-            </div>
-            <button onClick={search} className="btn btn-primary btn-lg" style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.25)' }}>
-              <Icon name="sparkles" size={16} /> Search
-            </button>
-          </div>
-
-          {/* Quick suggestions */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-            {['SUV under $30k', 'Family-friendly with low miles', 'Best on gas for a long commute', 'Sporty coupe under $50k'].map(s => (
-              <button key={s} onClick={() => router.push(`/inventory?aiQuery=${encodeURIComponent(s)}`)} style={{
-                background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)',
-                borderRadius: 999, padding: '8px 14px', fontSize: 13, fontFamily: 'inherit', color: 'white', cursor: 'pointer',
-              }}>
-                <Icon name="sparkles" size={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />{s}
+              <button onClick={search} className="btn btn-primary btn-lg" style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.25)' }}>
+                <Icon name="sparkles" size={16} /> Search
               </button>
-            ))}
+            </div>
+
+            {/* Quick suggestions */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+              {['SUV under $30k', 'Family-friendly with low miles', 'Best on gas for a long commute', 'Sporty coupe under $50k'].map(s => (
+                <button key={s} onClick={() => router.push(`/inventory?aiQuery=${encodeURIComponent(s)}`)} style={{
+                  background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)',
+                  borderRadius: 999, padding: '8px 14px', fontSize: 13, fontFamily: 'inherit', color: 'white', cursor: 'pointer',
+                }}>
+                  <Icon name="sparkles" size={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />{s}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* AI's top pick */}

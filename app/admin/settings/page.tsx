@@ -73,11 +73,34 @@ export default function AdminSettings() {
               <input className="input" value={s.imageUrl} onChange={e => set({ imageUrl: e.target.value })} placeholder="https://…/showroom.jpg" />
             </Field>
           )}
-          <Field label="Headline"><input className="input" value={s.headline} onChange={e => set({ headline: e.target.value })} /></Field>
-          <Field label="Subtext"><textarea className="input" value={s.subtext} onChange={e => set({ subtext: e.target.value })} style={{ minHeight: 64, fontFamily: 'inherit', resize: 'vertical' }} /></Field>
+          <Field label="">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, fontWeight: 600 }}>
+              <input type="checkbox" checked={s.showOverlay} onChange={e => set({ showOverlay: e.target.checked })} style={{ accentColor: 'var(--teal)' }} />
+              Show text &amp; search over the hero
+            </label>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
+              Turn off to use the hero as a clean clickable banner (image works best).
+            </div>
+          </Field>
+
+          {s.showOverlay ? (
+            <>
+              <Field label="Headline"><input className="input" value={s.headline} onChange={e => set({ headline: e.target.value })} /></Field>
+              <Field label="Subtext"><textarea className="input" value={s.subtext} onChange={e => set({ subtext: e.target.value })} style={{ minHeight: 64, fontFamily: 'inherit', resize: 'vertical' }} /></Field>
+            </>
+          ) : (
+            <Field label="Banner link (where clicks go)" hint="Internal path like /inventory or a full https:// link. Leave blank for no link.">
+              <input className="input" value={s.linkUrl} onChange={e => set({ linkUrl: e.target.value })} placeholder="/inventory  or  https://…" />
+            </Field>
+          )}
 
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', marginBottom: 8 }}>Preview</div>
           <HeroMedia hero={s} />
+          {!s.showOverlay && s.linkUrl && (
+            <div style={{ fontSize: 12, color: 'var(--teal-2)', marginTop: 8 }}>
+              <Icon name="info" size={12} style={{ verticalAlign: '-1px' }} /> Clicking the banner will go to <strong>{s.linkUrl}</strong>
+            </div>
+          )}
         </div>
 
         {/* Contact */}
