@@ -4,10 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
+import { HeroMedia } from '@/components/HeroMedia';
 import { INVENTORY } from '@/data/inventory';
+import { useHeroConfig } from '@/context/HeroConfigContext';
 
 export default function Home() {
   const router = useRouter();
+  const { hero } = useHeroConfig();
   const [query, setQuery] = useState('');
 
   const search = () => {
@@ -21,13 +24,18 @@ export default function Home() {
       {/* Hero */}
       <section style={{ padding: '80px 0 120px', background: 'linear-gradient(135deg, rgba(0,124,146,0.05), rgba(90,138,255,0.05))' }}>
         <div className="container" style={{ maxWidth: 1100 }}>
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(40px, 6vw, 68px)', fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', lineHeight: 1.1 }}>
-              Find the right car.
+              {hero.headline}
             </h1>
-            <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: 'var(--muted)', margin: 0, marginBottom: 32 }}>
-              Let Carson AI find your perfect match in 60 seconds.
+            <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: 'var(--muted)', margin: 0 }}>
+              {hero.subtext}
             </p>
+          </div>
+
+          {/* Hero media (video or image) */}
+          <div style={{ maxWidth: 960, margin: '0 auto 36px' }}>
+            <HeroMedia hero={hero} />
           </div>
 
           {/* Search Bar */}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Fraunces } from 'next/font/google';
 import { SavedProvider } from '@/context/SavedContext';
 import { PriceModeProvider } from '@/context/PriceModeContext';
+import { HeroConfigProvider } from '@/context/HeroConfigContext';
 import { AppShell } from './AppShell';
 import './globals.css';
 
@@ -19,7 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} ${fraunces.variable}`}>
         <SavedProvider>
           <PriceModeProvider>
-            <AppShell>{children}</AppShell>
+            <HeroConfigProvider>
+              <AppShell>{children}</AppShell>
+            </HeroConfigProvider>
           </PriceModeProvider>
         </SavedProvider>
       </body>
