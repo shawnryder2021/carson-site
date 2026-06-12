@@ -44,7 +44,7 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
     })();
   }, [params.id]);
 
-  const [tab, setTab] = useState<'overview' | 'specs' | 'history' | 'inspection'>('overview');
+  const [tab, setTab] = useState<'overview' | 'specs'>('overview');
   const [activeImage, setActiveImage] = useState(0);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiReply, setAiReply] = useState<string | null>(null);
@@ -157,24 +157,6 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
     { label: 'VIN', value: 'CXN' + String(vehicle.id || '').slice(-6).toUpperCase() + 'XXXXXX' },
   ];
 
-  const history = [
-    { date: '2 weeks ago', event: 'Arrived at Carson lot', detail: 'Passed 142-point inspection' },
-    { date: '1 month ago', event: 'Previous owner trade-in', detail: 'Single owner, no accidents reported' },
-    { date: '6 months ago', event: 'Routine maintenance', detail: 'Oil change, tire rotation' },
-    { date: '1 year ago', event: 'Service record', detail: 'Brake pad replacement (factory service)' },
-    { date: `${new Date().getFullYear() - vehicle.year} years ago`, event: 'First registration', detail: 'Original purchase, clean title' },
-  ];
-
-  const inspectionCategories = [
-    { name: 'Engine & Transmission', score: '24/24', status: 'pass' },
-    { name: 'Brakes & Suspension', score: '18/18', status: 'pass' },
-    { name: 'Electrical Systems', score: '22/22', status: 'pass' },
-    { name: 'Body & Paint', score: '14/15', status: 'pass' },
-    { name: 'Interior Condition', score: '18/18', status: 'pass' },
-    { name: 'Tires & Wheels', score: '12/12', status: 'pass' },
-    { name: 'Safety Systems', score: '20/20', status: 'pass' },
-    { name: 'Fluids & Filters', score: '14/14', status: 'pass' },
-  ];
 
   return (
     <div className="page fade-in">
@@ -270,7 +252,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--line)', marginBottom: 24 }}>
-              {([['overview', 'AI Overview'], ['specs', 'Specifications'], ['history', 'Vehicle History'], ['inspection', 'Inspection']] as const).map(([key, label]) => (
+              {([['overview', 'AI Overview'], ['specs', 'Specifications']] as const).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
@@ -338,51 +320,6 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                     <div style={{ fontSize: 14, color: 'var(--ink)' }}>{s.value}</div>
                   </div>
                 ))}
-              </div>
-            )}
-
-            {tab === 'history' && (
-              <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '24px 28px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {history.map((h, i) => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '32px 1fr', gap: 16, paddingBottom: 20, position: 'relative' }}>
-                      <div style={{ position: 'relative' }}>
-                        <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--teal)', marginTop: 4 }} />
-                        {i < history.length - 1 && <div style={{ position: 'absolute', left: 5, top: 18, bottom: -8, width: 2, background: 'var(--line)' }} />}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, marginBottom: 2 }}>{h.date}</div>
-                        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{h.event}</div>
-                        <div style={{ fontSize: 13, color: 'var(--muted)' }}>{h.detail}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {tab === 'inspection' && (
-              <div>
-                <div style={{ background: 'var(--teal-tint)', borderRadius: 14, padding: '20px 24px', marginBottom: 20, display: 'flex', gap: 14, alignItems: 'center' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
-                    <Icon name="shield" size={24} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--teal-2)' }}>142/142 Points Passed</div>
-                    <div style={{ fontSize: 13, color: 'var(--ink)' }}>This vehicle passed every check in our comprehensive inspection.</div>
-                  </div>
-                </div>
-                <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '8px 0' }}>
-                  {inspectionCategories.map((c, i) => (
-                    <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: i < inspectionCategories.length - 1 ? '1px solid var(--line)' : 'none' }}>
-                      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                        <Icon name="check" size={18} style={{ color: 'var(--teal)' }} />
-                        <span style={{ fontSize: 14, fontWeight: 500 }}>{c.name}</span>
-                      </div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)' }}>{c.score}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </div>
