@@ -8,6 +8,7 @@ import { VehicleCard } from '@/components/VehicleCard';
 import { HeroMedia } from '@/components/HeroMedia';
 import { INVENTORY } from '@/data/inventory';
 import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
+import { InstagramGrid, useInstagram } from '@/components/InstagramGrid';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { listVehicles, getSettings, getDealVehicleId, AdminVehicle } from '@/lib/db';
@@ -40,6 +41,8 @@ export default function Home() {
     if (/^https?:\/\//i.test(url)) window.open(url, '_blank', 'noopener');
     else router.push(url);
   };
+
+  const { config: igConfig, tiles: igTiles } = useInstagram(6);
 
   const available = vehicles.filter(v => v.status !== 'sold');
   const featured = available.slice(0, 8);
@@ -250,6 +253,31 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Instagram */}
+      {igTiles.length > 0 && (
+        <section style={{ padding: '0 0 80px' }}>
+          <div className="container" style={{ maxWidth: 1100 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
+              <div>
+                <h2 style={{ fontFamily: 'var(--display)', fontSize: 30, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 4px' }}>
+                  Follow along 📸
+                </h2>
+                <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>
+                  New arrivals and sold celebrations, fresh from the lot —{' '}
+                  <a href={`https://www.instagram.com/${igConfig?.handle || 'carsonexports'}/`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal-2)', fontWeight: 700 }}>
+                    @{igConfig?.handle || 'carsonexports'}
+                  </a>
+                </p>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => router.push('/social')}>
+                See more <Icon name="arrowRight" size={13} />
+              </button>
+            </div>
+            <InstagramGrid tiles={igTiles} handle={igConfig?.handle || 'carsonexports'} />
           </div>
         </section>
       )}

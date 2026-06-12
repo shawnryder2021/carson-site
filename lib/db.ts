@@ -398,6 +398,7 @@ export const DEFAULT_NAV: NavItem[] = [
   { label: 'About', href: '/about', children: [
     { label: 'About Carson', href: '/about' },
     { label: 'Meet the Team', href: '/team' },
+    { label: 'Social', href: '/social' },
     { label: 'Reviews', href: '/testimonials' },
     { label: 'FAQ', href: '/faq' },
     { label: 'Contact', href: '/contact' },
@@ -689,6 +690,40 @@ export async function saveDealVehicleId(vehicleId: string): Promise<{ error?: st
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
   const { error } = await sb.from('site_settings').update({ deal_vehicle_id: vehicleId }).eq('id', 1);
+  return { error: error?.message };
+}
+
+// ───────────────────────── Instagram / social ─────────────────────────
+
+export type InstagramTile = { image: string; link: string; caption?: string };
+export type SocialConfig = {
+  handle: string;        // instagram username, no @
+  feedUrl: string;       // Behold.so (or compatible) JSON feed for auto mode
+  posts: InstagramTile[]; // manually curated tiles (fallback / no-service mode)
+};
+
+export async function getSocialConfig(): Promise<SocialConfig> {
+  const fallback: SocialConfig = { handle: 'carsonexports', feedUrl: '', posts: [] };
+  const sb = getBrowserClient();
+  if (!sb) return fallback;
+  const { data } = await sb.from('site_settings')
+    .select('instagram_handle, instagram_feed_url, instagram_posts').eq('id', 1).maybeSingle();
+  if (!data) return fallback;
+  return {
+    handle: data.instagram_handle || 'carsonexports',
+    feedUrl: data.instagram_feed_url || '',
+    posts: Array.isArray(data.instagram_posts) ? data.instagram_posts : [],
+  };
+}
+
+export async function saveSocialConfig(c: SocialConfig): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('site_settings').update({
+    instagram_handle: c.handle.replace(/^@/, '').trim(),
+    instagram_feed_url: c.feedUrl.trim(),
+    instagram_posts: c.posts,
+  }).eq('id', 1);
   return { error: error?.message };
 }
 
