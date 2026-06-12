@@ -384,9 +384,13 @@ export type NavItem = {
 export const DEFAULT_NAV: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Inventory', href: '/inventory', autoCategories: true },
+  { label: 'Find Your Car', href: '/inventory-search' },
   { label: 'AI Finder', href: '/finder' },
   { label: 'Trade-in', href: '/tradein' },
-  { label: 'Financing', href: '/finance' },
+  { label: 'Financing', href: '/finance', children: [
+    { label: 'Financing Options', href: '/finance' },
+    { label: 'Ask AI', href: '/financing-explainer' },
+  ] },
   { label: 'Guides', href: '/guides' },
   { label: 'About', href: '/about', children: [
     { label: 'About Carson', href: '/about' },
@@ -558,6 +562,84 @@ export async function uploadImage(file: File): Promise<{ url?: string; error?: s
   if (error) return { error: error.message };
   const { data } = sb.storage.from('media').getPublicUrl(path);
   return { url: data.publicUrl };
+}
+
+// ───────────────────────── AI Knowledge Base ─────────────────────────
+
+export type KnowledgeEntry = {
+  id?: string;
+  category: 'about_carson' | 'inventory_insights' | 'market_data' | 'policies' | 'team' | 'promotions';
+  title: string;
+  content: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export async function listKnowledgeBase(category?: string): Promise<KnowledgeEntry[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  let query = sb.from('ai_knowledge_base').select('*');
+  if (category) query = query.eq('category', category);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error || !data) return [];
+  return data.map((r: any) => ({
+    id: r.id,
+    category: r.category,
+    title: r.title,
+    content: r.content,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
+export async function saveKnowledgeEntry(entry: KnowledgeEntry): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  if (!entry.title || !entry.content) return { error: 'Title and content required' };
+
+  if (entry.id) {
+    const { error } = await sb.from('ai_knowledge_base').update({
+      title: entry.title,
+      content: entry.content,
+      updated_at: new Date().toISOString(),
+    }).eq('id', entry.id);
+    return { error: error?.message };
+  } else {
+    const { error } = await sb.from('ai_knowledge_base').insert({
+      category: entry.category,
+      title: entry.title,
+      content: entry.content,
+    });
+    return { error: error?.message };
+  }
+}
+
+export async function deleteKnowledgeEntry(id: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('ai_knowledge_base').delete().eq('id', id);
+  return { error: error?.message };
+}
+
+export async function getKnowledgeBaseContext(): Promise<string> {
+  const entries = await listKnowledgeBase();
+  if (entries.length === 0) return '';
+
+  const grouped: Record<string, KnowledgeEntry[]> = {};
+  entries.forEach(e => {
+    if (!grouped[e.category]) grouped[e.category] = [];
+    grouped[e.category].push(e);
+  });
+
+  let context = '# Carson Exports Knowledge Base\n\n';
+  Object.entries(grouped).forEach(([cat, items]) => {
+    const catLabel = cat.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    context += `## ${catLabel}\n`;
+    items.forEach(item => {
+      context += `### ${item.title}\n${item.content}\n\n`;
+    });
+  });
+  return context;
 }
 
 export { isSupabaseConfigured };
