@@ -11,7 +11,7 @@ import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
-import { getVehicleById, listVehicles, createLead, recordVehicleView, AdminVehicle } from '@/lib/db';
+import { getVehicleById, listVehicles, createLead, recordVehicleView, createVehicleWatch, AdminVehicle } from '@/lib/db';
 
 const PRESET_QUESTIONS = [
   'Is this a fair price?',
@@ -49,8 +49,37 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
-  const [modal, setModal] = useState<null | 'testdrive' | 'video' | 'delivery' | 'otd'>(null);
+  const [modal, setModal] = useState<null | 'testdrive' | 'video' | 'delivery' | 'otd' | 'watch'>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  // Watch-this-car state
+  const [watchContact, setWatchContact] = useState('');
+  const [watching, setWatching] = useState(false);
+  const [watchBusy, setWatchBusy] = useState(false);
+  useEffect(() => {
+    setWatching(typeof window !== 'undefined' && !!localStorage.getItem(`cx_watch_${params.id}`));
+  }, [params.id]);
+
+  const startWatch = async () => {
+    if (!vehicle || !watchContact.trim()) return;
+    setWatchBusy(true);
+    const isEmail = watchContact.includes('@');
+    const { error } = await createVehicleWatch({
+      vehicleId: vehicle.id,
+      name: '',
+      email: isEmail ? watchContact.trim() : '',
+      phone: isEmail ? '' : watchContact.trim(),
+      contactPref: isEmail ? 'email' : 'sms',
+      lastNotifiedPrice: vehicle.price,
+    });
+    setWatchBusy(false);
+    if (!error) {
+      localStorage.setItem(`cx_watch_${params.id}`, '1');
+      setWatching(true);
+      setSubmitted(true);
+      setTimeout(() => { setModal(null); setSubmitted(false); setWatchContact(''); }, 1800);
+    }
+  };
 
   // Test drive state
   const [tdDate, setTdDate] = useState('');
@@ -331,11 +360,35 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               {vehicle.make} {vehicle.model}
             </h1>
 
-            <div style={{ display: 'flex', gap: 14, fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 14, fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
               <span><Icon name="gauge" size={13} style={{ verticalAlign: '-2px' }}/> {fmtMiles(vehicle.mileage)}</span>
               <span><Icon name="fuel" size={13} style={{ verticalAlign: '-2px' }}/> {vehicle.fuel}</span>
               <span><Icon name="car" size={13} style={{ verticalAlign: '-2px' }}/> {vehicle.drive}</span>
             </div>
+
+            {/* Social proof badges (real data: created_at + tracked views) */}
+            {(() => {
+              const days = vehicle.createdAt ? Math.floor((Date.now() - new Date(vehicle.createdAt).getTime()) / 86400000) : null;
+              const views = vehicle.views || 0;
+              const badges: Array<{ icon: string; text: string; hot?: boolean }> = [];
+              if (days !== null && days <= 7) badges.push({ icon: '🆕', text: days <= 1 ? 'Just arrived' : `Arrived ${days} days ago` });
+              if (views >= 10) badges.push({ icon: '👀', text: `${views} shoppers have viewed this car`, hot: views >= 40 });
+              if (badges.length === 0) return null;
+              return (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                  {badges.map((b, i) => (
+                    <span key={i} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      background: b.hot ? '#FDECEC' : 'var(--teal-tint)',
+                      color: b.hot ? '#A8232C' : 'var(--teal-2)',
+                      padding: '5px 12px', borderRadius: 999, fontSize: 12.5, fontWeight: 700,
+                    }}>
+                      {b.icon} {b.hot ? `In demand — ${b.text.toLowerCase()}` : b.text}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Price card */}
             <div style={{ background: 'var(--ink)', color: 'white', borderRadius: 16, padding: '24px 28px', marginBottom: 14, position: 'relative', overflow: 'hidden' }}>
@@ -378,6 +431,13 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                   Trade-in
                 </button>
               </div>
+              <button
+                onClick={() => !watching && setModal('watch')}
+                className="btn btn-ghost"
+                style={{ width: '100%', marginTop: 4, ...(watching ? { color: 'var(--teal-2)', borderColor: 'var(--teal)', cursor: 'default' } : {}) }}
+              >
+                <Icon name="trend" size={14} /> {watching ? 'Watching — we’ll alert you on a price drop ✓' : 'Watch this car · get price-drop alerts'}
+              </button>
             </div>
 
             {/* AI Q&A */}
@@ -447,6 +507,40 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
           </div>
         )}
       </div>
+
+      {/* ── WATCH THIS CAR ── */}
+      <Modal open={modal === 'watch'} onClose={() => setModal(null)} title="Watch this car">
+        {submitted ? (
+          <div style={{ textAlign: 'center', padding: '20px 0 8px' }}>
+            <div style={{ width: 52, height: 52, margin: '0 auto 16px', borderRadius: '50%', background: 'var(--teal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="check" size={26} style={{ color: 'var(--teal-2)' }} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>You&apos;re watching this car 👀</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>If the price drops, you&apos;ll be the first to know.</div>
+          </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 16px', lineHeight: 1.5 }}>
+              Not ready today? We get it. Leave an email or phone number and we&apos;ll automatically alert you if the price of this
+              {' '}{vehicle.year} {vehicle.make} {vehicle.model} drops below <strong>{fmtPrice(vehicle.price)}</strong> — or if it&apos;s about to sell.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input
+                className="input"
+                placeholder="Email or mobile number"
+                value={watchContact}
+                onChange={e => setWatchContact(e.target.value)}
+              />
+              <button onClick={startWatch} disabled={watchBusy || !watchContact.trim()} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                <Icon name="trend" size={14} /> {watchBusy ? 'Saving…' : 'Start watching'}
+              </button>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
+                <Icon name="shield" size={10} style={{ verticalAlign: '-1px' }} /> One alert per price change. No marketing, no spam.
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* ── BOOK TEST DRIVE ── */}
       <Modal open={modal === 'testdrive'} onClose={() => setModal(null)} title="Book a test drive">

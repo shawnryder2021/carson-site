@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { getBrowserClient } from '@/lib/supabase/client';
-import { listCarRequests, setCarRequestActive, deleteCarRequest, listVehicles, getAlertWebhookUrl, saveAlertWebhookUrl, isSupabaseConfigured, CarRequest, AdminVehicle } from '@/lib/db';
+import { listCarRequests, setCarRequestActive, deleteCarRequest, listVehicles, listVehicleWatches, deleteVehicleWatch, getAlertWebhookUrl, saveAlertWebhookUrl, isSupabaseConfigured, CarRequest, AdminVehicle, VehicleWatch } from '@/lib/db';
+import { fmtPrice } from '@/lib/format';
 import { matchesRequest, newMatchesFor, describeRequest } from '@/lib/carMatch';
 
 export default function AdminCarRequests() {
@@ -15,11 +16,14 @@ export default function AdminCarRequests() {
   const [webhook, setWebhook] = useState('');
   const [webhookMsg, setWebhookMsg] = useState<string | null>(null);
 
+  const [watches, setWatches] = useState<VehicleWatch[]>([]);
+
   const load = async () => {
-    const [r, v, w] = await Promise.all([listCarRequests(), listVehicles({ includeHidden: true }), getAlertWebhookUrl()]);
+    const [r, v, w, vw] = await Promise.all([listCarRequests(), listVehicles({ includeHidden: true }), getAlertWebhookUrl(), listVehicleWatches()]);
     setRequests(r);
     setVehicles(v);
     setWebhook(w);
+    setWatches(vw);
     setLoading(false);
   };
 
@@ -191,6 +195,41 @@ export default function AdminCarRequests() {
                     <button onClick={() => del(r)} disabled={busy} className="btn btn-ghost btn-sm" style={{ color: '#A8232C' }}>Delete</button>
                   </div>
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Vehicle watchers (price-drop alerts from VDPs) */}
+      <h2 style={{ fontFamily: 'var(--display)', fontSize: 21, fontWeight: 600, letterSpacing: '-.02em', margin: '34px 0 4px' }}>Watching specific vehicles</h2>
+      <p style={{ fontSize: 13.5, color: 'var(--muted)', margin: '0 0 14px' }}>
+        Shoppers who tapped &ldquo;Watch this car&rdquo; — they&apos;re alerted automatically on price drops or when the car sells.
+      </p>
+      {watches.length === 0 ? (
+        <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '18px', fontSize: 13.5, color: 'var(--muted)' }}>
+          No watchers yet. The &ldquo;Watch this car&rdquo; button lives on every vehicle page.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {watches.map(w => {
+            const v = vehicles.find(x => x.id === w.vehicleId);
+            const dropped = v && v.price < w.lastNotifiedPrice;
+            return (
+              <div key={w.id} style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', opacity: w.active ? 1 : 0.55 }}>
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>
+                    {w.email || w.phone}
+                    <span style={{ fontWeight: 400, color: 'var(--muted)' }}> is watching </span>
+                    {v ? `${v.year} ${v.make} ${v.model}` : w.vehicleId}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+                    signed up at {fmtPrice(w.lastNotifiedPrice)}
+                    {v && <> · now {fmtPrice(v.price)}{dropped && <span style={{ color: 'var(--teal-2)', fontWeight: 700 }}> — drop pending alert</span>}</>}
+                    {!w.active && ' · completed (car sold)'}
+                  </div>
+                </div>
+                <button onClick={async () => { if (confirm('Remove this watcher?')) { setBusy(true); await deleteVehicleWatch(w.id!); await load(); setBusy(false); } }} disabled={busy} className="btn btn-ghost btn-sm" style={{ color: '#A8232C' }}>Remove</button>
               </div>
             );
           })}

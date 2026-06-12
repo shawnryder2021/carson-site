@@ -153,16 +153,114 @@ export type AlertSummary = {
   requestsChecked: number;
   requestsWithNewMatches: number;
   alertsSent: number;
+  watchesChecked: number;
+  watchAlertsSent: number;
   webhookConfigured: boolean;
   emailConfigured: boolean;
   smsConfigured: boolean;
   details: Array<{ request: string; matches: number; sent: boolean; channel: string }>;
 };
 
+// ── Watch-this-car alerts (price drops + sold notices) ──
+
+type WatchRow = {
+  id: string; vehicle_id: string; name: string; email: string; phone: string;
+  contact_pref: 'email' | 'sms'; last_notified_price: number; active: boolean;
+};
+
+async function sendWatchWebhook(url: string, kind: 'price_drop' | 'sold', w: WatchRow, v: Veh, siteUrl: string): Promise<boolean> {
+  if (!url) return false;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: kind === 'price_drop' ? 'vehicle.price_drop' : 'vehicle.sold',
+        at: new Date().toISOString(),
+        contact: { name: w.name, email: w.email, phone: w.phone, preferredChannel: w.contact_pref },
+        vehicle: {
+          id: v.id,
+          title: `${v.year} ${v.make} ${v.model}`,
+          price: v.price,
+          previousPrice: w.last_notified_price,
+          savings: Math.max(0, w.last_notified_price - v.price),
+          mileageKm: v.mileage,
+          url: `${siteUrl}/vehicle/${v.id}`,
+          image: v.images?.[0] || null,
+        },
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function sendWatchEmail(kind: 'price_drop' | 'sold', w: WatchRow, v: Veh, siteUrl: string): Promise<boolean> {
+  const key = process.env.RESEND_API_KEY;
+  if (!key || !w.email) return false;
+  const from = process.env.ALERT_FROM_EMAIL || 'Carson Exports <onboarding@resend.dev>';
+  const title = `${v.year} ${v.make} ${v.model}`;
+  const subject = kind === 'price_drop'
+    ? `📉 Price drop: ${title} is now $${v.price.toLocaleString()} — Carson Exports`
+    : `${title} just sold — but we can find you another`;
+  const body = kind === 'price_drop'
+    ? `<p>Good news${w.name ? ', ' + w.name.split(' ')[0] : ''} — the <strong>${title}</strong> you're watching just dropped from <s>$${w.last_notified_price.toLocaleString()}</s> to <strong>$${v.price.toLocaleString()}</strong> (save $${(w.last_notified_price - v.price).toLocaleString()}).</p>
+       <p><a href="${siteUrl}/vehicle/${v.id}" style="display:inline-block;background:#007C92;color:#fff;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:8px;">See the new price</a></p>
+       <p style="color:#889;font-size:12px;">Price drops attract attention — this one may not last. Carson Exports · 550 Windmill Rd, Dartmouth, NS</p>`
+    : `<p>${w.name ? w.name.split(' ')[0] + ', the' : 'The'} <strong>${title}</strong> you were watching has been sold. Want us to watch for a similar one? <a href="${siteUrl}/carfinder">Set up a CarFinder alert</a> and you'll get first dibs.</p>`;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ from, to: [w.email], subject, html: `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;font-size:14.5px;line-height:1.6;color:#222;">${body}</div>` }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function runWatchAlerts(sb: SupabaseClient, siteUrl: string, webhookUrl: string, summary: AlertSummary) {
+  const { data: watches } = await sb.from('vehicle_watches').select('*').eq('active', true);
+  if (!watches || watches.length === 0) return;
+  const ids = Array.from(new Set(watches.map((w: any) => w.vehicle_id)));
+  const { data: vehs } = await sb.from('vehicles')
+    .select('id, year, make, model, price, mileage, body, fuel, drive, status, images')
+    .in('id', ids);
+  const byId = new Map((vehs || []).map((v: any) => [v.id, v as Veh]));
+
+  summary.watchesChecked = watches.length;
+
+  for (const w of watches as WatchRow[]) {
+    const v = byId.get(w.vehicle_id);
+    if (!v) continue; // vehicle removed; cascade will clean up eventually
+    const sold = v.status === 'sold';
+    const dropped = !sold && v.price < w.last_notified_price;
+    if (!sold && !dropped) continue;
+
+    const kind = sold ? 'sold' as const : 'price_drop' as const;
+    let sent = false;
+    if (webhookUrl) sent = await sendWatchWebhook(webhookUrl, kind, w, v, siteUrl);
+    if (!sent) sent = await sendWatchEmail(kind, w, v, siteUrl);
+
+    if (sent) {
+      summary.watchAlertsSent++;
+      if (sold) await sb.from('vehicle_watches').update({ active: false }).eq('id', w.id);
+      else await sb.from('vehicle_watches').update({ last_notified_price: v.price }).eq('id', w.id);
+    }
+    summary.details.push({
+      request: `${w.name || w.email || w.phone} watching ${v.year} ${v.make} ${v.model}`,
+      matches: 1, sent, channel: webhookUrl ? 'webhook' : 'email',
+    });
+  }
+}
+
 export async function runMatchAlerts(sb: SupabaseClient, siteUrl: string): Promise<AlertSummary> {
   const webhookUrl = await getWebhookUrl(sb);
   const summary: AlertSummary = {
     requestsChecked: 0, requestsWithNewMatches: 0, alertsSent: 0,
+    watchesChecked: 0, watchAlertsSent: 0,
     webhookConfigured: !!webhookUrl,
     emailConfigured: !!process.env.RESEND_API_KEY,
     smsConfigured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER),
@@ -173,7 +271,10 @@ export async function runMatchAlerts(sb: SupabaseClient, siteUrl: string): Promi
     sb.from('car_requests').select('*').eq('active', true),
     sb.from('vehicles').select('id, year, make, model, price, mileage, body, fuel, drive, status, hidden_override'),
   ]);
-  if (!reqRows || !vehRows) return summary;
+  if (!reqRows || !vehRows) {
+    await runWatchAlerts(sb, siteUrl, webhookUrl, summary).catch(() => {});
+    return summary;
+  }
 
   const vehicles: Veh[] = vehRows
     .filter((v: any) => !v.hidden_override)
@@ -216,6 +317,9 @@ export async function runMatchAlerts(sb: SupabaseClient, siteUrl: string): Promi
 
     summary.details.push({ request: `${req.name} — ${describeRequest(req)}`, matches: matches.length, sent, channel });
   }
+
+  // Watch-this-car alerts ride along on every run.
+  await runWatchAlerts(sb, siteUrl, webhookUrl, summary).catch(() => {});
 
   return summary;
 }

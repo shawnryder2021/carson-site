@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { complete, generateDescriptionPrompt } from '@/lib/ai';
-import { listVehicles, deleteVehicle, importStarterVehicles, syncFromSheet, setVehicleHidden, saveVehicle, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
+import { listVehicles, deleteVehicle, importStarterVehicles, syncFromSheet, setVehicleHidden, saveVehicle, getDealVehicleId, saveDealVehicleId, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
 
 export default function AdminInventory() {
   const router = useRouter();
@@ -14,12 +14,26 @@ export default function AdminInventory() {
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState('');
 
+  const [dealId, setDealId] = useState('');
+
   const load = async () => {
     setLoading(true);
-    setVehicles(await listVehicles({ includeHidden: true }));
+    const [v, d] = await Promise.all([listVehicles({ includeHidden: true }), getDealVehicleId()]);
+    setVehicles(v);
+    setDealId(d);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
+
+  // Deal of the week: one vehicle gets the homepage banner spot.
+  const toggleDeal = async (id: string) => {
+    setBusy(true);
+    const next = dealId === id ? '' : id;
+    const { error } = await saveDealVehicleId(next);
+    setBusy(false);
+    if (error) return alert(error);
+    setDealId(next);
+  };
 
   const remove = async (id: string, label: string) => {
     if (!confirm(`Delete ${label}? This can’t be undone.`)) return;
@@ -150,6 +164,15 @@ export default function AdminInventory() {
                     )}
                   </td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <button
+                      onClick={() => toggleDeal(v.id)}
+                      disabled={busy}
+                      title={dealId === v.id ? 'Remove Deal of the Week' : 'Make Deal of the Week (homepage banner)'}
+                      className="btn btn-ghost btn-sm"
+                      style={{ marginRight: 6, ...(dealId === v.id ? { background: '#FFF4E5', borderColor: '#ff9d2e', color: '#8A5400' } : {}) }}
+                    >
+                      {dealId === v.id ? '🔥 Deal ✓' : '🔥 Deal'}
+                    </button>
                     <button onClick={() => toggleHide(v.id, !hidden)} disabled={busy} className="btn btn-ghost btn-sm" style={{ marginRight: 6 }}>
                       {hidden ? 'Show' : 'Hide'}
                     </button>

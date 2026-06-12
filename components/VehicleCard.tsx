@@ -42,6 +42,22 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         {photo
           ? <img src={photo} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : <img src={vehicleImageURL(vehicle, { size: 300 })} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />}
+        {/* Social proof badge (real data: created_at / tracked views) */}
+        {(() => {
+          const createdAt = (vehicle as any).createdAt as string | undefined;
+          const views = ((vehicle as any).views as number) || 0;
+          const days = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : null;
+          const badge = days !== null && days <= 7
+            ? { text: '🆕 Just arrived', bg: 'var(--teal)', color: 'white' }
+            : views >= 40
+              ? { text: '🔥 In demand', bg: '#A8232C', color: 'white' }
+              : null;
+          return badge ? (
+            <span style={{ position: 'absolute', top: 12, left: 12, background: badge.bg, color: badge.color, padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 800, letterSpacing: '.03em', boxShadow: '0 2px 8px rgba(0,0,0,.18)' }}>
+              {badge.text}
+            </span>
+          ) : null;
+        })()}
         <button
           onClick={(e) => {
             e.stopPropagation();

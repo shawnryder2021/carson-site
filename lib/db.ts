@@ -633,6 +633,65 @@ export async function saveAlertWebhookUrl(url: string): Promise<{ error?: string
   return { error: error?.message };
 }
 
+// ───────────────────────── Vehicle watches (price-drop alerts) ─────────────────────────
+
+export type VehicleWatch = {
+  id?: string;
+  vehicleId: string;
+  name: string;
+  email: string;
+  phone: string;
+  contactPref: 'email' | 'sms';
+  lastNotifiedPrice: number;
+  active: boolean;
+  createdAt?: string;
+};
+
+export async function createVehicleWatch(w: Omit<VehicleWatch, 'id' | 'active' | 'createdAt'>): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('vehicle_watches').insert({
+    vehicle_id: w.vehicleId, name: w.name, email: w.email, phone: w.phone,
+    contact_pref: w.contactPref, last_notified_price: w.lastNotifiedPrice,
+  });
+  return { error: error?.message };
+}
+
+export async function listVehicleWatches(): Promise<VehicleWatch[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  const { data, error } = await sb.from('vehicle_watches').select('*').order('created_at', { ascending: false });
+  if (error || !data) return [];
+  return data.map((r: any) => ({
+    id: r.id, vehicleId: r.vehicle_id, name: r.name, email: r.email, phone: r.phone,
+    contactPref: r.contact_pref, lastNotifiedPrice: r.last_notified_price,
+    active: r.active, createdAt: r.created_at,
+  }));
+}
+
+export async function deleteVehicleWatch(id: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('vehicle_watches').delete().eq('id', id);
+  return { error: error?.message };
+}
+
+// ───────────────────────── Deal of the week ─────────────────────────
+
+export async function getDealVehicleId(): Promise<string> {
+  const sb = getBrowserClient();
+  if (!sb) return '';
+  const { data } = await sb.from('site_settings').select('deal_vehicle_id').eq('id', 1).maybeSingle();
+  return data?.deal_vehicle_id || '';
+}
+
+export async function saveDealVehicleId(vehicleId: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('site_settings').update({ deal_vehicle_id: vehicleId }).eq('id', 1);
+  return { error: error?.message };
+}
+
 // ───────────────────────── AI Knowledge Base ─────────────────────────
 
 export type KnowledgeEntry = {

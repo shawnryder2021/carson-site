@@ -8,19 +8,23 @@ import { VehicleCard } from '@/components/VehicleCard';
 import { HeroMedia } from '@/components/HeroMedia';
 import { INVENTORY } from '@/data/inventory';
 import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
-import { listVehicles, getSettings, AdminVehicle } from '@/lib/db';
+import { vehicleImageURL } from '@/data/vehicleImage';
+import { fmtPrice, fmtMiles } from '@/lib/format';
+import { listVehicles, getSettings, getDealVehicleId, AdminVehicle } from '@/lib/db';
 
 export default function Home() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [hero, setHero] = useState<HeroConfig>(DEFAULT_HERO);
   const [vehicles, setVehicles] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
+  const [dealId, setDealId] = useState('');
 
   useEffect(() => {
     (async () => {
-      const [s, v] = await Promise.all([getSettings(), listVehicles()]);
+      const [s, v, d] = await Promise.all([getSettings(), listVehicles(), getDealVehicleId()]);
       setHero(s);
       if (v.length) setVehicles(v);
+      setDealId(d);
     })();
   }, []);
 
@@ -37,7 +41,10 @@ export default function Home() {
     else router.push(url);
   };
 
-  const featured = vehicles.slice(0, 8);
+  const available = vehicles.filter(v => v.status !== 'sold');
+  const featured = available.slice(0, 8);
+  const deal = dealId ? available.find(v => v.id === dealId) : undefined;
+  const recentlySold = vehicles.filter(v => v.status === 'sold').slice(0, 4);
 
   return (
     <div className="page fade-in">
@@ -110,6 +117,44 @@ export default function Home() {
         )}
       </section>
 
+      {/* Deal of the Week */}
+      {deal && (
+        <section style={{ padding: '72px 0 0' }}>
+          <div className="container" style={{ maxWidth: 900 }}>
+            <div
+              onClick={() => router.push(`/vehicle/${deal.id}`)}
+              style={{
+                background: 'linear-gradient(120deg, #1a1a1a, #2a1a08)', color: 'white', borderRadius: 22,
+                padding: 32, display: 'grid', gridTemplateColumns: '1fr 1.1fr', gap: 32, alignItems: 'center',
+                cursor: 'pointer', border: '1px solid rgba(255,170,60,.35)', position: 'relative', overflow: 'hidden',
+              }}
+            >
+              <div style={{ position: 'absolute', inset: 0, opacity: .25, background: 'radial-gradient(circle at 85% 15%, #ff9d2e, transparent 55%)' }} />
+              <div style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '4/3', background: '#111', position: 'relative' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={(deal as any).images?.[0] || vehicleImageURL(deal, { size: 600 })} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', top: 14, left: 14, background: '#ff9d2e', color: '#1a1a1a', padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 800, letterSpacing: '.04em' }}>
+                  🔥 DEAL OF THE WEEK
+                </div>
+              </div>
+              <div style={{ position: 'relative' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#caa', marginBottom: 4 }}>{deal.year}</div>
+                <h2 style={{ fontFamily: 'var(--display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 12px', lineHeight: 1.1 }}>
+                  {deal.make} {deal.model}
+                </h2>
+                <div style={{ display: 'flex', gap: 14, fontSize: 13, color: '#caa', marginBottom: 16 }}>
+                  <span>{fmtMiles(deal.mileage)}</span><span>{deal.fuel}</span><span>{deal.drive}</span>
+                </div>
+                <div style={{ fontFamily: 'var(--display)', fontSize: 38, fontWeight: 700, marginBottom: 16 }}>{fmtPrice(deal.price)}</div>
+                <button className="btn btn-primary btn-lg" style={{ width: '100%', background: '#ff9d2e', color: '#1a1a1a', borderColor: '#ff9d2e' }}>
+                  See this week&apos;s deal <Icon name="arrowRight" size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* AI's top pick */}
       {featured.length > 0 && (
       <section style={{ padding: '72px 0 0' }}>
@@ -175,6 +220,39 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Recently sold — social proof */}
+      {recentlySold.length > 0 && (
+        <section style={{ padding: '0 0 80px' }}>
+          <div className="container" style={{ maxWidth: 1200 }}>
+            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+              <h2 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 6px' }}>
+                Gone, but not forgotten 💨
+              </h2>
+              <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>
+                These found their new owners recently. Don&apos;t wait on the one you love — or <span onClick={() => router.push('/carfinder')} style={{ color: 'var(--teal-2)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>get alerted when your match arrives</span>.
+              </p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
+              {recentlySold.map(v => (
+                <div key={v.id} style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)', background: 'white', position: 'relative' }}>
+                  <div style={{ aspectRatio: '4/3', background: 'var(--bg-soft)', position: 'relative' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={(v as any).images?.[0] || vehicleImageURL(v, { size: 400 })} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(.5)' }} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ background: 'var(--ink)', color: 'white', padding: '6px 18px', borderRadius: 999, fontSize: 13, fontWeight: 800, letterSpacing: '.08em', transform: 'rotate(-8deg)', boxShadow: '0 4px 14px rgba(0,0,0,.3)' }}>SOLD</span>
+                    </div>
+                  </div>
+                  <div style={{ padding: '12px 14px' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>{v.year} {v.make} {v.model}</div>
+                    <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{fmtMiles(v.mileage)} · {v.fuel}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Why Carson */}
       <section style={{ padding: '80px 0', background: 'var(--bg-soft)' }}>
