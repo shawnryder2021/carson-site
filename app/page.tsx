@@ -8,7 +8,7 @@ import { VehicleCard } from '@/components/VehicleCard';
 import { HeroMedia } from '@/components/HeroMedia';
 import { INVENTORY } from '@/data/inventory';
 import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
-import { InstagramGrid, useInstagram } from '@/components/InstagramGrid';
+import { InstagramGrid, BeholdWidget, useInstagram } from '@/components/InstagramGrid';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { listVehicles, getSettings, getDealVehicleId, AdminVehicle } from '@/lib/db';
@@ -42,7 +42,7 @@ export default function Home() {
     else router.push(url);
   };
 
-  const { config: igConfig, tiles: igTiles } = useInstagram(6);
+  const { config: igConfig, tiles: igTiles, widgetId: igWidgetId } = useInstagram(6);
 
   const available = vehicles.filter(v => v.status !== 'sold');
   const featured = available.slice(0, 8);
@@ -258,7 +258,7 @@ export default function Home() {
       )}
 
       {/* Instagram */}
-      {igTiles.length > 0 && (
+      {(igTiles.length > 0 || !!igWidgetId) && (
         <section style={{ padding: '0 0 80px' }}>
           <div className="container" style={{ maxWidth: 1100 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
@@ -277,7 +277,9 @@ export default function Home() {
                 See more <Icon name="arrowRight" size={13} />
               </button>
             </div>
-            <InstagramGrid tiles={igTiles} handle={igConfig?.handle || 'carsonexports'} />
+            {igWidgetId
+              ? <BeholdWidget id={igWidgetId} />
+              : <InstagramGrid tiles={igTiles} handle={igConfig?.handle || 'carsonexports'} />}
           </div>
         </section>
       )}

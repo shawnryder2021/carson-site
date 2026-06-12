@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { getSocialConfig, saveSocialConfig, uploadImage, isSupabaseConfigured, SocialConfig } from '@/lib/db';
-import { parseInstagramFeed } from '@/components/InstagramGrid';
+import { parseInstagramFeed, normalizeFeedInput } from '@/components/InstagramGrid';
 
 const label: React.CSSProperties = {
   display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--muted)',
@@ -23,24 +23,34 @@ export default function AdminSocial() {
   if (!config) return <div style={{ padding: 40, color: 'var(--muted)' }}>Loading…</div>;
 
   const save = async (next: SocialConfig) => {
+    // Accept embed snippets too: <behold-widget feed-id="..."> → widget:ID
+    const cleaned = { ...next, feedUrl: normalizeFeedInput(next.feedUrl) };
     setBusy(true);
     setMsg(null);
-    const { error } = await saveSocialConfig(next);
-    setMsg(error ? `Error: ${error}` : 'Saved.');
-    if (!error) setConfig(next);
+    const { error } = await saveSocialConfig(cleaned);
+    setMsg(error ? `Error: ${error}` : cleaned.feedUrl.startsWith('widget:')
+      ? '✓ Saved — Behold widget detected. The grid renders via Behold on the homepage and /social.'
+      : 'Saved.');
+    if (!error) setConfig(cleaned);
     setBusy(false);
   };
 
   const testFeed = async () => {
-    if (!config.feedUrl) return;
+    const raw = normalizeFeedInput(config.feedUrl);
+    if (!raw) return;
+    if (raw.startsWith('widget:')) {
+      setMsg(`✓ Widget mode (feed-id ${raw.slice(7)}) — it renders directly on the site. Open the homepage to see it.`);
+      return;
+    }
     setBusy(true);
     setMsg(null);
     try {
-      const res = await fetch(config.feedUrl, { cache: 'no-store' });
+      const url = /^https?:/i.test(raw) ? raw : `https://feeds.behold.so/${raw}`;
+      const res = await fetch(url, { cache: 'no-store' });
       const tiles = parseInstagramFeed(await res.json());
       setMsg(tiles.length > 0 ? `✓ Feed works — found ${tiles.length} posts.` : 'Feed responded but no posts were found — double-check the URL.');
     } catch {
-      setMsg('Could not read that feed URL — make sure it’s the JSON feed link from Behold.');
+      setMsg('Could not read that as a JSON feed — if you have a widget embed code, paste the whole snippet and Save; widget mode is detected automatically.');
     }
     setBusy(false);
   };
@@ -96,8 +106,8 @@ export default function AdminSocial() {
             <input className="input" value={config.handle} onChange={e => setConfig({ ...config, handle: e.target.value })} placeholder="carsonexports" />
           </div>
           <div>
-            <label style={label}>Feed URL (from Behold.so)</label>
-            <input className="input" value={config.feedUrl} onChange={e => setConfig({ ...config, feedUrl: e.target.value })} placeholder="https://feeds.behold.so/…" />
+            <label style={label}>Behold feed URL or widget embed code</label>
+            <input className="input" value={config.feedUrl} onChange={e => setConfig({ ...config, feedUrl: e.target.value })} placeholder='https://feeds.behold.so/… or <behold-widget feed-id="…">' />
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -105,8 +115,9 @@ export default function AdminSocial() {
           <button onClick={testFeed} disabled={busy || !config.feedUrl} className="btn btn-ghost btn-sm">Test feed</button>
         </div>
         <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 12, lineHeight: 1.6 }}>
-          <strong>5-minute setup:</strong> go to <strong>behold.so</strong> → sign up free → connect the @{config.handle || 'carsonexports'} Instagram account →
-          create a feed (JSON type) → copy the feed URL here. New Instagram posts then appear on the site automatically. No feed URL? The manual tiles below are used instead.
+          <strong>Setup:</strong> at <strong>behold.so</strong>, connect @{config.handle || 'carsonexports'} and create a feed. Both feed types work here —
+          paste either the <strong>JSON feed URL</strong> (we render native tiles in the site&apos;s style) or the <strong>widget embed code</strong>
+          (Behold renders its own grid, styled in their dashboard). New Instagram posts appear automatically either way. Nothing set? The manual tiles below are used.
         </div>
       </div>
 

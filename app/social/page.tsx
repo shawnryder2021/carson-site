@@ -1,10 +1,10 @@
 'use client';
 
 import { Icon } from '@/components/Icon';
-import { InstagramGrid, useInstagram } from '@/components/InstagramGrid';
+import { InstagramGrid, BeholdWidget, useInstagram } from '@/components/InstagramGrid';
 
 export default function SocialPage() {
-  const { config, tiles, loaded } = useInstagram(18);
+  const { config, tiles, widgetId, loaded } = useInstagram(18);
   const handle = config?.handle || 'carsonexports';
   const profileUrl = `https://www.instagram.com/${handle}/`;
 
@@ -29,6 +29,15 @@ export default function SocialPage() {
       <div className="container" style={{ maxWidth: 1100, padding: '46px 20px 80px' }}>
         {!loaded ? (
           <div style={{ textAlign: 'center', color: 'var(--muted)', padding: 60 }}>Loading the feed…</div>
+        ) : widgetId ? (
+          <>
+            <BeholdWidget id={widgetId} />
+            <div style={{ textAlign: 'center', marginTop: 32 }}>
+              <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-lg" style={{ textDecoration: 'none' }}>
+                See more on Instagram <Icon name="arrowRight" size={14} />
+              </a>
+            </div>
+          </>
         ) : tiles.length > 0 ? (
           <>
             <InstagramGrid tiles={tiles} handle={handle} />
