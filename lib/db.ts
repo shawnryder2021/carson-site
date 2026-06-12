@@ -379,6 +379,7 @@ export const DEFAULT_NAV: NavItem[] = [
   { label: 'Guides', href: '/guides' },
   { label: 'About', href: '/about', children: [
     { label: 'About Carson', href: '/about' },
+    { label: 'Meet the Team', href: '/team' },
     { label: 'Reviews', href: '/testimonials' },
     { label: 'FAQ', href: '/faq' },
     { label: 'Contact', href: '/contact' },
@@ -424,6 +425,115 @@ export async function saveNav(items: NavItem[]): Promise<{ error?: string }> {
 
 export async function seedDefaultNav(): Promise<{ error?: string }> {
   return saveNav(DEFAULT_NAV);
+}
+
+// ───────────────────────── Team ─────────────────────────
+
+export type TeamMember = {
+  id?: string;
+  slug: string;
+  name: string;
+  role: string;
+  photoUrl: string;
+  videoUrl: string;
+  bio: string;
+  funFacts: string[];
+  specialties: string[];
+  email: string;
+  phone: string;
+  active: boolean;
+  sortOrder?: number;
+};
+
+// Shown until real members are added (or when Supabase is unconfigured).
+export const SAMPLE_TEAM: TeamMember[] = [
+  {
+    slug: 'sample-team-member',
+    name: 'Your Name Here',
+    role: 'Sales Specialist',
+    photoUrl: '', videoUrl: '',
+    bio: 'This is a sample profile. Add your real team in Admin → Team — each member gets their own page with a photo, intro video, bio, and fun facts.',
+    funFacts: ['Add fun facts in the admin', 'Each person gets their own page', 'Videos welcome'],
+    specialties: ['Customer care'],
+    email: '', phone: '', active: true,
+  },
+];
+
+function rowToMember(r: any): TeamMember {
+  return {
+    id: r.id,
+    slug: r.slug,
+    name: r.name,
+    role: r.role ?? '',
+    photoUrl: r.photo_url ?? '',
+    videoUrl: r.video_url ?? '',
+    bio: r.bio ?? '',
+    funFacts: Array.isArray(r.fun_facts) ? r.fun_facts : [],
+    specialties: Array.isArray(r.specialties) ? r.specialties : [],
+    email: r.email ?? '',
+    phone: r.phone ?? '',
+    active: r.active ?? true,
+    sortOrder: r.sort_order ?? 0,
+  };
+}
+
+function memberToRow(m: TeamMember) {
+  return {
+    slug: m.slug,
+    name: m.name,
+    role: m.role ?? '',
+    photo_url: m.photoUrl ?? '',
+    video_url: m.videoUrl ?? '',
+    bio: m.bio ?? '',
+    fun_facts: m.funFacts ?? [],
+    specialties: m.specialties ?? [],
+    email: m.email ?? '',
+    phone: m.phone ?? '',
+    active: m.active ?? true,
+    sort_order: m.sortOrder ?? 0,
+  };
+}
+
+export async function listTeam(opts?: { includeInactive?: boolean }): Promise<TeamMember[]> {
+  const sb = getBrowserClient();
+  if (!sb) return SAMPLE_TEAM;
+  let q = sb.from('team_members').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+  if (!opts?.includeInactive) q = q.eq('active', true);
+  const { data, error } = await q;
+  if (error || !data || data.length === 0) return opts?.includeInactive && data ? [] : SAMPLE_TEAM;
+  return data.map(rowToMember);
+}
+
+export async function getTeamMemberBySlug(slug: string): Promise<TeamMember | null> {
+  const sb = getBrowserClient();
+  if (!sb) return SAMPLE_TEAM.find(m => m.slug === slug) ?? null;
+  const { data, error } = await sb.from('team_members').select('*').eq('slug', slug).maybeSingle();
+  if (error || !data) return SAMPLE_TEAM.find(m => m.slug === slug) ?? null;
+  return rowToMember(data);
+}
+
+export async function saveTeamMember(m: TeamMember): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('team_members').upsert(memberToRow(m), { onConflict: 'slug' });
+  return { error: error?.message };
+}
+
+export async function deleteTeamMember(slug: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('team_members').delete().eq('slug', slug);
+  return { error: error?.message };
+}
+
+export async function reorderTeam(slugs: string[]): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  for (let i = 0; i < slugs.length; i++) {
+    const { error } = await sb.from('team_members').update({ sort_order: i }).eq('slug', slugs[i]);
+    if (error) return { error: error.message };
+  }
+  return {};
 }
 
 // ───────────────────────── Image upload (Storage) ─────────────────────────

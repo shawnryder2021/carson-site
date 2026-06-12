@@ -14,6 +14,7 @@ export function Footer() {
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#9ad', marginBottom: 20 }}>Brand</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
               <button onClick={() => router.push('/about')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit' }}>About Carson</button>
+              <button onClick={() => router.push('/team')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit' }}>Meet the Team</button>
               <button onClick={() => router.push('/testimonials')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit' }}>Testimonials</button>
               <button onClick={() => router.push('/guides')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit' }}>Guides</button>
             </div>
