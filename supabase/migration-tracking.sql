@@ -8,7 +8,7 @@ alter table public.vehicles add column if not exists hidden_override boolean not
 -- 2) Price history (one row per price change, including the initial price)
 create table if not exists public.price_history (
   id          uuid primary key default gen_random_uuid(),
-  vehicle_id  text not null references public.vehicles(id) on delete cascade,
+  vehicle_id  uuid not null references public.vehicles(id) on delete cascade,
   price       int not null,
   recorded_at timestamptz not null default now()
 );
@@ -36,11 +36,11 @@ create trigger vehicles_price_history
   for each row execute function public.record_price_change();
 
 -- 3) Anonymous-safe view counter (RPC), so VDP visits can increment views
-create or replace function public.increment_vehicle_view(vid text) returns void
+create or replace function public.increment_vehicle_view(vid uuid) returns void
 language sql security definer as $$
   update public.vehicles set views = views + 1 where id = vid;
 $$;
-grant execute on function public.increment_vehicle_view(text) to anon, authenticated;
+grant execute on function public.increment_vehicle_view(uuid) to anon, authenticated;
 
 -- 4) Backfill initial price history for existing vehicles (idempotent-ish:
 --    only inserts for vehicles that have no history yet)
