@@ -6,7 +6,8 @@ import { listLeads, updateLeadStatus, isSupabaseConfigured, Lead } from '@/lib/d
 
 const typeLabel: Record<Lead['type'], string> = {
   contact: 'Contact', testdrive: 'Test drive', tradein: 'Trade-in',
-  finance: 'Financing', video: 'Video request', delivery: 'Delivery', other: 'Other',
+  finance: 'Financing', video: 'Video request', delivery: 'Delivery',
+  carfinder: 'CarFinder', other: 'Other',
 };
 const statusColor: Record<Lead['status'], string> = { new: '#007C92', contacted: '#8A5400', closed: '#8A8A8A' };
 

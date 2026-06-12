@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { sheetCsvUrl, parseSheetToVehicles } from '@/lib/sheetSync';
 import { vehicleToRow } from '@/lib/db';
+import { runMatchAlerts } from '@/lib/matchAlerts';
+import { SITE_URL } from '@/lib/serverDb';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +47,13 @@ async function run(req: Request) {
       if (stale.length) { await sb.from('vehicles').delete().in('id', stale); removed = stale.length; }
     }
 
-    return Response.json({ ok: true, count: rows.length, removed, warnings, at: new Date().toISOString() });
+    // CarFinder: alert shoppers whose saved requests match the fresh inventory.
+    let alerts = null;
+    try {
+      alerts = await runMatchAlerts(sb, SITE_URL);
+    } catch { /* alerts are best-effort; never fail the sync */ }
+
+    return Response.json({ ok: true, count: rows.length, removed, warnings, alerts, at: new Date().toISOString() });
   } catch (e: any) {
     return Response.json({ error: e?.message || 'Sync failed' }, { status: 500 });
   }

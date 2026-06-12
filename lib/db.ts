@@ -15,7 +15,7 @@ export type SiteSettings = HeroConfig & {
 
 export type Lead = {
   id: string;
-  type: 'contact' | 'testdrive' | 'tradein' | 'finance' | 'video' | 'delivery' | 'other';
+  type: 'contact' | 'testdrive' | 'tradein' | 'finance' | 'video' | 'delivery' | 'carfinder' | 'other';
   name?: string;
   email?: string;
   phone?: string;
@@ -384,7 +384,10 @@ export type NavItem = {
 export const DEFAULT_NAV: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Inventory', href: '/inventory', autoCategories: true },
-  { label: 'Find Your Car', href: '/inventory-search' },
+  { label: 'Find Your Car', href: '/inventory-search', children: [
+    { label: 'AI Search', href: '/inventory-search' },
+    { label: 'CarFinder Alerts', href: '/carfinder' },
+  ] },
   { label: 'AI Finder', href: '/finder' },
   { label: 'Trade-in', href: '/tradein' },
   { label: 'Financing', href: '/finance', children: [
@@ -562,6 +565,56 @@ export async function uploadImage(file: File): Promise<{ url?: string; error?: s
   if (error) return { error: error.message };
   const { data } = sb.storage.from('media').getPublicUrl(path);
   return { url: data.publicUrl };
+}
+
+// ───────────────────────── CarFinder requests ─────────────────────────
+
+export type { CarRequest } from './carMatch';
+import type { CarRequest } from './carMatch';
+
+function rowToCarRequest(r: any): CarRequest {
+  return {
+    id: r.id, name: r.name, email: r.email, phone: r.phone,
+    contactPref: r.contact_pref, body: r.body, make: r.make, model: r.model,
+    yearMin: r.year_min, priceMax: r.price_max, mileageMax: r.mileage_max,
+    fuel: r.fuel, drive: r.drive, notes: r.notes, active: r.active,
+    notifiedVehicleIds: Array.isArray(r.notified_vehicle_ids) ? r.notified_vehicle_ids : [],
+    createdAt: r.created_at,
+  };
+}
+
+export async function createCarRequest(req: Omit<CarRequest, 'id' | 'active' | 'notifiedVehicleIds' | 'createdAt'>): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('car_requests').insert({
+    name: req.name, email: req.email, phone: req.phone, contact_pref: req.contactPref,
+    body: req.body, make: req.make, model: req.model,
+    year_min: req.yearMin || null, price_max: req.priceMax || null, mileage_max: req.mileageMax || null,
+    fuel: req.fuel, drive: req.drive, notes: req.notes,
+  });
+  return { error: error?.message };
+}
+
+export async function listCarRequests(): Promise<CarRequest[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  const { data, error } = await sb.from('car_requests').select('*').order('created_at', { ascending: false });
+  if (error || !data) return [];
+  return data.map(rowToCarRequest);
+}
+
+export async function setCarRequestActive(id: string, active: boolean): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('car_requests').update({ active }).eq('id', id);
+  return { error: error?.message };
+}
+
+export async function deleteCarRequest(id: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('car_requests').delete().eq('id', id);
+  return { error: error?.message };
 }
 
 // ───────────────────────── AI Knowledge Base ─────────────────────────

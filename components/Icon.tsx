@@ -21,6 +21,12 @@ const icons: Record<string, string> = {
   chevronUp: 'M18 15l-6-6-6 6',
   chevronDown: 'M6 9l6 6 6-6',
   trend: 'M23 6l-9.5 9.5-5-5L1 18m22-12v12h-12',
+  plus: 'M12 5v14M5 12h14',
+  edit: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z M15 5l4 4',
+  trash: 'M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6',
+  send: 'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
+  helpCircle: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01',
+  brain: 'M12 2a4 4 0 0 0-4 4 4 4 0 0 0-2.5 7.13A4 4 0 0 0 8 20a4 4 0 0 0 4 2 4 4 0 0 0 4-2 4 4 0 0 0 2.5-6.87A4 4 0 0 0 16 6a4 4 0 0 0-4-4z M12 2v20',
 };
 
 export function Icon({ name, size = 24, ...props }: { name: keyof typeof icons; size?: number; [key: string]: any }) {
