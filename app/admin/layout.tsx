@@ -7,6 +7,7 @@ import { getBrowserClient } from '@/lib/supabase/client';
 
 const NAV = [
   { href: '/admin', label: 'Dashboard', icon: 'gauge' },
+  { href: '/admin/analytics', label: 'Analytics', icon: 'trend' },
   { href: '/admin/inventory', label: 'Inventory', icon: 'car' },
   { href: '/admin/leads', label: 'Leads', icon: 'mail' },
   { href: '/admin/guides', label: 'Guides', icon: 'sparkles' },

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { fmtPrice } from '@/lib/format';
+import { complete, generateDescriptionPrompt } from '@/lib/ai';
 import { saveVehicle, uploadImage, getPriceHistory, isSupabaseConfigured, AdminVehicle, PricePoint } from '@/lib/db';
 
 const EMPTY: AdminVehicle = {
@@ -28,6 +29,7 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const [writing, setWriting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<PricePoint[]>([]);
   const set = (patch: Partial<AdminVehicle>) => setV(prev => ({ ...prev, ...patch }));
@@ -147,8 +149,28 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
             </label>
           </Field>
 
-          <Field label="AI summary / description">
+          <Field label="Description">
             <textarea className="input" value={v.aiSummary} onChange={e => set({ aiSummary: e.target.value })} placeholder="Reliable sedan, great for daily commute" style={{ ...inputStyle, minHeight: 70, fontFamily: 'inherit', resize: 'vertical' }} />
+            <button
+              type="button"
+              onClick={async () => {
+                if (!v.make || !v.model) { setError('Add year, make, and model first so the AI has something to work with.'); return; }
+                setWriting(true); setError(null);
+                try {
+                  const reply = await complete(generateDescriptionPrompt(v));
+                  set({ aiSummary: reply.trim().replace(/^["']|["']$/g, '') });
+                } catch {
+                  setError('AI writing failed — try again in a moment.');
+                }
+                setWriting(false);
+              }}
+              disabled={writing}
+              className="btn btn-ghost btn-sm"
+              style={{ marginTop: 8 }}
+            >
+              <Icon name="sparkles" size={13} /> {writing ? 'Writing…' : 'Write with AI'}
+            </button>
+            <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>Generates from the specs above — edit before saving.</span>
           </Field>
 
           <Field label="Photos">

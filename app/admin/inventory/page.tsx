@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { fmtPrice, fmtMiles } from '@/lib/format';
-import { listVehicles, deleteVehicle, importStarterVehicles, syncFromSheet, setVehicleHidden, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
+import { complete, generateDescriptionPrompt } from '@/lib/ai';
+import { listVehicles, deleteVehicle, importStarterVehicles, syncFromSheet, setVehicleHidden, saveVehicle, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
 
 export default function AdminInventory() {
   const router = useRouter();
@@ -46,6 +47,31 @@ export default function AdminInventory() {
     load();
   };
 
+  // Generate descriptions for vehicles whose summary is missing or thin
+  // (sheet-synced cars default to just "year make model").
+  const aiFillDescriptions = async () => {
+    const thin = vehicles.filter(v => ((v.aiSummary || '').trim().length < 40) && (v as any).status !== 'sold');
+    if (thin.length === 0) return alert('All vehicles already have descriptions.');
+    if (!confirm(`Write AI descriptions for ${thin.length} vehicle(s) with missing/thin descriptions?`)) return;
+    setBusy(true);
+    let done = 0;
+    const failed: string[] = [];
+    for (const v of thin) {
+      try {
+        const reply = await complete(generateDescriptionPrompt(v));
+        const { error } = await saveVehicle({ ...v, aiSummary: reply.trim().replace(/^["']|["']$/g, '') });
+        if (error) failed.push(`${v.make} ${v.model}`);
+        else done++;
+        await new Promise(r => setTimeout(r, 400)); // gentle on rate limits
+      } catch {
+        failed.push(`${v.make} ${v.model}`);
+      }
+    }
+    setBusy(false);
+    alert(`Wrote ${done} description(s).` + (failed.length ? `\nFailed: ${failed.join(', ')}` : ''));
+    load();
+  };
+
   const syncSheet = async () => {
     setBusy(true);
     const { error, count, warnings } = await syncFromSheet();
@@ -66,6 +92,9 @@ export default function AdminInventory() {
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={importStarter} disabled={busy || !isSupabaseConfigured} className="btn btn-ghost btn-sm">
             <Icon name="arrowRight" size={13} /> Import starter inventory
+          </button>
+          <button onClick={aiFillDescriptions} disabled={busy || !isSupabaseConfigured} className="btn btn-ghost btn-sm">
+            <Icon name="sparkles" size={13} /> AI-fill missing descriptions
           </button>
           <button onClick={syncSheet} disabled={busy || !isSupabaseConfigured} className="btn btn-dark btn-sm">
             <Icon name="sparkles" size={14} /> {busy ? 'Working…' : 'Sync from Google Sheet'}

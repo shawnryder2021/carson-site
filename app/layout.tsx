@@ -3,6 +3,7 @@ import { Inter, Fraunces } from 'next/font/google';
 import { SavedProvider } from '@/context/SavedContext';
 import { PriceModeProvider } from '@/context/PriceModeContext';
 import { HeroConfigProvider } from '@/context/HeroConfigContext';
+import { SITE_URL } from '@/lib/serverDb';
 import { AppShell } from './AppShell';
 import './globals.css';
 
@@ -10,14 +11,42 @@ const inter = Inter({ variable: '--font-inter', subsets: ['latin'] });
 const fraunces = Fraunces({ variable: '--font-fraunces', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Carson Exports — The best place to buy a used car. Period.',
-  description: 'Family-run worldwide auto sales since 2008. AI-powered car finder, honest pricing, and zero pressure.',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'Carson Exports — The best place to buy a used car. Period.',
+    template: '%s | Carson Exports',
+  },
+  description: 'Family-run auto sales in Dartmouth, NS. AI-powered car finder, honest pricing, 142-point inspections, and zero pressure.',
+  openGraph: {
+    siteName: 'Carson Exports',
+    type: 'website',
+    url: SITE_URL,
+    images: [{ url: `${SITE_URL}/carson-logo.svg` }],
+  },
+};
+
+const dealerJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'AutoDealer',
+  name: 'Carson Exports',
+  url: SITE_URL,
+  telephone: '(555) 234-9090',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '550 Windmill Rd',
+    addressLocality: 'Dartmouth',
+    addressRegion: 'NS',
+    postalCode: 'B3B 1B3',
+    addressCountry: 'CA',
+  },
+  openingHours: ['Mo-Fr 09:00-19:00', 'Sa 10:00-18:00', 'Su 11:00-17:00'],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${inter.variable} ${fraunces.variable}`}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dealerJsonLd) }} />
         <SavedProvider>
           <PriceModeProvider>
             <HeroConfigProvider>

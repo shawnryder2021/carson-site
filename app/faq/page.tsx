@@ -52,8 +52,20 @@ export default function FAQPage() {
     },
   ];
 
+  // FAQ rich-results structured data
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(f => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
+
   return (
     <div className="page fade-in">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <PageHeader eyebrow="FAQ" title="Answers to your questions." subtitle="Everything you need to know about buying from Carson — from financing to test drives to what happens if you change your mind."/>
       <div className="container" style={{ maxWidth: 880, paddingBottom: 80 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>

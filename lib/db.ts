@@ -144,6 +144,17 @@ export async function recordVehicleView(id: string): Promise<void> {
 
 export type PricePoint = { price: number; recordedAt: string };
 
+// All price-change rows (for the analytics dashboard).
+export async function getAllPriceHistory(): Promise<Array<PricePoint & { vehicleId: string }>> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  const { data, error } = await sb.from('price_history')
+    .select('vehicle_id, price, recorded_at')
+    .order('recorded_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map((r: any) => ({ vehicleId: r.vehicle_id, price: r.price, recordedAt: r.recorded_at }));
+}
+
 export async function getPriceHistory(vehicleId: string): Promise<PricePoint[]> {
   const sb = getBrowserClient();
   if (!sb) return [];
