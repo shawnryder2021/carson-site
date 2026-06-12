@@ -1,34 +1,44 @@
 import { createClient } from '@supabase/supabase-js';
 import { runMatchAlerts, sendTestWebhook } from '@/lib/matchAlerts';
 import { SITE_URL } from '@/lib/serverDb';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase/config';
 
 export const dynamic = 'force-dynamic';
 
 // Match CarFinder requests against inventory and send alerts.
-// Auth: either ?secret=SYNC_SECRET (scheduled jobs) or a logged-in
-// admin's Supabase access token in the Authorization header.
+// Auth, in order of preference:
+//   1. ?secret=SYNC_SECRET + SUPABASE_SERVICE_ROLE_KEY  (scheduled jobs)
+//   2. A logged-in admin's Supabase access token         (admin UI buttons)
+// With an admin token we run as that user (anon client + their JWT), so no
+// service-role key is needed for the admin-triggered path — RLS lets
+// authenticated users read/update car_requests.
 async function run(req: Request) {
   const url = new URL(req.url);
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://sfxswebjrzzdqtuzfmvd.supabase.co';
 
-  if (!SERVICE_KEY) {
-    return Response.json({ error: 'Not configured (set SUPABASE_SERVICE_ROLE_KEY).' }, { status: 503 });
-  }
+  let sb = null;
 
-  const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-  // Auth check
   const secret = url.searchParams.get('secret');
-  let authorized = !!process.env.SYNC_SECRET && secret === process.env.SYNC_SECRET;
-  if (!authorized) {
+  if (process.env.SYNC_SECRET && secret === process.env.SYNC_SECRET && SERVICE_KEY) {
+    sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+  } else {
     const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
     if (token) {
-      const { data } = await sb.auth.getUser(token);
-      authorized = !!data?.user;
+      const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false },
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data } = await userClient.auth.getUser(token);
+      if (data?.user) {
+        // Prefer the service client when available; otherwise act as the admin.
+        sb = SERVICE_KEY
+          ? createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
+          : userClient;
+      }
     }
   }
-  if (!authorized) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  if (!sb) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     // ?test=1 → fire a sample payload at the webhook to verify the hookup
