@@ -6,6 +6,31 @@ import { CarRequest, newMatchesFor, describeRequest } from './carMatch';
 
 type Veh = { id: string; year: number; make: string; model: string; price: number; mileage: number; body: string; fuel: string; drive: string; status?: string; images?: string[] };
 
+// DB-configured webhook (Admin → CarFinder) wins; env var is the fallback.
+async function getWebhookUrl(sb: SupabaseClient): Promise<string> {
+  try {
+    const { data } = await sb.from('site_settings').select('alert_webhook_url').eq('id', 1).maybeSingle();
+    if (data?.alert_webhook_url) return data.alert_webhook_url;
+  } catch { /* column may not exist yet */ }
+  return process.env.ALERT_WEBHOOK_URL || '';
+}
+
+// Fires a sample payload at the configured webhook so the owner can verify
+// their Zapier/Make/GHL flow end-to-end before any real shopper signs up.
+export async function sendTestWebhook(sb: SupabaseClient, siteUrl: string): Promise<{ ok: boolean; webhookUrl: string }> {
+  const webhookUrl = await getWebhookUrl(sb);
+  if (!webhookUrl) return { ok: false, webhookUrl: '' };
+  const sample: CarRequest = {
+    id: 'test', name: 'Test Shopper', email: 'test@example.com', phone: '(902) 555-0123',
+    contactPref: 'email', body: 'SUV', make: 'Toyota', model: 'RAV4',
+    yearMin: 2019, priceMax: 30000, mileageMax: null, fuel: '', drive: 'AWD',
+    notes: 'This is a test alert from Carson Exports admin.', active: true, notifiedVehicleIds: [],
+  };
+  const sampleVeh: Veh = { id: 'test-vehicle', year: 2021, make: 'Toyota', model: 'RAV4', price: 28500, mileage: 64000, body: 'SUV', fuel: 'Gas', drive: 'AWD' };
+  const ok = await sendWebhook(webhookUrl, sample, [sampleVeh], siteUrl);
+  return { ok, webhookUrl };
+}
+
 function rowToRequest(r: any): CarRequest {
   return {
     id: r.id, name: r.name, email: r.email, phone: r.phone,
@@ -18,9 +43,9 @@ function rowToRequest(r: any): CarRequest {
 }
 
 // Primary channel: POST the alert to a webhook (Zapier / Make / GoHighLevel /
-// any automation tool) which delivers the email or text. Set ALERT_WEBHOOK_URL.
-async function sendWebhook(req: CarRequest, matches: Veh[], siteUrl: string): Promise<boolean> {
-  const url = process.env.ALERT_WEBHOOK_URL;
+// any automation tool) which delivers the email or text. Configured in
+// Admin → CarFinder (site_settings.alert_webhook_url) or ALERT_WEBHOOK_URL env.
+async function sendWebhook(url: string, req: CarRequest, matches: Veh[], siteUrl: string): Promise<boolean> {
   if (!url) return false;
   try {
     const res = await fetch(url, {
@@ -135,9 +160,10 @@ export type AlertSummary = {
 };
 
 export async function runMatchAlerts(sb: SupabaseClient, siteUrl: string): Promise<AlertSummary> {
+  const webhookUrl = await getWebhookUrl(sb);
   const summary: AlertSummary = {
     requestsChecked: 0, requestsWithNewMatches: 0, alertsSent: 0,
-    webhookConfigured: !!process.env.ALERT_WEBHOOK_URL,
+    webhookConfigured: !!webhookUrl,
     emailConfigured: !!process.env.RESEND_API_KEY,
     smsConfigured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER),
     details: [],
@@ -165,7 +191,7 @@ export async function runMatchAlerts(sb: SupabaseClient, siteUrl: string): Promi
     let sent = false;
     let channel = 'none';
     if (summary.webhookConfigured) {
-      sent = await sendWebhook(req, matches, siteUrl);
+      sent = await sendWebhook(webhookUrl, req, matches, siteUrl);
       channel = 'webhook';
     }
     if (!sent) {

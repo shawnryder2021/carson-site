@@ -30,4 +30,7 @@ create policy "car requests public insert" on public.car_requests for insert wit
 create policy "car requests admin all" on public.car_requests for all
   using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
+-- Alert delivery webhook (configured from Admin → CarFinder, no env var needed)
+alter table public.site_settings add column if not exists alert_webhook_url text not null default '';
+
 notify pgrst, 'reload schema';

@@ -617,6 +617,22 @@ export async function deleteCarRequest(id: string): Promise<{ error?: string }> 
   return { error: error?.message };
 }
 
+// Webhook that delivers CarFinder alerts (Zapier/Make/GHL). Stored in
+// site_settings so it's configurable from the admin UI without env vars.
+export async function getAlertWebhookUrl(): Promise<string> {
+  const sb = getBrowserClient();
+  if (!sb) return '';
+  const { data } = await sb.from('site_settings').select('alert_webhook_url').eq('id', 1).maybeSingle();
+  return data?.alert_webhook_url || '';
+}
+
+export async function saveAlertWebhookUrl(url: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('site_settings').update({ alert_webhook_url: url.trim() }).eq('id', 1);
+  return { error: error?.message };
+}
+
 // ───────────────────────── AI Knowledge Base ─────────────────────────
 
 export type KnowledgeEntry = {

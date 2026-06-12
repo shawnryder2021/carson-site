@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { runMatchAlerts } from '@/lib/matchAlerts';
+import { runMatchAlerts, sendTestWebhook } from '@/lib/matchAlerts';
 import { SITE_URL } from '@/lib/serverDb';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +31,12 @@ async function run(req: Request) {
   if (!authorized) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
+    // ?test=1 → fire a sample payload at the webhook to verify the hookup
+    if (url.searchParams.get('test')) {
+      const { ok, webhookUrl } = await sendTestWebhook(sb, SITE_URL);
+      if (!webhookUrl) return Response.json({ error: 'No webhook configured. Save a webhook URL first.' }, { status: 400 });
+      return Response.json({ ok, test: true, webhookUrl: webhookUrl.replace(/^(https?:\/\/[^/]+).*/, '$1/…') });
+    }
     const summary = await runMatchAlerts(sb, SITE_URL);
     return Response.json({ ok: true, ...summary, at: new Date().toISOString() });
   } catch (e: any) {

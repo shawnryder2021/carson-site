@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { getBrowserClient } from '@/lib/supabase/client';
-import { listCarRequests, setCarRequestActive, deleteCarRequest, listVehicles, isSupabaseConfigured, CarRequest, AdminVehicle } from '@/lib/db';
+import { listCarRequests, setCarRequestActive, deleteCarRequest, listVehicles, getAlertWebhookUrl, saveAlertWebhookUrl, isSupabaseConfigured, CarRequest, AdminVehicle } from '@/lib/db';
 import { matchesRequest, newMatchesFor, describeRequest } from '@/lib/carMatch';
 
 export default function AdminCarRequests() {
@@ -12,11 +12,14 @@ export default function AdminCarRequests() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [runResult, setRunResult] = useState<string | null>(null);
+  const [webhook, setWebhook] = useState('');
+  const [webhookMsg, setWebhookMsg] = useState<string | null>(null);
 
   const load = async () => {
-    const [r, v] = await Promise.all([listCarRequests(), listVehicles({ includeHidden: true })]);
+    const [r, v, w] = await Promise.all([listCarRequests(), listVehicles({ includeHidden: true }), getAlertWebhookUrl()]);
     setRequests(r);
     setVehicles(v);
+    setWebhook(w);
     setLoading(false);
   };
 
@@ -34,6 +37,36 @@ export default function AdminCarRequests() {
     setBusy(true);
     await deleteCarRequest(r.id!);
     await load();
+    setBusy(false);
+  };
+
+  const saveWebhook = async () => {
+    setBusy(true);
+    setWebhookMsg(null);
+    const { error } = await saveAlertWebhookUrl(webhook);
+    setWebhookMsg(error ? `Error: ${error}` : 'Saved.');
+    setBusy(false);
+  };
+
+  const testWebhook = async () => {
+    setBusy(true);
+    setWebhookMsg(null);
+    try {
+      const sb = getBrowserClient();
+      const { data } = await sb!.auth.getSession();
+      const token = data?.session?.access_token;
+      const res = await fetch('/api/match-alerts?test=1', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const json = await res.json();
+      if (!res.ok) setWebhookMsg(`Error: ${json.error || res.status}`);
+      else setWebhookMsg(json.ok
+        ? '✓ Test payload delivered — check your automation tool for a "Test Shopper / 2021 Toyota RAV4" alert.'
+        : 'Webhook responded with an error — double-check the URL.');
+    } catch (e: any) {
+      setWebhookMsg(`Error: ${e?.message || 'failed'}`);
+    }
     setBusy(false);
   };
 
@@ -79,6 +112,33 @@ export default function AdminCarRequests() {
         <button onClick={runAlerts} disabled={busy || !isSupabaseConfigured} className="btn btn-dark btn-sm">
           <Icon name="sparkles" size={13} /> {busy ? 'Working…' : 'Run alerts now'}
         </button>
+      </div>
+
+      {/* Alert delivery webhook */}
+      <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '16px 18px', marginTop: 18 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.05em', textTransform: 'uppercase', marginBottom: 6 }}>
+          Alert delivery webhook
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10, lineHeight: 1.5 }}>
+          Paste a webhook URL from Zapier, Make, or GoHighLevel — every match is POSTed there with the shopper&apos;s
+          contact info, preferred channel (email/text), and the matched vehicles. Your automation sends the actual message.
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            className="input"
+            value={webhook}
+            onChange={e => setWebhook(e.target.value)}
+            placeholder="https://hooks.zapier.com/hooks/catch/…"
+            style={{ flex: 1, minWidth: 280 }}
+          />
+          <button onClick={saveWebhook} disabled={busy} className="btn btn-primary btn-sm">Save</button>
+          <button onClick={testWebhook} disabled={busy || !webhook} className="btn btn-ghost btn-sm">Send test webhook</button>
+        </div>
+        {webhookMsg && (
+          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 10, color: webhookMsg.startsWith('Error') || webhookMsg.startsWith('Webhook') ? '#A8232C' : 'var(--teal-2)' }}>
+            {webhookMsg}
+          </div>
+        )}
       </div>
 
       {runResult && (
@@ -138,10 +198,9 @@ export default function AdminCarRequests() {
       )}
 
       <div style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 12, padding: '14px 16px', fontSize: 12.5, color: 'var(--muted)', marginTop: 22, lineHeight: 1.6 }}>
-        <strong>How alerts are delivered:</strong> set <code>ALERT_WEBHOOK_URL</code> in Netlify env vars to push each match to your automation tool
-        (Zapier, Make, GoHighLevel…) which sends the email/text. The webhook payload includes the contact, their preferred channel, and the matched vehicles.
-        Without a webhook, the system falls back to <code>RESEND_API_KEY</code> (email) and <code>TWILIO_*</code> (SMS) if configured.
-        Alerts run automatically after every scheduled inventory sync — or press &ldquo;Run alerts now.&rdquo;
+        <strong>How it works:</strong> alerts run automatically after every scheduled inventory sync (and via &ldquo;Run alerts now&rdquo;).
+        Each shopper is only alerted once per vehicle. If no webhook is set, the system falls back to
+        <code> RESEND_API_KEY</code> (email) / <code>TWILIO_*</code> (SMS) env vars if configured.
       </div>
     </div>
   );
