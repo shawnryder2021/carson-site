@@ -14,6 +14,7 @@ import { listVehicles, AdminVehicle } from '@/lib/db';
 
 type Filters = {
   body: string[];
+  make: string[];
   fuel: string[];
   drive: string[];
   priceMax: number;
@@ -23,6 +24,7 @@ type Filters = {
 
 const DEFAULT_FILTERS: Filters = {
   body: [],
+  make: [],
   fuel: [],
   drive: [],
   priceMax: 100000,
@@ -58,6 +60,8 @@ function InventoryContent() {
 
   const aiQuery = searchParams.get('aiQuery');
   const bodyParam = searchParams.get('body');
+  const makeParam = searchParams.get('make');
+  const maxPriceParam = searchParams.get('maxPrice');
 
   const [inventory, setInventory] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   useEffect(() => { listVehicles().then(v => { if (v.length) setInventory(v); }); }, []);
@@ -65,7 +69,16 @@ function InventoryContent() {
   const [filters, setFilters] = useState<Filters>({
     ...DEFAULT_FILTERS,
     body: bodyParam ? [bodyParam] : [],
+    make: makeParam ? [makeParam] : [],
+    priceMax: maxPriceParam ? +maxPriceParam : 100000,
   });
+
+  // Makes present in the current inventory, by frequency (for the filter list).
+  const availableMakes = useMemo(() => {
+    const counts = new Map<string, number>();
+    inventory.forEach(v => counts.set(v.make, (counts.get(v.make) || 0) + 1));
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([m]) => m);
+  }, [inventory]);
   const [sortBy, setSortBy] = useState<string>('relevance');
   const [aiThinking, setAiThinking] = useState(false);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
@@ -106,6 +119,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
   const filtered = useMemo(() => {
     let results = inventory.filter(v => {
       if (filters.body.length && !filters.body.includes(v.body)) return false;
+      if (filters.make.length && !filters.make.includes(v.make)) return false;
       if (filters.fuel.length && !filters.fuel.includes(v.fuel)) return false;
       if (filters.drive.length && !filters.drive.includes(v.drive)) return false;
       if (v.price > filters.priceMax) return false;
@@ -130,7 +144,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
     return results;
   }, [inventory, filters, sortBy, saved, topPickId]);
 
-  const toggleArrayFilter = (key: 'body' | 'fuel' | 'drive', value: string) => {
+  const toggleArrayFilter = (key: 'body' | 'make' | 'fuel' | 'drive', value: string) => {
     setFilters(f => ({
       ...f,
       [key]: f[key].includes(value) ? f[key].filter(v => v !== value) : [...f[key], value],
@@ -138,7 +152,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
   };
 
   const clearFilters = () => setFilters(DEFAULT_FILTERS);
-  const activeFilterCount = filters.body.length + filters.fuel.length + filters.drive.length +
+  const activeFilterCount = filters.body.length + filters.make.length + filters.fuel.length + filters.drive.length +
     (filters.priceMax < 100000 ? 1 : 0) + (filters.milesMax < 100000 ? 1 : 0) + (filters.savedOnly ? 1 : 0);
 
   return (
@@ -201,6 +215,17 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
                     ))}
                   </div>
                 </div>
+
+                {availableMakes.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>Make</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {availableMakes.map(m => (
+                        <FilterChip key={m} active={filters.make.includes(m)} onClick={() => toggleArrayFilter('make', m)}>{m}</FilterChip>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>Fuel</div>

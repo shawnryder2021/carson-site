@@ -9,6 +9,7 @@ import { HeroMedia } from '@/components/HeroMedia';
 import { INVENTORY } from '@/data/inventory';
 import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
 import { InstagramGrid, BeholdWidget, useInstagram } from '@/components/InstagramGrid';
+import { ShopByStyle } from '@/components/ShopByStyle';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { listVehicles, getSettings, getDealVehicleId, AdminVehicle } from '@/lib/db';
@@ -119,6 +120,9 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {/* Shop by style / budget / make */}
+      <ShopByStyle vehicles={vehicles} />
 
       {/* Deal of the Week */}
       {deal && (

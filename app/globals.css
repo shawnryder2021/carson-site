@@ -55,6 +55,29 @@ footer { border-top: 1px solid var(--line); }
 
 .ai-glow { position: relative; background: linear-gradient(135deg, rgba(0,124,146,0.1), rgba(90,138,255,0.05)); }
 
+/* ───────── Shop-by-style tiles (Carvana-style) ───────── */
+.shop-style-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.shop-style-tile {
+  background: white; border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+  cursor: pointer; font-family: inherit; padding: 0; text-align: left;
+  transition: transform 200ms, box-shadow 200ms; display: block; width: 100%;
+}
+.shop-style-tile:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(0,0,0,0.10); }
+.shop-style-photo { aspect-ratio: 16/11; background: var(--bg-soft); overflow: hidden; }
+
+.shop-budget-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.shop-budget-tile {
+  background: white; border: 1px solid var(--line); border-radius: 14px; cursor: pointer;
+  font-family: inherit; padding: 22px 18px; text-align: center;
+  transition: border-color 200ms, transform 200ms;
+}
+.shop-budget-tile:hover { border-color: var(--teal); transform: translateY(-2px); }
+
+@media (max-width: 860px) {
+  .shop-style-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .shop-budget-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* Full-bleed hero background video — scales a 16:9 YouTube iframe to cover */
 .hero-cover-video {
   position: absolute;
