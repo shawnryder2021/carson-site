@@ -12,6 +12,7 @@ import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
 import { getVehicleById, listVehicles, createLead, recordVehicleView, createVehicleWatch, AdminVehicle } from '@/lib/db';
+import { recordRecentlyViewed } from '@/lib/recentlyViewed';
 
 const PRESET_QUESTIONS = [
   'Is this a fair price?',
@@ -35,6 +36,7 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
       if (all.length) setAllVehicles(all);
       // Count one view per vehicle per browser session.
       if (v && !(v as any).hiddenOverride) {
+        recordRecentlyViewed(params.id);
         const key = `cx_viewed_${params.id}`;
         if (!sessionStorage.getItem(key)) {
           sessionStorage.setItem(key, '1');

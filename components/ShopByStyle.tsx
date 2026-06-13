@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Icon } from './Icon';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { estMonthly } from '@/lib/format';
 import { AdminVehicle } from '@/lib/db';
 
 // Carvana-style "shop popular styles" blocks for the homepage.
@@ -21,6 +22,13 @@ const BUDGETS: { label: string; max: number }[] = [
   { label: 'Under $20k', max: 20000 },
   { label: 'Under $30k', max: 30000 },
   { label: 'Under $40k', max: 40000 },
+];
+
+const PAYMENTS: { label: string; max: number }[] = [
+  { label: 'Under $200/mo', max: 200 },
+  { label: 'Under $300/mo', max: 300 },
+  { label: 'Under $400/mo', max: 400 },
+  { label: 'Under $500/mo', max: 500 },
 ];
 
 export function ShopByStyle({ vehicles }: { vehicles: AdminVehicle[] }) {
@@ -104,6 +112,30 @@ export function ShopByStyle({ vehicles }: { vehicles: AdminVehicle[] }) {
                 >
                   <Icon name="dollar" size={20} style={{ color: 'var(--teal)' }} />
                   <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8 }}>{b.label}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>{count} car{count === 1 ? '' : 's'}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Shop by monthly payment */}
+        <div style={{ marginTop: 48 }}>
+          <h3 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 4px' }}>
+            Shop by monthly payment
+          </h3>
+          <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>Estimated at 10% down, 72 months, 7.2% APR.</p>
+          <div className="shop-budget-grid">
+            {PAYMENTS.map(p => {
+              const count = available.filter(v => estMonthly(v.price) <= p.max).length;
+              return (
+                <button
+                  key={p.max}
+                  onClick={() => router.push(`/inventory?maxMonthly=${p.max}`)}
+                  className="shop-budget-tile"
+                >
+                  <Icon name="gauge" size={20} style={{ color: 'var(--teal)' }} />
+                  <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8 }}>{p.label}</div>
                   <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>{count} car{count === 1 ? '' : 's'}</div>
                 </button>
               );

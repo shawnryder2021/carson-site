@@ -6,7 +6,7 @@ import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
 import { DotsAnim } from '@/components/DotsAnim';
 import { INVENTORY, Vehicle } from '@/data/inventory';
-import { fmtPrice } from '@/lib/format';
+import { fmtPrice, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
 import { PriceModeToggle } from '@/context/PriceModeContext';
@@ -18,9 +18,12 @@ type Filters = {
   fuel: string[];
   drive: string[];
   priceMax: number;
+  monthlyMax: number;
   milesMax: number;
   savedOnly: boolean;
 };
+
+const MONTHLY_CAP = 2000;
 
 const DEFAULT_FILTERS: Filters = {
   body: [],
@@ -28,6 +31,7 @@ const DEFAULT_FILTERS: Filters = {
   fuel: [],
   drive: [],
   priceMax: 100000,
+  monthlyMax: MONTHLY_CAP,
   milesMax: 100000,
   savedOnly: false,
 };
@@ -62,6 +66,7 @@ function InventoryContent() {
   const bodyParam = searchParams.get('body');
   const makeParam = searchParams.get('make');
   const maxPriceParam = searchParams.get('maxPrice');
+  const maxMonthlyParam = searchParams.get('maxMonthly');
 
   const [inventory, setInventory] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   useEffect(() => { listVehicles().then(v => { if (v.length) setInventory(v); }); }, []);
@@ -71,6 +76,7 @@ function InventoryContent() {
     body: bodyParam ? [bodyParam] : [],
     make: makeParam ? [makeParam] : [],
     priceMax: maxPriceParam ? +maxPriceParam : 100000,
+    monthlyMax: maxMonthlyParam ? +maxMonthlyParam : MONTHLY_CAP,
   });
 
   // Makes present in the current inventory, by frequency (for the filter list).
@@ -123,6 +129,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
       if (filters.fuel.length && !filters.fuel.includes(v.fuel)) return false;
       if (filters.drive.length && !filters.drive.includes(v.drive)) return false;
       if (v.price > filters.priceMax) return false;
+      if (filters.monthlyMax < MONTHLY_CAP && estMonthly(v.price) > filters.monthlyMax) return false;
       if (v.mileage > filters.milesMax) return false;
       if (filters.savedOnly && !saved.includes(v.id)) return false;
       return true;
@@ -153,7 +160,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
 
   const clearFilters = () => setFilters(DEFAULT_FILTERS);
   const activeFilterCount = filters.body.length + filters.make.length + filters.fuel.length + filters.drive.length +
-    (filters.priceMax < 100000 ? 1 : 0) + (filters.milesMax < 100000 ? 1 : 0) + (filters.savedOnly ? 1 : 0);
+    (filters.priceMax < 100000 ? 1 : 0) + (filters.monthlyMax < MONTHLY_CAP ? 1 : 0) + (filters.milesMax < 100000 ? 1 : 0) + (filters.savedOnly ? 1 : 0);
 
   return (
     <div className="page fade-in">
@@ -250,6 +257,16 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
                   <input type="range" min={15000} max={100000} step={1000} value={filters.priceMax}
                     onChange={e => setFilters(f => ({ ...f, priceMax: +e.target.value }))}
                     style={{ width: '100%', accentColor: 'var(--teal)' }} />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>
+                    Max monthly: {filters.monthlyMax >= MONTHLY_CAP ? 'Any' : '$' + filters.monthlyMax + '/mo'}
+                  </div>
+                  <input type="range" min={150} max={MONTHLY_CAP} step={25} value={filters.monthlyMax}
+                    onChange={e => setFilters(f => ({ ...f, monthlyMax: +e.target.value }))}
+                    style={{ width: '100%', accentColor: 'var(--teal)' }} />
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Est. at 10% down, 72 mo, 7.2% APR</div>
                 </div>
 
                 <div>
