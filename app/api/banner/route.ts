@@ -59,7 +59,9 @@ async function requireAdmin(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const KEY = process.env.KIE_API_KEY;
+  // Strip quotes/whitespace a Netlify env value might carry (a common cause
+  // of kie.ai "Authentication failed").
+  const KEY = (process.env.KIE_API_KEY || '').trim().replace(/^["']|["']$/g, '');
   if (!KEY) return Response.json({ error: 'Banner generation not configured (set KIE_API_KEY).' }, { status: 503 });
 
   const sb = await requireAdmin(req);
@@ -84,7 +86,9 @@ export async function POST(req: Request) {
       const json = await res.json().catch(() => ({}));
       const taskId = json?.data?.taskId || json?.data?.task_id || json?.taskId;
       if (!res.ok || !taskId) {
-        return Response.json({ error: json?.msg || json?.message || 'Generation failed to start.' }, { status: 502 });
+        const msg = json?.msg || json?.message || 'Generation failed to start.';
+        // Surface kie's HTTP status + key length (not the key) for diagnosis.
+        return Response.json({ error: `${msg} [kie HTTP ${res.status}; key length ${KEY.length}]` }, { status: 502 });
       }
       return Response.json({ taskId });
     }
