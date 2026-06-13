@@ -15,6 +15,7 @@ const NAV = [
   { href: '/admin/team', label: 'Team', icon: 'handshake' },
   { href: '/admin/kb', label: 'AI Knowledge Base', icon: 'brain' },
   { href: '/admin/social', label: 'Social', icon: 'heart' },
+  { href: '/admin/banners', label: 'Banner Studio', icon: 'sparkles' },
   { href: '/admin/navigation', label: 'Navigation', icon: 'arrowRight' },
   { href: '/admin/settings', label: 'Site settings', icon: 'shield' },
 ];

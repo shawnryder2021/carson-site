@@ -693,8 +693,35 @@ export async function saveDealVehicleId(vehicleId: string): Promise<{ error?: st
   return { error: error?.message };
 }
 
-// ───────────────────────── Instagram / social ─────────────────────────
+// ───────────────────────── Marketing banners (AI-generated) ─────────────────────────
 
+export type MarketingBanner = { url: string; prompt: string; createdAt: string };
+
+export async function listBanners(): Promise<MarketingBanner[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  const { data } = await sb.from('site_settings').select('marketing_banners').eq('id', 1).maybeSingle();
+  return Array.isArray(data?.marketing_banners) ? data!.marketing_banners : [];
+}
+
+export async function addBanner(b: MarketingBanner): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const existing = await listBanners();
+  const next = [b, ...existing].slice(0, 24); // keep a reasonable library
+  const { error } = await sb.from('site_settings').update({ marketing_banners: next }).eq('id', 1);
+  return { error: error?.message };
+}
+
+export async function deleteBanner(url: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const existing = await listBanners();
+  const { error } = await sb.from('site_settings').update({ marketing_banners: existing.filter(b => b.url !== url) }).eq('id', 1);
+  return { error: error?.message };
+}
+
+// ───────────────────────── Instagram / social ─────────────────────────
 export type InstagramTile = { image: string; link: string; caption?: string };
 export type SocialConfig = {
   handle: string;        // instagram username, no @
