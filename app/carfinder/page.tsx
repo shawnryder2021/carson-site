@@ -216,7 +216,7 @@ export default function CarFinderPage() {
                 <input className="input" value={model} onChange={e => setModel(e.target.value)} placeholder="e.g. RAV4" />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div>
                 <label style={label}>Year (newest from)</label>
                 <input className="input" type="number" value={yearMin} onChange={e => setYearMin(e.target.value)} placeholder="2019" />

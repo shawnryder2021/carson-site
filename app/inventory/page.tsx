@@ -181,7 +181,7 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
 
       {/* Main */}
       <div className="container" style={{ maxWidth: 1400, padding: '32px 20px 80px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 32 }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 32 }}>
           {/* Sidebar */}
           <aside style={{ position: 'sticky', top: 90, height: 'fit-content' }}>
             <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '20px 22px' }}>

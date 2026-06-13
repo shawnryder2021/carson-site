@@ -94,3 +94,62 @@ footer { border-top: 1px solid var(--line); }
   .vdp-mobile-cta { display: flex; }
   .vdp-mobile-cta + * { padding-bottom: 80px; }
 }
+
+/* ───────── Responsive grid utility ─────────
+   Add className="rg" to any inline-styled grid: desktop keeps the inline
+   gridTemplateColumns; under 860px it stacks (or uses --gtc-m if set). */
+@media (max-width: 860px) {
+  .rg { grid-template-columns: var(--gtc-m, 1fr) !important; }
+}
+
+/* ───────── Mobile navigation ───────── */
+.nav-burger { display: none; background: none; border: none; cursor: pointer; color: var(--ink); padding: 6px; }
+
+.mobile-menu {
+  position: fixed; top: 72px; left: 0; right: 0; bottom: 0; z-index: 90;
+  background: white; overflow-y: auto; padding: 8px 20px 48px;
+  animation: fadeIn 160ms ease-out both;
+}
+.mobile-menu-link {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  background: none; border: none; border-bottom: 1px solid var(--line); cursor: pointer;
+  font-family: inherit; font-size: 16px; font-weight: 600; color: var(--ink);
+  padding: 16px 4px; text-align: left;
+}
+.mobile-menu-sub {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; font-size: 14.5px; color: var(--ink);
+  padding: 11px 4px 11px 18px; text-align: left;
+}
+.mobile-menu-sub:active { color: var(--teal); }
+
+@media (max-width: 1020px) {
+  .topbar-inner { padding: 0 16px; gap: 12px; }
+  .nav { display: none; }
+  .topbar-phone { display: none; }
+  .nav-burger { display: flex; align-items: center; }
+}
+
+@media (max-width: 860px) {
+  .page { padding: 0 14px; }
+  .topbar-inner { height: 60px; }
+  .mobile-menu { top: 60px; }
+}
+
+/* ───────── Admin on mobile: sidebar becomes a top bar ───────── */
+@media (max-width: 900px) {
+  .admin-shell { grid-template-columns: 1fr !important; }
+  .admin-side {
+    position: static !important; height: auto !important;
+    flex-direction: row !important; align-items: center !important;
+    overflow-x: auto; padding: 10px 12px !important; gap: 10px;
+  }
+  .admin-side nav { flex-direction: row !important; gap: 4px !important; }
+  .admin-side nav button { white-space: nowrap; padding: 8px 10px !important; font-size: 13px !important; }
+  .admin-logo { padding: 0 !important; }
+  .admin-logo div { display: none; }
+  .admin-foot { border-top: none !important; padding-top: 0 !important; flex-direction: row !important; }
+  .admin-foot button { white-space: nowrap; }
+  .admin-main > div { padding-left: 16px !important; padding-right: 16px !important; }
+}

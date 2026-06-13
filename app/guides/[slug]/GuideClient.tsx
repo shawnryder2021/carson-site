@@ -163,7 +163,7 @@ Answer helpfully and specifically in 2-4 sentences, in a friendly, honest tone. 
         {fallbackRelated.length > 0 && (
           <div style={{ marginTop: 48 }}>
             <h3 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600, letterSpacing: '-.01em', marginBottom: 18 }}>Keep reading</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               {fallbackRelated.map(g => (
                 <div
                   key={g.slug}

@@ -27,13 +27,17 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
   const [nav, setNav] = useState<NavItem[]>(DEFAULT_NAV);
   const [vehicles, setVehicles] = useState<AdminVehicle[]>([]);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     listNav().then(setNav);
     listVehicles().then(setVehicles);
   }, []);
 
-  const go = (href: string) => { setOpenMenu(null); router.push(href); };
+  // Close the drawer on navigation.
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  const go = (href: string) => { setOpenMenu(null); setMobileOpen(false); router.push(href); };
 
   const hasDropdown = (item: NavItem) => item.autoCategories || (item.children && item.children.length > 0);
 
@@ -177,14 +181,64 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
               </span>
             )}
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => window.open('tel:(555)234-9090')}>
+          <button className="btn btn-ghost btn-sm topbar-phone" onClick={() => window.open('tel:(555)234-9090')}>
             <Icon name="phone" size={14} /> (555) 234-9090
           </button>
           <button className="btn btn-dark btn-sm" onClick={onAIClick}>
             <Icon name="sparkles" size={14} /> Find my car
           </button>
+          <button className="nav-burger" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} onClick={() => setMobileOpen(o => !o)}>
+            {mobileOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="mobile-menu">
+          {nav.map((item, i) => {
+            const key = item.id || `${item.label}-${i}`;
+            return (
+              <div key={key}>
+                <button className="mobile-menu-link" onClick={() => item.href && item.href !== '#' && go(item.href)}>
+                  {item.label}
+                  <Icon name="arrowRight" size={15} style={{ color: 'var(--muted)' }} />
+                </button>
+                {item.autoCategories && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '12px 4px 14px', borderBottom: '1px solid var(--line)' }}>
+                    {BODY_CATEGORIES.map(c => (
+                      <button key={c.body} onClick={() => go(`/inventory?body=${c.body}`)} style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', color: 'var(--ink)' }}>
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {item.children && item.children.length > 0 && (
+                  <div style={{ borderBottom: '1px solid var(--line)', padding: '4px 0 8px' }}>
+                    {item.children.map((c, j) => (
+                      <button key={c.id || j} className="mobile-menu-sub" onClick={() => go(c.href)}>
+                        <Icon name="arrowRight" size={12} style={{ color: 'var(--teal)' }} /> {c.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
+            <button className="btn btn-dark btn-lg" style={{ width: '100%' }} onClick={() => { setMobileOpen(false); onAIClick(); }}>
+              <Icon name="sparkles" size={15} /> Find my car with AI
+            </button>
+            <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} onClick={() => window.open('tel:(555)234-9090')}>
+              <Icon name="phone" size={15} /> Call (555) 234-9090
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

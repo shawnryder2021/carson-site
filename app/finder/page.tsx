@@ -105,7 +105,7 @@ Pick exactly 3 matches, best first. Prefer vehicles near or under budget.`;
               if (!v) return null;
               const photo = (v as any).images?.[0];
               return (
-                <div key={m.id} style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 18, padding: 20, display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24, alignItems: 'center' }}>
+                <div key={m.id} className="rg" style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 18, padding: 20, display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24, alignItems: 'center' }}>
                   <div onClick={() => router.push(`/vehicle/${v.id}`)} style={{ cursor: 'pointer', background: 'var(--bg-soft)', borderRadius: 14, aspectRatio: '4/3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     <img src={photo || vehicleImageURL(v, { size: 300 })} alt="" style={photo ? { width: '100%', height: '100%', objectFit: 'cover' } : { width: '85%', height: '85%' }} />
                     {i === 0 && <span style={{ position: 'absolute', top: 10, left: 10, background: 'var(--teal)', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 999, letterSpacing: '.04em' }}>BEST MATCH</span>}

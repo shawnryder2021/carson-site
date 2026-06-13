@@ -16,7 +16,7 @@ export default function AboutPage() {
       />
       <div className="container" style={{ maxWidth: 1080, paddingBottom: 80 }}>
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, background: 'var(--ink)', color: 'white', borderRadius: 18, padding: '32px 0', marginBottom: 48 }}>
+        <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, background: 'var(--ink)', color: 'white', borderRadius: 18, padding: '32px 0', marginBottom: 48 }}>
           {[{ n: '4,200+', l: 'Cars sold' }, { n: '4.9★', l: 'Avg. rating · 1,800+ reviews' }, { n: '142-pt', l: 'Inspection on every car' }, { n: '7-day', l: 'Worry-free returns' }].map((s, i) => (
             <div key={i} style={{ padding: '0 28px', textAlign: 'center', borderRight: i < 3 ? '1px solid #2a2a2a' : 'none' }}>
               <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1 }}>{s.n}</div>
@@ -26,7 +26,7 @@ export default function AboutPage() {
         </div>
 
         {/* Why AI */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', marginBottom: 56 }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', marginBottom: 56 }}>
           <div>
             <div className="ai-pill" style={{ marginBottom: 16 }}><span className="ai-dot" />Why we built Carson AI</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(26px,3.4vw,38px)', fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 16px', lineHeight: 1.1 }}>
@@ -67,7 +67,7 @@ export default function AboutPage() {
 
         {/* Promises */}
         <h3 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(22px,3vw,30px)', fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 20px' }}>The Carson promise.</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 56 }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 56 }}>
           {[
             { icon: 'shield', title: '142-point inspection', desc: "If it doesn't pass, we don't sell it." },
             { icon: 'dollar', title: 'Honest pricing', desc: 'Live market data on every car — no hidden fees.' },

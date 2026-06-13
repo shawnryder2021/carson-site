@@ -121,7 +121,7 @@ etc.`;
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.05em' }}>
                   What type of vehicle? *
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {BODY_TYPES.map(t => (
                     <button
                       key={t}

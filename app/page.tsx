@@ -125,6 +125,7 @@ export default function Home() {
         <section style={{ padding: '72px 0 0' }}>
           <div className="container" style={{ maxWidth: 900 }}>
             <div
+              className="rg"
               onClick={() => router.push(`/vehicle/${deal.id}`)}
               style={{
                 background: 'linear-gradient(120deg, #1a1a1a, #2a1a08)', color: 'white', borderRadius: 22,
@@ -163,6 +164,7 @@ export default function Home() {
       <section style={{ padding: '72px 0 0' }}>
         <div className="container" style={{ maxWidth: 900 }}>
           <div
+            className="rg"
             onClick={() => router.push(`/vehicle/${featured[0].id}`)}
             style={{
               background: 'white', border: '1px solid var(--line)', borderRadius: 22,
@@ -290,7 +292,7 @@ export default function Home() {
           <h2 style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, textAlign: 'center', marginBottom: 48, letterSpacing: '-.02em' }}>
             Why choose Carson
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+          <div className="rg" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
             {[
               { icon: 'sparkles', title: 'AI-Powered', desc: 'Carson AI answers your questions 24/7' },
               { icon: 'check', title: 'Honest Pricing', desc: 'Live market data on every car' },

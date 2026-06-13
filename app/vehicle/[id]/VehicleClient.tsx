@@ -229,7 +229,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 40, alignItems: 'start' }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 40, alignItems: 'start' }}>
           {/* Left column */}
           <div>
             {/* Gallery */}
@@ -315,7 +315,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                   </p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '22px 24px' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal-2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>
                       <Icon name="check" size={14} style={{ verticalAlign: '-2px', marginRight: 4 }} /> Pros
@@ -560,7 +560,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Pick a day</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                   {Array.from({ length: 4 }, (_, i) => {
                     const d = new Date();
                     d.setDate(d.getDate() + i + 1);
@@ -579,7 +579,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               </div>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Pick a time</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                   {['10 AM', '12 PM', '2 PM', '4 PM', '5 PM', '6 PM'].map(t => (
                     <button key={t} onClick={() => setTdTime(t)} style={{
                       padding: '10px 6px', borderRadius: 10,

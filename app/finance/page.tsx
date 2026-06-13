@@ -59,7 +59,7 @@ Reply ONLY JSON: {"verdict":"Comfortable"|"Manageable"|"Stretch"|"Tight","headli
     <div className="page fade-in">
       <PageHeader eyebrow="Financing" title="Get pre-qualified in 60 seconds." subtitle="Soft check — won't affect your score. Carson AI tells you honestly if it fits your budget." />
       <div className="container" style={{ maxWidth: 1040, paddingBottom: 80 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 30 }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 30 }}>
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 18, padding: '28px 32px' }}>
             <Field label="Vehicle (optional)">
               <select className="select" value={vehicle?.id || ''} onChange={e => setVehicle(inv.find(v => v.id === e.target.value) || null)}>
@@ -79,7 +79,7 @@ Reply ONLY JSON: {"verdict":"Comfortable"|"Manageable"|"Stretch"|"Tight","headli
             </Field>
             <div style={{ height: 18 }} />
             <Field label="Credit tier">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+              <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                 {[['excellent', '740+'], ['good', '670-739'], ['fair', '580-669'], ['rebuilding', '<580']].map(([v, r]) => (
                   <button key={v} onClick={() => setInfo(i => ({ ...i, score: v }))} style={{ padding: '10px 6px', borderRadius: 10, background: info.score === v ? 'var(--ink)' : 'white', color: info.score === v ? 'white' : 'var(--ink)', border: '1px solid ' + (info.score === v ? 'var(--ink)' : 'var(--line)'), cursor: 'pointer', fontFamily: 'inherit' }}>
                     <div style={{ fontWeight: 700, fontSize: 13, textTransform: 'capitalize' }}>{v}</div>

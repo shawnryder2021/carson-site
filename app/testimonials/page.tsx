@@ -66,7 +66,7 @@ export default function TestimonialsPage() {
       />
       <div className="container" style={{ maxWidth: 1200, paddingBottom: 80 }}>
         {/* Stats Strip */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 60 }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 60 }}>
           {[
             { stat: '4.9★', label: 'Average rating' },
             { stat: '1,800+', label: 'Reviews' },
@@ -82,7 +82,7 @@ export default function TestimonialsPage() {
         </div>
 
         {/* Testimonials Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24, marginBottom: 60 }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24, marginBottom: 60 }}>
           {testimonials.map((t, i) => (
             <div key={i} style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 16, padding: '28px 30px' }}>
               <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>

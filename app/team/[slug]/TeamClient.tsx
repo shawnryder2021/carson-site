@@ -58,7 +58,7 @@ export default function TeamClient({ params }: { params: { slug: string } }) {
         </button>
 
         {/* Profile header */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', marginBottom: 36 }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', marginBottom: 36 }}>
           <TeamAvatar name={member.name} photoUrl={member.photoUrl} size={140} radius={28} />
           <div>
             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(30px, 5vw, 44px)', fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 6px', lineHeight: 1.05 }}>
@@ -75,7 +75,7 @@ export default function TeamClient({ params }: { params: { slug: string } }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 32, alignItems: 'start' }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 32, alignItems: 'start' }}>
           {/* Left: video + bio + fun facts */}
           <div>
             {vid && (

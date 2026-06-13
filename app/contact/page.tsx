@@ -25,7 +25,7 @@ export default function ContactPage() {
     <div className="page fade-in">
       <PageHeader eyebrow="Get in touch" title="Let's talk cars." subtitle="Have a question? Want to schedule a test drive? Just want to chat about what makes Carson different? We'd love to hear from you."/>
       <div className="container" style={{ maxWidth: 1200, paddingBottom: 80 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'start' }}>
+        <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'start' }}>
 
           {/* Contact Form */}
           <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 18, padding: '32px 36px' }}>

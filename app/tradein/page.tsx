@@ -43,7 +43,7 @@ Reply ONLY JSON: {"low":<int>,"high":<int>,"midpoint":<int>,"carsonOffer":<~5% a
       <div className="page fade-in">
         <PageHeader eyebrow="Your AI trade-in estimate" title="Here's what it's worth." />
         <div className="container" style={{ maxWidth: 820, paddingBottom: 80 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24, marginBottom: 22 }}>
+          <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24, marginBottom: 22 }}>
             <div style={{ background: 'linear-gradient(135deg, var(--ink), #1f1f1f)', color: 'white', borderRadius: 18, padding: '32px 36px', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', inset: 0, opacity: 0.5, background: 'radial-gradient(circle at 90% 0%, var(--teal), transparent 60%)' }} />
               <div style={{ position: 'relative' }}>
@@ -90,7 +90,7 @@ Reply ONLY JSON: {"low":<int>,"high":<int>,"midpoint":<int>,"carsonOffer":<~5% a
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <Field label="Year"><input className="input" value={d.year} onChange={e => up('year', e.target.value)} placeholder="2021" /></Field>
                 <Field label="Make"><input className="input" value={d.make} onChange={e => up('make', e.target.value)} placeholder="Toyota" /></Field>
                 <Field label="Model"><input className="input" value={d.model} onChange={e => up('model', e.target.value)} placeholder="RAV4" /></Field>
@@ -100,7 +100,7 @@ Reply ONLY JSON: {"low":<int>,"high":<int>,"midpoint":<int>,"carsonOffer":<~5% a
                 <Field label="Mileage"><input className="input" value={d.mileage} onChange={e => up('mileage', e.target.value)} placeholder="48,000" /></Field>
               </div>
               <Field label="Condition">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                   {['Excellent', 'Good', 'Fair', 'Rough'].map(c => (
                     <button key={c} onClick={() => up('condition', c)} style={{ padding: '10px', borderRadius: 10, background: d.condition === c ? 'var(--ink)' : 'white', color: d.condition === c ? 'white' : 'var(--ink)', border: '1px solid ' + (d.condition === c ? 'var(--ink)' : 'var(--line)'), cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>{c}</button>
                   ))}
