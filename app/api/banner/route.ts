@@ -4,7 +4,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase/config';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const KIE_BASE = 'https://api.kie.ai/api/v1/gpt4o-image';
+const KIE_CREATE = 'https://api.kie.ai/api/v1/jobs/createTask';
+const KIE_RECORD = 'https://api.kie.ai/api/v1/jobs/recordInfo';
+const KIE_MODEL = 'gpt-image-2-text-to-image';
 
 // Recursively pull image URLs out of kie.ai's record-info response, which
 // has varied across versions (data.response.resultUrls, data.resultUrls,
@@ -68,16 +70,16 @@ export async function POST(req: Request) {
   const action = body.action || 'generate';
 
   try {
-    // ── 1) Kick off a generation ──
+    // ── 1) Kick off a generation (kie.ai unified jobs API, GPT Image 2) ──
     if (action === 'generate') {
       const prompt = (body.prompt || '').trim();
       if (!prompt) return Response.json({ error: 'A prompt is required.' }, { status: 400 });
-      const size = ['1:1', '3:2', '2:3'].includes(body.size) ? body.size : '3:2';
+      const aspect = ['1:1', '3:2', '2:3', '16:9'].includes(body.size) ? body.size : '3:2';
 
-      const res = await fetch(`${KIE_BASE}/generate`, {
+      const res = await fetch(KIE_CREATE, {
         method: 'POST',
         headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, size, nVariants: 1 }),
+        body: JSON.stringify({ model: KIE_MODEL, input: { prompt, aspect_ratio: aspect } }),
       });
       const json = await res.json().catch(() => ({}));
       const taskId = json?.data?.taskId || json?.data?.task_id || json?.taskId;
@@ -91,18 +93,18 @@ export async function POST(req: Request) {
     if (action === 'status') {
       const taskId = body.taskId;
       if (!taskId) return Response.json({ error: 'taskId required' }, { status: 400 });
-      const res = await fetch(`${KIE_BASE}/record-info?taskId=${encodeURIComponent(taskId)}`, {
+      const res = await fetch(`${KIE_RECORD}?taskId=${encodeURIComponent(taskId)}`, {
         headers: { Authorization: `Bearer ${KEY}` },
       });
       const json = await res.json().catch(() => ({}));
       const data = json?.data ?? json;
       const urls = extractImageUrls(data);
-      const flag = data?.successFlag ?? data?.success_flag;
-      const statusStr = String(data?.status || '').toUpperCase();
+      // jobs API uses `state`: waiting | queuing | generating | success | fail
+      const state = String(data?.state || data?.status || '').toLowerCase();
 
       if (urls.length > 0) return Response.json({ status: 'done', urls });
-      if (statusStr.includes('FAIL') || flag === 2 || flag === 3) {
-        return Response.json({ status: 'failed', error: data?.errorMessage || data?.error_message || 'Generation failed.' });
+      if (state.includes('fail') || state.includes('error')) {
+        return Response.json({ status: 'failed', error: data?.failMsg || data?.errorMessage || data?.failCode || 'Generation failed.' });
       }
       return Response.json({ status: 'pending' });
     }
