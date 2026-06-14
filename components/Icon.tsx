@@ -27,6 +27,7 @@ const icons: Record<string, string> = {
   send: 'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
   helpCircle: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01',
   brain: 'M12 2a4 4 0 0 0-4 4 4 4 0 0 0-2.5 7.13A4 4 0 0 0 8 20a4 4 0 0 0 4 2 4 4 0 0 0 4-2 4 4 0 0 0 2.5-6.87A4 4 0 0 0 16 6a4 4 0 0 0-4-4z M12 2v20',
+  grip: 'M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01',
 };
 
 export function Icon({ name, size = 24, ...props }: { name: keyof typeof icons; size?: number; [key: string]: any }) {

@@ -15,7 +15,7 @@ export type SiteSettings = HeroConfig & {
 
 export type Lead = {
   id: string;
-  type: 'contact' | 'testdrive' | 'tradein' | 'finance' | 'video' | 'delivery' | 'carfinder' | 'other';
+  type: 'contact' | 'testdrive' | 'tradein' | 'finance' | 'video' | 'delivery' | 'carfinder' | 'service' | 'page' | 'other';
   name?: string;
   email?: string;
   phone?: string;
@@ -690,6 +690,76 @@ export async function saveDealVehicleId(vehicleId: string): Promise<{ error?: st
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
   const { error } = await sb.from('site_settings').update({ deal_vehicle_id: vehicleId }).eq('id', 1);
+  return { error: error?.message };
+}
+
+// ───────────────────────── Custom pages (page builder) ─────────────────────────
+
+export type PageBlock =
+  | { type: 'html'; html: string }
+  | { type: 'inventory'; title?: string; body?: string; make?: string; priceMax?: number; limit?: number }
+  | { type: 'leadform'; title?: string; subtitle?: string; leadType?: string; fields?: string[]; buttonText?: string };
+
+export type CustomPage = {
+  id?: string;
+  slug: string;
+  title: string;
+  description: string;
+  blocks: PageBlock[];
+  published?: boolean;
+  sortOrder?: number;
+};
+
+function rowToPage(r: any): CustomPage {
+  return {
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    description: r.description ?? '',
+    blocks: Array.isArray(r.blocks) ? r.blocks : [],
+    published: r.published,
+    sortOrder: r.sort_order,
+  };
+}
+
+export async function listPages(opts?: { includeUnpublished?: boolean }): Promise<CustomPage[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  let q = sb.from('pages').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false });
+  if (!opts?.includeUnpublished) q = q.eq('published', true);
+  const { data, error } = await q;
+  if (error || !data) return [];
+  return data.map(rowToPage);
+}
+
+export async function getPageBySlug(slug: string): Promise<CustomPage | null> {
+  const sb = getBrowserClient();
+  if (!sb) return null;
+  const { data, error } = await sb.from('pages').select('*').eq('slug', slug).maybeSingle();
+  if (error || !data) return null;
+  return rowToPage(data);
+}
+
+export async function savePage(p: CustomPage): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  if (!p.slug || !p.title) return { error: 'Title and slug are required' };
+  const { error } = await sb.from('pages').upsert({
+    slug: p.slug,
+    title: p.title,
+    description: p.description ?? '',
+    blocks: p.blocks ?? [],
+    published: p.published ?? true,
+    sort_order: p.sortOrder ?? 0,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'slug' });
+  return { error: error?.message };
+}
+
+export async function deletePage(slug: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('pages').delete().eq('slug', slug);
   return { error: error?.message };
 }
 

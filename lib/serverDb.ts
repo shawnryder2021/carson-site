@@ -98,3 +98,22 @@ export async function fetchTeamMember(slug: string): Promise<ServerTeamMember | 
   const all = await fetchTeam();
   return all.find(m => m.slug === slug) ?? null;
 }
+
+export type ServerPage = { slug: string; title: string; description: string };
+
+export async function fetchPages(): Promise<ServerPage[]> {
+  const sb = client();
+  if (!sb) return [];
+  try {
+    const { data, error } = await sb.from('pages').select('slug,title,description').eq('published', true);
+    if (error || !data) return [];
+    return data.map((r: any) => ({ slug: r.slug, title: r.title, description: r.description ?? '' }));
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchPage(slug: string): Promise<ServerPage | null> {
+  const all = await fetchPages();
+  return all.find(p => p.slug === slug) ?? null;
+}

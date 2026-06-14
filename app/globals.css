@@ -55,6 +55,20 @@ footer { border-top: 1px solid var(--line); }
 
 .ai-glow { position: relative; background: linear-gradient(135deg, rgba(0,124,146,0.1), rgba(90,138,255,0.05)); }
 
+/* ───────── Custom page (page builder) HTML blocks ───────── */
+.page-html { font-size: 16px; line-height: 1.7; color: var(--ink); }
+.page-html h1 { font-family: var(--font-fraunces), serif; font-size: clamp(30px, 5vw, 44px); font-weight: 600; letter-spacing: -.02em; line-height: 1.1; margin: 0 0 16px; }
+.page-html h2 { font-family: var(--font-fraunces), serif; font-size: clamp(22px, 3vw, 30px); font-weight: 600; letter-spacing: -.02em; margin: 28px 0 12px; }
+.page-html h3 { font-size: 19px; font-weight: 700; margin: 22px 0 8px; }
+.page-html p { margin: 0 0 16px; }
+.page-html p.lead { font-size: 18px; color: var(--muted); font-family: var(--font-fraunces), serif; font-style: italic; }
+.page-html ul, .page-html ol { margin: 0 0 16px; padding-left: 22px; }
+.page-html li { margin-bottom: 8px; }
+.page-html a { color: var(--teal-2); font-weight: 600; }
+.page-html img { max-width: 100%; height: auto; border-radius: 12px; margin: 12px 0; }
+.page-html blockquote { border-left: 3px solid var(--teal); padding-left: 16px; margin: 16px 0; color: var(--muted); font-style: italic; }
+.page-html hr { border: none; border-top: 1px solid var(--line); margin: 28px 0; }
+
 /* ───────── Shop-by-style tiles (Carvana-style) ───────── */
 .shop-style-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
 .shop-style-tile {

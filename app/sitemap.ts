@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { SITE_URL, fetchVehicles, fetchGuides, fetchTeam } from '@/lib/serverDb';
+import { SITE_URL, fetchVehicles, fetchGuides, fetchTeam, fetchPages } from '@/lib/serverDb';
 
 // Regenerate per-request so the daily sheet sync is reflected without a redeploy.
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: p === '' ? 1 : p === '/inventory' ? 0.9 : 0.6,
   }));
 
-  const [vehicles, guides, team] = await Promise.all([fetchVehicles(), fetchGuides(), fetchTeam()]);
+  const [vehicles, guides, team, pages] = await Promise.all([fetchVehicles(), fetchGuides(), fetchTeam(), fetchPages()]);
 
   return [
     ...staticRoutes,
@@ -32,6 +32,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${SITE_URL}/team/${m.slug}`,
       changeFrequency: 'monthly' as const,
       priority: 0.4,
+    })),
+    ...pages.map(p => ({
+      url: `${SITE_URL}/p/${p.slug}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
     })),
   ];
 }
