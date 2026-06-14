@@ -4,17 +4,19 @@ import { useState, ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { Footer } from '@/components/Footer';
-import { AIConciergeLauncher, AIConcierge } from '@/components/AIConcierge';
+import { ChatLauncher, ChatWidget } from '@/components/ChatWidget';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [aiOpen, setAiOpen] = useState(false);
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
 
+  // Map the design tokens to the loaded fonts. --display is the dealership's
+  // Impact look (Anton is the loaded fallback for devices without Impact).
   const fontStyle = (
     <style>{`
       :root {
-        --display: var(--font-bricolage, system-ui, sans-serif);
+        --display: 'Impact', var(--font-anton), 'Haettenschweiler', 'Franklin Gothic Bold', 'Arial Narrow', sans-serif;
         --sans: var(--font-inter, system-ui, sans-serif);
         --serif: var(--font-fraunces, Georgia, serif);
       }
@@ -39,8 +41,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
       <Footer />
-      {!aiOpen && <AIConciergeLauncher onClick={() => setAiOpen(true)} />}
-      <AIConcierge open={aiOpen} onClose={() => setAiOpen(false)} />
+      {!aiOpen && <ChatLauncher onClick={() => setAiOpen(true)} />}
+      <ChatWidget open={aiOpen} onClose={() => setAiOpen(false)} />
     </div>
   );
 }

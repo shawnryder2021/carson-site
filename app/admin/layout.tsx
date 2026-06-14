@@ -11,6 +11,7 @@ const NAV = [
   { href: '/admin/traffic', label: 'Traffic', icon: 'gauge' },
   { href: '/admin/inventory', label: 'Inventory', icon: 'car' },
   { href: '/admin/leads', label: 'Leads', icon: 'mail' },
+  { href: '/admin/chat', label: 'Chat', icon: 'mail' },
   { href: '/admin/requests', label: 'CarFinder', icon: 'search' },
   { href: '/admin/guides', label: 'Guides', icon: 'sparkles' },
   { href: '/admin/pages', label: 'Pages', icon: 'edit' },

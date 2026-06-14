@@ -699,6 +699,92 @@ export async function saveDealVehicleId(vehicleId: string): Promise<{ error?: st
   return { error: error?.message };
 }
 
+// ───────────────────────── Live + AI chat (admin side) ─────────────────────────
+
+import type { ChatHours } from './chatHours';
+
+export type ChatConversation = {
+  id: string; name: string; contact: string; mode: string; status: string;
+  agentUnread: boolean; createdAt: string; lastMessageAt: string;
+};
+export type ChatMessage = { id: string; role: 'visitor' | 'agent' | 'ai' | 'system'; text: string; createdAt: string };
+
+export type ChatSettings = {
+  enabled: boolean;
+  timezone: string;
+  hours: ChatHours;
+  greeting: string;
+  offlineGreeting: string;
+};
+
+function rowToConvo(r: any): ChatConversation {
+  return { id: r.id, name: r.name ?? '', contact: r.contact ?? '', mode: r.mode, status: r.status, agentUnread: !!r.agent_unread, createdAt: r.created_at, lastMessageAt: r.last_message_at };
+}
+
+export async function listChatConversations(): Promise<ChatConversation[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  const { data, error } = await sb.from('chat_conversations').select('*').order('last_message_at', { ascending: false }).limit(100);
+  if (error || !data) return [];
+  return data.map(rowToConvo);
+}
+
+export async function getChatMessages(conversationId: string): Promise<ChatMessage[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  const { data, error } = await sb.from('chat_messages').select('id,role,text,created_at').eq('conversation_id', conversationId).order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return data.map((r: any) => ({ id: r.id, role: r.role, text: r.text, createdAt: r.created_at }));
+}
+
+export async function sendAgentMessage(conversationId: string, text: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('chat_messages').insert({ conversation_id: conversationId, role: 'agent', text });
+  if (error) return { error: error.message };
+  await sb.from('chat_conversations').update({ agent_unread: false, last_message_at: new Date().toISOString() }).eq('id', conversationId);
+  return {};
+}
+
+export async function markChatRead(conversationId: string): Promise<void> {
+  const sb = getBrowserClient();
+  if (!sb) return;
+  await sb.from('chat_conversations').update({ agent_unread: false }).eq('id', conversationId);
+}
+
+export async function closeChatConversation(conversationId: string): Promise<void> {
+  const sb = getBrowserClient();
+  if (!sb) return;
+  await sb.from('chat_conversations').update({ status: 'closed' }).eq('id', conversationId);
+}
+
+export async function getChatSettings(): Promise<ChatSettings | null> {
+  const sb = getBrowserClient();
+  if (!sb) return null;
+  const { data } = await sb.from('site_settings').select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting').eq('id', 1).maybeSingle();
+  if (!data) return null;
+  return {
+    enabled: data.chat_enabled !== false,
+    timezone: data.chat_timezone || 'America/Halifax',
+    hours: Array.isArray(data.chat_hours) ? data.chat_hours : [],
+    greeting: data.chat_greeting || '',
+    offlineGreeting: data.chat_offline_greeting || '',
+  };
+}
+
+export async function saveChatSettings(s: ChatSettings): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('site_settings').update({
+    chat_enabled: s.enabled,
+    chat_timezone: s.timezone,
+    chat_hours: s.hours,
+    chat_greeting: s.greeting,
+    chat_offline_greeting: s.offlineGreeting,
+  }).eq('id', 1);
+  return { error: error?.message };
+}
+
 // ───────────────────────── Custom pages (page builder) ─────────────────────────
 
 export type PageBlock =
