@@ -13,7 +13,7 @@ import { ShopByStyle } from '@/components/ShopByStyle';
 import { WelcomeBack } from '@/components/WelcomeBack';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles } from '@/lib/format';
-import { listVehicles, getSettings, getDealVehicleId, AdminVehicle } from '@/lib/db';
+import { listVehicles, getSettings, getDealVehicleId, getHomepageSections, DEFAULT_HOME_SECTIONS, HomeSections, AdminVehicle } from '@/lib/db';
 
 export default function Home() {
   const router = useRouter();
@@ -21,13 +21,15 @@ export default function Home() {
   const [hero, setHero] = useState<HeroConfig>(DEFAULT_HERO);
   const [vehicles, setVehicles] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   const [dealId, setDealId] = useState('');
+  const [sections, setSections] = useState<HomeSections>(DEFAULT_HOME_SECTIONS);
 
   useEffect(() => {
     (async () => {
-      const [s, v, d] = await Promise.all([getSettings(), listVehicles(), getDealVehicleId()]);
+      const [s, v, d, sec] = await Promise.all([getSettings(), listVehicles(), getDealVehicleId(), getHomepageSections()]);
       setHero(s);
       if (v.length) setVehicles(v);
       setDealId(d);
+      setSections(sec);
     })();
   }, []);
 
@@ -123,13 +125,13 @@ export default function Home() {
       </section>
 
       {/* Returning-visitor personalization */}
-      <WelcomeBack vehicles={vehicles} />
+      {sections.welcomeBack && <WelcomeBack vehicles={vehicles} />}
 
       {/* Shop by style / budget / make / payment */}
-      <ShopByStyle vehicles={vehicles} />
+      {sections.shopBy && <ShopByStyle vehicles={vehicles} />}
 
       {/* Deal of the Week */}
-      {deal && (
+      {sections.deal && deal && (
         <section style={{ padding: '72px 0 0' }}>
           <div className="container" style={{ maxWidth: 900 }}>
             <div
@@ -168,7 +170,7 @@ export default function Home() {
       )}
 
       {/* AI's top pick */}
-      {featured.length > 0 && (
+      {sections.topPick && featured.length > 0 && (
       <section style={{ padding: '72px 0 0' }}>
         <div className="container" style={{ maxWidth: 900 }}>
           <div
@@ -221,6 +223,7 @@ export default function Home() {
       )}
 
       {/* Featured Inventory */}
+      {sections.featured && (
       <section style={{ padding: '80px 0' }}>
         <div className="container" style={{ maxWidth: 1200 }}>
           <h2 style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, textAlign: 'center', marginBottom: 48, letterSpacing: '-.02em' }}>
@@ -233,9 +236,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Recently sold — social proof */}
-      {recentlySold.length > 0 && (
+      {sections.recentlySold && recentlySold.length > 0 && (
         <section style={{ padding: '0 0 80px' }}>
           <div className="container" style={{ maxWidth: 1200 }}>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
@@ -268,7 +272,7 @@ export default function Home() {
       )}
 
       {/* Instagram */}
-      {(igTiles.length > 0 || !!igWidgetId) && (
+      {sections.instagram && (igTiles.length > 0 || !!igWidgetId) && (
         <section style={{ padding: '0 0 80px' }}>
           <div className="container" style={{ maxWidth: 1100 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
@@ -295,6 +299,7 @@ export default function Home() {
       )}
 
       {/* Why Carson */}
+      {sections.whyCarson && (
       <section style={{ padding: '80px 0', background: 'var(--bg-soft)' }}>
         <div className="container" style={{ maxWidth: 1200 }}>
           <h2 style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, textAlign: 'center', marginBottom: 48, letterSpacing: '-.02em' }}>
@@ -315,8 +320,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* CTA */}
+      {sections.cta && (
       <section style={{ padding: '60px 0', background: 'linear-gradient(135deg, var(--teal), #5a8aff)', color: 'white', textAlign: 'center' }}>
         <div className="container">
           <h2 style={{ fontFamily: 'var(--display)', fontSize: 40, fontWeight: 600, marginBottom: 16 }}>Ready?</h2>
@@ -326,6 +333,7 @@ export default function Home() {
           </button>
         </div>
       </section>
+      )}
     </div>
   );
 }

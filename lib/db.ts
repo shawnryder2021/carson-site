@@ -693,6 +693,47 @@ export async function saveDealVehicleId(vehicleId: string): Promise<{ error?: st
   return { error: error?.message };
 }
 
+// ───────────────────────── Homepage section toggles ─────────────────────────
+
+export type HomeSectionKey =
+  | 'welcomeBack' | 'shopBy' | 'deal' | 'topPick' | 'featured'
+  | 'recentlySold' | 'instagram' | 'whyCarson' | 'cta';
+
+export const HOME_SECTIONS: { key: HomeSectionKey; label: string; desc: string }[] = [
+  { key: 'welcomeBack', label: 'Welcome back', desc: 'Returning-visitor strip (new arrivals + recently viewed).' },
+  { key: 'shopBy', label: 'Shop by style / budget / payment', desc: 'Category, budget, payment and make tiles.' },
+  { key: 'deal', label: 'Deal of the Week', desc: 'Featured deal banner (only shows if a deal is set).' },
+  { key: 'topPick', label: "Today's AI top pick", desc: 'The highlighted featured vehicle card.' },
+  { key: 'featured', label: 'Browse our inventory', desc: 'The grid of featured vehicles.' },
+  { key: 'recentlySold', label: 'Recently sold', desc: 'Social-proof strip of sold vehicles.' },
+  { key: 'instagram', label: 'Instagram feed', desc: 'The "Follow along" Instagram grid.' },
+  { key: 'whyCarson', label: 'Why choose Carson', desc: 'The trust/benefits section.' },
+  { key: 'cta', label: 'Bottom call-to-action', desc: 'The closing "Ready to find your car?" banner.' },
+];
+
+export type HomeSections = Record<HomeSectionKey, boolean>;
+
+export const DEFAULT_HOME_SECTIONS: HomeSections = {
+  welcomeBack: true, shopBy: true, deal: true, topPick: true, featured: true,
+  recentlySold: true, instagram: true, whyCarson: true, cta: true,
+};
+
+export async function getHomepageSections(): Promise<HomeSections> {
+  const sb = getBrowserClient();
+  if (!sb) return DEFAULT_HOME_SECTIONS;
+  const { data } = await sb.from('site_settings').select('homepage_sections').eq('id', 1).maybeSingle();
+  const stored = (data?.homepage_sections && typeof data.homepage_sections === 'object') ? data.homepage_sections : {};
+  // Missing keys default to ON.
+  return { ...DEFAULT_HOME_SECTIONS, ...stored };
+}
+
+export async function saveHomepageSections(sections: HomeSections): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('site_settings').update({ homepage_sections: sections }).eq('id', 1);
+  return { error: error?.message };
+}
+
 // ───────────────────────── Marketing banners (AI-generated) ─────────────────────────
 
 export type MarketingBanner = { url: string; prompt: string; createdAt: string };
