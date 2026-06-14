@@ -6,7 +6,16 @@
   --muted: #666666;
   --line: #e8e8e8;
   --bg-soft: #f5f5f5;
+
+  /* Display = the dealership's Impact font (Anton is the loaded look-alike
+     fallback for devices without Impact). Serif = Fraunces for italic accents. */
+  --display: 'Impact', var(--font-anton), 'Haettenschweiler', 'Franklin Gothic Bold', 'Arial Narrow', sans-serif;
+  --serif: var(--font-fraunces), Georgia, serif;
 }
+
+/* Impact/Anton are condensed and read "tighter" than the old fallback, so
+   loosen tracking a touch and keep headings crisp. */
+[style*="--display"], h1, h2, h3 { text-rendering: optimizeLegibility; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -57,9 +66,9 @@ footer { border-top: 1px solid var(--line); }
 
 /* ───────── Custom page (page builder) HTML blocks ───────── */
 .page-html { font-size: 16px; line-height: 1.7; color: var(--ink); }
-.page-html h1 { font-family: var(--font-fraunces), serif; font-size: clamp(30px, 5vw, 44px); font-weight: 600; letter-spacing: -.02em; line-height: 1.1; margin: 0 0 16px; }
-.page-html h2 { font-family: var(--font-fraunces), serif; font-size: clamp(22px, 3vw, 30px); font-weight: 600; letter-spacing: -.02em; margin: 28px 0 12px; }
-.page-html h3 { font-size: 19px; font-weight: 700; margin: 22px 0 8px; }
+.page-html h1 { font-family: var(--display); font-size: clamp(34px, 5.5vw, 52px); font-weight: 400; letter-spacing: .01em; line-height: 1.05; margin: 0 0 16px; }
+.page-html h2 { font-family: var(--display); font-size: clamp(24px, 3.4vw, 34px); font-weight: 400; letter-spacing: .01em; margin: 28px 0 12px; }
+.page-html h3 { font-family: var(--display); font-size: 22px; font-weight: 400; letter-spacing: .01em; margin: 22px 0 8px; }
 .page-html p { margin: 0 0 16px; }
 .page-html p.lead { font-size: 18px; color: var(--muted); font-family: var(--font-fraunces), serif; font-style: italic; }
 .page-html ul, .page-html ol { margin: 0 0 16px; padding-left: 22px; }

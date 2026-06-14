@@ -390,6 +390,12 @@ export const DEFAULT_NAV: NavItem[] = [
   ] },
   { label: 'AI Finder', href: '/finder' },
   { label: 'Trade-in', href: '/tradein' },
+  { label: 'Service', href: '/p/service', children: [
+    { label: 'Service Department', href: '/p/service' },
+    { label: 'Tire & Wheel Centre', href: '/p/tire-centre' },
+    { label: 'Service Specials', href: '/p/service-specials' },
+    { label: 'Parts & Accessories', href: '/p/parts-accessories' },
+  ] },
   { label: 'Financing', href: '/finance', children: [
     { label: 'Financing Options', href: '/finance' },
     { label: 'Ask AI', href: '/financing-explainer' },

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import { Inter, Fraunces } from 'next/font/google';
+import { Inter, Fraunces, Anton } from 'next/font/google';
 import { SavedProvider } from '@/context/SavedContext';
 import { PriceModeProvider } from '@/context/PriceModeContext';
 import { HeroConfigProvider } from '@/context/HeroConfigContext';
@@ -10,6 +10,9 @@ import './globals.css';
 
 const inter = Inter({ variable: '--font-inter', subsets: ['latin'] });
 const fraunces = Fraunces({ variable: '--font-fraunces', subsets: ['latin'] });
+// Anton: a free, near-identical match for the dealership's Impact font, used
+// as the fallback so devices without Impact (most phones) still get the look.
+const anton = Anton({ variable: '--font-anton', weight: '400', subsets: ['latin'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -46,7 +49,7 @@ const dealerJsonLd = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${fraunces.variable}`}>
+      <body className={`${inter.variable} ${fraunces.variable} ${anton.variable}`}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dealerJsonLd) }} />
         {/* Web analytics (shawnryder.site, site #56) — collects the data the
             admin Traffic dashboard reads. */}
