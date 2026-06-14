@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { Inter, Fraunces } from 'next/font/google';
 import { SavedProvider } from '@/context/SavedContext';
 import { PriceModeProvider } from '@/context/PriceModeContext';
@@ -47,6 +48,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.variable} ${fraunces.variable}`}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dealerJsonLd) }} />
+        {/* Web analytics (shawnryder.site, site #56) — collects the data the
+            admin Traffic dashboard reads. */}
+        <Script
+          id="ZwSg9rf6GA"
+          src="https://shawnryder.site/js/script.js"
+          data-host="https://shawnryder.site"
+          data-dnt="false"
+          strategy="afterInteractive"
+        />
         <SavedProvider>
           <PriceModeProvider>
             <HeroConfigProvider>
