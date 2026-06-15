@@ -91,6 +91,12 @@ export async function POST(req: Request) {
       const { data: convo } = await sb.from('chat_conversations').select('*').eq('id', conversationId).eq('token', token).maybeSingle();
       if (!convo) return Response.json({ error: 'not found' }, { status: 404 });
 
+      // Is this the visitor's first message? (drives a distinct "new chat" alert)
+      const { count: priorVisitorMsgs } = await sb.from('chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId).eq('role', 'visitor');
+      const isFirst = (priorVisitorMsgs || 0) === 0;
+
       const patch: any = { agent_unread: true, last_message_at: new Date().toISOString() };
       if (name && !convo.name) patch.name = name;
       if (contact && !convo.contact) patch.contact = contact;
@@ -99,7 +105,15 @@ export async function POST(req: Request) {
 
       if (open) {
         // Live mode: notify the team; agent replies from the admin console.
-        await fireWebhook({ event: 'chat.message', at: new Date().toISOString(), conversationId, name: patch.name || convo.name, contact: patch.contact || convo.contact, text: text.trim(), url: `${SITE_URL}/admin/chat` });
+        await fireWebhook({
+          event: isFirst ? 'chat.new' : 'chat.message',
+          at: new Date().toISOString(),
+          conversationId,
+          name: patch.name || convo.name || 'Website visitor',
+          contact: patch.contact || convo.contact || '',
+          text: text.trim(),
+          url: `${SITE_URL}/admin/chat`,
+        });
         return Response.json({ ok: true, mode: 'live' });
       }
 

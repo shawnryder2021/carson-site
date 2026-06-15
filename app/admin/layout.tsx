@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
+import { ChatNotifier } from '@/components/admin/ChatNotifier';
 import { getBrowserClient } from '@/lib/supabase/client';
 
 const NAV = [
@@ -48,6 +49,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+          <ChatNotifier />
           {NAV.map(item => {
             const active = item.href === '/admin' ? pathname === '/admin' : pathname?.startsWith(item.href);
             return (
