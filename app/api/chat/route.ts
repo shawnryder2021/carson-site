@@ -17,9 +17,10 @@ function admin(): SupabaseClient | null {
 
 async function getChatConfig(sb: SupabaseClient) {
   const { data } = await sb.from('site_settings')
-    .select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting, chat_agents, chat_takeover_seconds')
+    .select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting, chat_agents, chat_takeover_seconds, alert_webhook_url')
     .eq('id', 1).maybeSingle();
   return {
+    webhookUrl: data?.alert_webhook_url || process.env.ALERT_WEBHOOK_URL || '',
     enabled: data?.chat_enabled !== false,
     timezone: data?.chat_timezone || 'America/Halifax',
     hours: Array.isArray(data?.chat_hours) ? data!.chat_hours : DEFAULT_CHAT_HOURS,
@@ -58,8 +59,7 @@ async function aiReply(sb: SupabaseClient, history: { role: string; text: string
   }
 }
 
-async function fireWebhook(payload: any) {
-  const url = process.env.ALERT_WEBHOOK_URL;
+async function fireWebhook(url: string, payload: any) {
   if (!url) return;
   try { await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); } catch { /* best effort */ }
 }
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
 
       if (open && !convo.ai_active) {
         // Live mode, team still handling: notify them; they reply from the console.
-        await fireWebhook({
+        await fireWebhook(cfg.webhookUrl, {
           event: isFirst ? 'chat.new' : 'chat.message',
           at: new Date().toISOString(),
           conversationId,
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
           if (claimed && claimed.length > 0) {
             const reply = await aiReply(sb, msgs as any);
             await sb.from('chat_messages').insert({ conversation_id: conversationId, role: 'ai', text: reply });
-            await fireWebhook({ event: 'chat.ai_takeover', at: new Date().toISOString(), conversationId, url: `${SITE_URL}/admin/chat` });
+            await fireWebhook(cfg.webhookUrl, { event: 'chat.ai_takeover', at: new Date().toISOString(), conversationId, url: `${SITE_URL}/admin/chat` });
           }
         }
       }

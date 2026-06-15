@@ -5,7 +5,7 @@ import { Icon } from '@/components/Icon';
 import { isChatOpen, DEFAULT_CHAT_HOURS, DAY_LABELS } from '@/lib/chatHours';
 import {
   listChatConversations, getChatMessages, sendAgentMessage, markChatRead, closeChatConversation,
-  getChatSettings, saveChatSettings, isSupabaseConfigured, ChatConversation, ChatMessage, ChatSettings,
+  getChatSettings, saveChatSettings, getAlertWebhookUrl, saveAlertWebhookUrl, isSupabaseConfigured, ChatConversation, ChatMessage, ChatSettings,
 } from '@/lib/db';
 
 function timeAgo(iso: string) {
@@ -25,6 +25,8 @@ export default function AdminChat() {
   const [settings, setSettings] = useState<ChatSettings | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [webhook, setWebhook] = useState('');
+  const [webhookMsg, setWebhookMsg] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
 
   const loadConvos = useCallback(async () => {
@@ -32,7 +34,13 @@ export default function AdminChat() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadConvos(); getChatSettings().then(setSettings); }, [loadConvos]);
+  useEffect(() => { loadConvos(); getChatSettings().then(setSettings); getAlertWebhookUrl().then(setWebhook); }, [loadConvos]);
+
+  const saveWebhook = async () => {
+    const { error } = await saveAlertWebhookUrl(webhook);
+    setWebhookMsg(error ? `Error: ${error}` : '✓ Saved');
+    setTimeout(() => setWebhookMsg(null), 2500);
+  };
 
   // Poll conversation list + active thread.
   useEffect(() => {
@@ -149,6 +157,19 @@ export default function AdminChat() {
               <textarea className="input" value={settings.offlineGreeting} onChange={e => setSettings({ ...settings, offlineGreeting: e.target.value })} style={{ minHeight: 70, fontFamily: 'inherit' }} />
             </div>
           </div>
+          {/* Notification webhook (shared with CarFinder & price-drop alerts) */}
+          <div style={{ borderTop: '1px solid var(--line)', margin: '6px 0 14px', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Notification webhook (Twilio / Zapier / Make)</div>
+            <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 8, lineHeight: 1.5 }}>
+              New live chats POST here (event <code>chat.new</code>) with the visitor message + your on-duty team&apos;s phone numbers. Your automation sends the texts. Shared with CarFinder &amp; price-drop alerts.
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <input className="input" value={webhook} onChange={e => setWebhook(e.target.value)} placeholder="https://hooks.zapier.com/…" style={{ flex: 1, minWidth: 260 }} />
+              <button onClick={saveWebhook} className="btn btn-primary btn-sm">Save webhook</button>
+            </div>
+            {webhookMsg && <div style={{ fontSize: 13, fontWeight: 700, marginTop: 8, color: webhookMsg.startsWith('Error') ? '#A8232C' : 'var(--teal-2)' }}>{webhookMsg}</div>}
+          </div>
+
           {/* Chat agents roster (texted via your Twilio webhook) */}
           <div style={{ borderTop: '1px solid var(--line)', margin: '6px 0 14px', paddingTop: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Chat sales team (texted on new live chats)</div>
