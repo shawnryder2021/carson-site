@@ -79,6 +79,11 @@ export default function AdminChat() {
     setSettings({ ...settings, hours });
   };
 
+  const agents = settings?.agents || [];
+  const setAgent = (i: number, patch: any) => settings && setSettings({ ...settings, agents: agents.map((a, j) => j === i ? { ...a, ...patch } : a) });
+  const addAgent = () => settings && setSettings({ ...settings, agents: [...agents, { name: '', phone: '', active: true }] });
+  const removeAgent = (i: number) => settings && setSettings({ ...settings, agents: agents.filter((_, j) => j !== i) });
+
   return (
     <div style={{ padding: '24px 28px 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -144,6 +149,39 @@ export default function AdminChat() {
               <textarea className="input" value={settings.offlineGreeting} onChange={e => setSettings({ ...settings, offlineGreeting: e.target.value })} style={{ minHeight: 70, fontFamily: 'inherit' }} />
             </div>
           </div>
+          {/* Chat agents roster (texted via your Twilio webhook) */}
+          <div style={{ borderTop: '1px solid var(--line)', margin: '6px 0 14px', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Chat sales team (texted on new live chats)</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {agents.length === 0 && <div style={{ fontSize: 13, color: 'var(--muted)' }}>No one added yet. Add the people who should get a text when a live chat starts.</div>}
+              {agents.map((a, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input className="input" value={a.name} onChange={e => setAgent(i, { name: e.target.value })} placeholder="Name" style={{ flex: 1 }} />
+                  <input className="input" value={a.phone} onChange={e => setAgent(i, { phone: e.target.value })} placeholder="Mobile (+1902…)" style={{ flex: 1 }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: 'var(--muted)' }}>
+                    <input type="checkbox" checked={a.active !== false} onChange={e => setAgent(i, { active: e.target.checked })} style={{ accentColor: 'var(--teal)' }} /> On
+                  </label>
+                  <button onClick={() => removeAgent(i)} className="btn btn-ghost btn-sm" style={{ color: '#A8232C' }}>×</button>
+                </div>
+              ))}
+            </div>
+            <button onClick={addAgent} className="btn btn-ghost btn-sm" style={{ marginTop: 8 }}><Icon name="plus" size={13} /> Add team member</button>
+          </div>
+
+          {/* AI takeover delay */}
+          <div style={{ borderTop: '1px solid var(--line)', margin: '6px 0 14px', paddingTop: 14 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, fontWeight: 600, flexWrap: 'wrap' }}>
+              If no team reply within
+              <input type="number" min={0} className="input" value={settings.takeoverSeconds}
+                onChange={e => setSettings({ ...settings, takeoverSeconds: Math.max(0, +e.target.value || 0) })}
+                style={{ width: 90 }} />
+              seconds, Carson AI takes over the chat.
+            </label>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
+              Set to <strong>0</strong> to disable auto-takeover (chats wait for a human). Try 120 (2 min) and adjust as you test.
+            </div>
+          </div>
+
           <button onClick={saveSettings} className="btn btn-primary btn-sm"><Icon name="check" size={14} /> Save settings</button>
           {savedMsg && <span style={{ marginLeft: 12, fontSize: 13, fontWeight: 700, color: savedMsg.startsWith('Error') ? '#A8232C' : 'var(--teal-2)' }}>{savedMsg}</span>}
         </div>
@@ -168,7 +206,9 @@ export default function AdminChat() {
                   <span style={{ fontSize: 11, color: 'var(--muted)' }}>{timeAgo(c.lastMessageAt)}</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
-                  {c.contact || 'no contact'} · <span style={{ textTransform: 'capitalize' }}>{c.mode}</span>{c.status === 'closed' ? ' · closed' : ''}
+                  {c.contact || 'no contact'}
+                  {c.aiActive ? <span style={{ color: '#5a8aff', fontWeight: 700 }}> · 🤖 AI handling</span> : <> · <span style={{ textTransform: 'capitalize' }}>{c.mode}</span></>}
+                  {c.status === 'closed' ? ' · closed' : ''}
                 </div>
               </button>
             ))}
@@ -183,7 +223,10 @@ export default function AdminChat() {
               <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{active.name || 'Visitor'}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{active.contact || 'no contact provided'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                    {active.contact || 'no contact provided'}
+                    {active.aiActive && <span style={{ color: '#5a8aff', fontWeight: 700 }}> · 🤖 AI took over — reply to take it back</span>}
+                  </div>
                 </div>
                 {active.status !== 'closed' && <button onClick={() => { closeChatConversation(active.id); loadConvos(); }} className="btn btn-ghost btn-sm">Close</button>}
               </div>

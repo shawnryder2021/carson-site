@@ -17,7 +17,7 @@ function admin(): SupabaseClient | null {
 
 async function getChatConfig(sb: SupabaseClient) {
   const { data } = await sb.from('site_settings')
-    .select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting')
+    .select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting, chat_agents, chat_takeover_seconds')
     .eq('id', 1).maybeSingle();
   return {
     enabled: data?.chat_enabled !== false,
@@ -25,6 +25,8 @@ async function getChatConfig(sb: SupabaseClient) {
     hours: Array.isArray(data?.chat_hours) ? data!.chat_hours : DEFAULT_CHAT_HOURS,
     greeting: data?.chat_greeting || 'Hi! A Carson team member is here — how can we help?',
     offlineGreeting: data?.chat_offline_greeting || "I'm Carson AI — ask me anything and I'll help right now.",
+    agents: Array.isArray(data?.chat_agents) ? data!.chat_agents.filter((a: any) => a?.active !== false && a?.phone) : [],
+    takeoverSeconds: typeof data?.chat_takeover_seconds === 'number' ? data!.chat_takeover_seconds : 120,
   };
 }
 
@@ -103,8 +105,8 @@ export async function POST(req: Request) {
       await sb.from('chat_conversations').update(patch).eq('id', conversationId);
       await sb.from('chat_messages').insert({ conversation_id: conversationId, role: 'visitor', text: text.trim() });
 
-      if (open) {
-        // Live mode: notify the team; agent replies from the admin console.
+      if (open && !convo.ai_active) {
+        // Live mode, team still handling: notify them; they reply from the console.
         await fireWebhook({
           event: isFirst ? 'chat.new' : 'chat.message',
           at: new Date().toISOString(),
@@ -112,6 +114,7 @@ export async function POST(req: Request) {
           name: patch.name || convo.name || 'Website visitor',
           contact: patch.contact || convo.contact || '',
           text: text.trim(),
+          agents: cfg.agents,  // [{name, phone}] for your Twilio flow to text
           url: `${SITE_URL}/admin/chat`,
         });
         return Response.json({ ok: true, mode: 'live' });
@@ -124,12 +127,34 @@ export async function POST(req: Request) {
       return Response.json({ ok: true, mode: 'ai', reply });
     }
 
-    // ── Poll for new messages ──
+    // ── Poll for new messages (also drives AI auto-takeover) ──
     if (action === 'poll') {
       const { conversationId, token, since } = body;
       if (!conversationId || !token) return Response.json({ error: 'bad request' }, { status: 400 });
-      const { data: convo } = await sb.from('chat_conversations').select('id').eq('id', conversationId).eq('token', token).maybeSingle();
+      const { data: convo } = await sb.from('chat_conversations').select('id, ai_active').eq('id', conversationId).eq('token', token).maybeSingle();
       if (!convo) return Response.json({ error: 'not found' }, { status: 404 });
+
+      // AI takeover: during live hours, if the team never picked it up and the
+      // latest message is a visitor message older than the configured delay,
+      // AI claims the thread. Driven by the visitor's own polling — no cron.
+      if (open && !convo.ai_active && cfg.takeoverSeconds > 0) {
+        const { data: all } = await sb.from('chat_messages').select('role,text,created_at').eq('conversation_id', conversationId).order('created_at', { ascending: true });
+        const msgs = all || [];
+        const anyAgent = msgs.some((m: any) => m.role === 'agent');
+        const last = msgs[msgs.length - 1];
+        const waited = last ? (Date.now() - new Date(last.created_at).getTime()) / 1000 : 0;
+        if (!anyAgent && last && last.role === 'visitor' && waited >= cfg.takeoverSeconds) {
+          // Claim atomically so concurrent polls can't double-answer.
+          const { data: claimed } = await sb.from('chat_conversations')
+            .update({ ai_active: true }).eq('id', conversationId).eq('ai_active', false).select('id');
+          if (claimed && claimed.length > 0) {
+            const reply = await aiReply(sb, msgs as any);
+            await sb.from('chat_messages').insert({ conversation_id: conversationId, role: 'ai', text: reply });
+            await fireWebhook({ event: 'chat.ai_takeover', at: new Date().toISOString(), conversationId, url: `${SITE_URL}/admin/chat` });
+          }
+        }
+      }
+
       let q = sb.from('chat_messages').select('role,text,created_at').eq('conversation_id', conversationId).order('created_at', { ascending: true });
       if (since) q = q.gt('created_at', since);
       const { data } = await q;

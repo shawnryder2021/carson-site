@@ -705,9 +705,11 @@ import type { ChatHours } from './chatHours';
 
 export type ChatConversation = {
   id: string; name: string; contact: string; mode: string; status: string;
-  agentUnread: boolean; createdAt: string; lastMessageAt: string;
+  agentUnread: boolean; aiActive: boolean; createdAt: string; lastMessageAt: string;
 };
 export type ChatMessage = { id: string; role: 'visitor' | 'agent' | 'ai' | 'system'; text: string; createdAt: string };
+
+export type ChatAgent = { name: string; phone: string; active: boolean };
 
 export type ChatSettings = {
   enabled: boolean;
@@ -715,10 +717,12 @@ export type ChatSettings = {
   hours: ChatHours;
   greeting: string;
   offlineGreeting: string;
+  agents: ChatAgent[];
+  takeoverSeconds: number;
 };
 
 function rowToConvo(r: any): ChatConversation {
-  return { id: r.id, name: r.name ?? '', contact: r.contact ?? '', mode: r.mode, status: r.status, agentUnread: !!r.agent_unread, createdAt: r.created_at, lastMessageAt: r.last_message_at };
+  return { id: r.id, name: r.name ?? '', contact: r.contact ?? '', mode: r.mode, status: r.status, agentUnread: !!r.agent_unread, aiActive: !!r.ai_active, createdAt: r.created_at, lastMessageAt: r.last_message_at };
 }
 
 export async function listChatConversations(): Promise<ChatConversation[]> {
@@ -742,7 +746,8 @@ export async function sendAgentMessage(conversationId: string, text: string): Pr
   if (!sb) return { error: 'Supabase not configured' };
   const { error } = await sb.from('chat_messages').insert({ conversation_id: conversationId, role: 'agent', text });
   if (error) return { error: error.message };
-  await sb.from('chat_conversations').update({ agent_unread: false, last_message_at: new Date().toISOString() }).eq('id', conversationId);
+  // An agent stepping in releases any AI claim — keep it human from here.
+  await sb.from('chat_conversations').update({ agent_unread: false, ai_active: false, last_message_at: new Date().toISOString() }).eq('id', conversationId);
   return {};
 }
 
@@ -761,7 +766,7 @@ export async function closeChatConversation(conversationId: string): Promise<voi
 export async function getChatSettings(): Promise<ChatSettings | null> {
   const sb = getBrowserClient();
   if (!sb) return null;
-  const { data } = await sb.from('site_settings').select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting').eq('id', 1).maybeSingle();
+  const { data } = await sb.from('site_settings').select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting, chat_agents, chat_takeover_seconds').eq('id', 1).maybeSingle();
   if (!data) return null;
   return {
     enabled: data.chat_enabled !== false,
@@ -769,6 +774,8 @@ export async function getChatSettings(): Promise<ChatSettings | null> {
     hours: Array.isArray(data.chat_hours) ? data.chat_hours : [],
     greeting: data.chat_greeting || '',
     offlineGreeting: data.chat_offline_greeting || '',
+    agents: Array.isArray(data.chat_agents) ? data.chat_agents : [],
+    takeoverSeconds: typeof data.chat_takeover_seconds === 'number' ? data.chat_takeover_seconds : 120,
   };
 }
 
@@ -781,6 +788,8 @@ export async function saveChatSettings(s: ChatSettings): Promise<{ error?: strin
     chat_hours: s.hours,
     chat_greeting: s.greeting,
     chat_offline_greeting: s.offlineGreeting,
+    chat_agents: s.agents,
+    chat_takeover_seconds: s.takeoverSeconds,
   }).eq('id', 1);
   return { error: error?.message };
 }
