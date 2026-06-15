@@ -5,7 +5,18 @@ import { Icon } from './Icon';
 import { DotsAnim } from './DotsAnim';
 import { complete } from '@/lib/ai';
 
-type Msg = { role: 'visitor' | 'agent' | 'ai' | 'system'; text: string };
+type Suggestion = { id: string; title: string; price: number; image: string; url: string };
+type Msg = { role: 'visitor' | 'agent' | 'ai' | 'system'; text: string; suggestions?: Suggestion[] };
+
+// Turn bare URLs in AI/agent text into clickable links.
+function renderText(text: string) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return parts.map((p, i) =>
+    /^https?:\/\//.test(p)
+      ? <a key={i} href={p} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--teal-2)', fontWeight: 600, wordBreak: 'break-word' }}>{p.replace(/^https?:\/\/[^/]+/, '').replace(/^\/vehicle\//, 'View vehicle ↗ ').slice(0, 60) || p}</a>
+      : <span key={i}>{p}</span>
+  );
+}
 
 export function ChatLauncher({ onClick, unseen }: { onClick: () => void; unseen?: boolean }) {
   return (
@@ -112,7 +123,7 @@ export function ChatWidget({ open, onClose }: { open: boolean; onClose: () => vo
     try {
       const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'send', conversationId: convo.current.id, token: convo.current.token, text, name, contact }) });
       const json = await res.json();
-      if (json.reply) setMessages(m => [...m, { role: 'ai', text: json.reply }]);
+      if (json.reply) setMessages(m => [...m, { role: 'ai', text: json.reply, suggestions: json.suggestions }]);
     } catch { /* poll will recover live replies */ }
     setThinking(false);
   };
@@ -154,7 +165,27 @@ export function ChatWidget({ open, onClose }: { open: boolean; onClose: () => vo
           return (
             <div key={i} style={{ textAlign: mine ? 'right' : 'left' }}>
               {!mine && <div style={{ fontSize: 10.5, color: 'var(--muted)', marginBottom: 2, fontWeight: 700 }}>{m.role === 'agent' ? 'Carson team' : 'Carson AI'}</div>}
-              <div style={{ display: 'inline-block', background: mine ? 'var(--ink)' : (m.role === 'agent' ? 'var(--teal-tint)' : 'var(--bg-soft)'), color: mine ? 'white' : 'var(--ink)', padding: '10px 14px', borderRadius: 12, fontSize: 13.5, lineHeight: 1.5, maxWidth: '82%', textAlign: 'left' }}>{m.text}</div>
+              <div style={{ display: 'inline-block', background: mine ? 'var(--ink)' : (m.role === 'agent' ? 'var(--teal-tint)' : 'var(--bg-soft)'), color: mine ? 'white' : 'var(--ink)', padding: '10px 14px', borderRadius: 12, fontSize: 13.5, lineHeight: 1.5, maxWidth: '82%', textAlign: 'left' }}>
+                {mine ? m.text : renderText(m.text)}
+              </div>
+              {/* Vehicle suggestion cards */}
+              {m.suggestions && m.suggestions.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                  {m.suggestions.map(s => (
+                    <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', gap: 10, alignItems: 'center', textDecoration: 'none', color: 'var(--ink)', background: 'white', border: '1px solid var(--line)', borderRadius: 10, padding: 8, maxWidth: 300 }}>
+                      {s.image
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={s.image} alt="" style={{ width: 60, height: 44, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+                        : <span style={{ width: 60, height: 44, borderRadius: 6, background: 'var(--bg-soft)', flexShrink: 0 }} />}
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: 'block', fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</span>
+                        <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--teal-2)' }}>${s.price.toLocaleString()}</span>
+                        <span style={{ fontSize: 11, color: 'var(--muted)' }}>View details →</span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}

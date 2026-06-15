@@ -39,20 +39,72 @@ async function knowledgeContext(sb: SupabaseClient): Promise<string> {
   } catch { return ''; }
 }
 
-async function aiReply(sb: SupabaseClient, history: { role: string; text: string }[]): Promise<string> {
+type SuggestVehicle = { id: string; year: number; make: string; model: string; price: number; mileage: number; body: string; fuel: string; drive: string; images: string[]; status: string; hidden_override?: boolean };
+
+// In-stock vehicles for the AI to reference (and for suggestion cards).
+async function loadInventory(sb: SupabaseClient): Promise<SuggestVehicle[]> {
+  try {
+    const { data } = await sb.from('vehicles')
+      .select('id, year, make, model, price, mileage, body, fuel, drive, images, status, hidden_override')
+      .neq('status', 'sold').neq('status', 'hidden').limit(120);
+    return (data || []).filter((v: any) => !v.hidden_override) as SuggestVehicle[];
+  } catch { return []; }
+}
+
+function inventoryContext(inv: SuggestVehicle[]): string {
+  if (inv.length === 0) return '';
+  const lines = inv.slice(0, 60).map(v =>
+    `- ${v.year} ${v.make} ${v.model} — $${v.price.toLocaleString()}, ${v.mileage.toLocaleString()}km, ${v.body}, ${v.fuel}, ${v.drive} — ${SITE_URL}/vehicle/${v.id}`);
+  return `# Current inventory in stock (${inv.length} vehicles; only recommend from this list):\n${lines.join('\n')}`;
+}
+
+// Pick up to 3 relevant vehicles from the conversation text (for cards).
+function suggestFromText(inv: SuggestVehicle[], text: string): SuggestVehicle[] {
+  const t = text.toLowerCase();
+  if (!t.trim()) return [];
+  // Optional price ceiling from "$25k", "under 30000", "25,000"
+  let priceMax = Infinity;
+  const kMatch = t.match(/\$?\s?(\d{1,3})\s?k\b/);
+  if (kMatch) priceMax = parseInt(kMatch[1]) * 1000;
+  const nMatch = t.match(/(?:under|below|max|less than|budget|around)\D{0,8}\$?\s?(\d{2,3}[,.]?\d{3})/);
+  if (nMatch) priceMax = Math.min(priceMax, parseInt(nMatch[1].replace(/[,.]/g, '')));
+
+  const bodies = ['suv', 'sedan', 'truck', 'coupe', 'wagon', 'hatchback', 'van', 'minivan'];
+  const fuels = ['hybrid', 'electric', 'ev', 'gas', 'diesel'];
+  const drives = ['awd', '4wd', 'fwd', 'rwd', '4x4'];
+
+  const scored = inv.map(v => {
+    let score = 0;
+    const make = v.make.toLowerCase(), model = v.model.toLowerCase();
+    if (t.includes(make)) score += 3;
+    if (model.length > 2 && t.includes(model)) score += 4;
+    if (bodies.some(b => t.includes(b) && v.body.toLowerCase() === (b === 'minivan' || b === 'van' ? 'wagon' : b))) score += 3;
+    if (fuels.some(f => t.includes(f) && (v.fuel.toLowerCase() === f || (f === 'ev' && v.fuel.toLowerCase() === 'electric')))) score += 2;
+    if (drives.some(d => t.includes(d) && v.drive.toLowerCase() === (d === '4wd' || d === '4x4' ? 'awd' : d))) score += 1;
+    if (/family|kids|space|room/.test(t) && v.body.toLowerCase() === 'suv') score += 2;
+    if (/cheap|afford|budget|low/.test(t)) score += 0; // handled by price filter
+    if (v.price <= priceMax) score += 1; else score -= 3;
+    return { v, score };
+  }).filter(x => x.score > 1).sort((a, b) => b.score - a.score || a.v.price - b.v.price);
+
+  return scored.slice(0, 3).map(x => x.v);
+}
+
+async function aiReply(sb: SupabaseClient, history: { role: string; text: string }[], inv: SuggestVehicle[]): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return "I'm here to help! Leave your name and number and a team member will reach out shortly.";
   const kb = await knowledgeContext(sb);
   const openai = new OpenAI({ apiKey });
   const messages = [
     { role: 'system' as const, content:
-      `You are Carson AI, the friendly after-hours assistant for Carson Exports, a family-run used-car dealership at 550 Windmill Rd, Dartmouth, NS. ` +
+      `You are Carson AI, the friendly assistant for Carson Exports, a family-run used-car dealership at 550 Windmill Rd, Dartmouth, NS. ` +
       `Help with vehicles, financing, trade-ins, service, and hours. Keep replies to 1-3 short sentences, warm and honest, never pushy. ` +
-      `If you don't know something specific, offer to have a team member follow up and ask for their name + contact. Site: ${SITE_URL}.\n\n${kb}` },
+      `When a shopper describes what they want, recommend 1-3 specific vehicles ONLY from the inventory list below, mentioning the year/make/model and price, and include the vehicle link. ` +
+      `Never invent vehicles or prices. If nothing fits, say so and offer to take their info for when something arrives. Site: ${SITE_URL}.\n\n${inventoryContext(inv)}\n\n${kb}` },
     ...history.slice(-10).map(m => ({ role: m.role === 'visitor' ? 'user' as const : 'assistant' as const, content: m.text })),
   ];
   try {
-    const r = await openai.chat.completions.create({ model: process.env.OPENAI_MODEL || 'gpt-4o-mini', messages, temperature: 0.6, max_tokens: 300 });
+    const r = await openai.chat.completions.create({ model: process.env.OPENAI_MODEL || 'gpt-4o-mini', messages, temperature: 0.6, max_tokens: 320 });
     return r.choices[0]?.message?.content || "Sorry, I didn't catch that — could you rephrase?";
   } catch {
     return "I'm having trouble right now, but leave your contact and our team will follow up first thing.";
@@ -120,11 +172,14 @@ export async function POST(req: Request) {
         return Response.json({ ok: true, mode: 'live' });
       }
 
-      // After-hours: AI answers immediately.
+      // After-hours OR AI has claimed the thread: AI answers immediately.
+      const inv = await loadInventory(sb);
       const { data: hist } = await sb.from('chat_messages').select('role,text').eq('conversation_id', conversationId).order('created_at', { ascending: true });
-      const reply = await aiReply(sb, (hist || []) as any);
+      const reply = await aiReply(sb, (hist || []) as any, inv);
       await sb.from('chat_messages').insert({ conversation_id: conversationId, role: 'ai', text: reply });
-      return Response.json({ ok: true, mode: 'ai', reply });
+      const visitorText = [...(hist || []).filter((m: any) => m.role === 'visitor').map((m: any) => m.text), text].join(' ');
+      const suggestions = suggestFromText(inv, visitorText).map(v => ({ id: v.id, title: `${v.year} ${v.make} ${v.model}`, price: v.price, image: v.images?.[0] || '', url: `${SITE_URL}/vehicle/${v.id}` }));
+      return Response.json({ ok: true, mode: 'ai', reply, suggestions });
     }
 
     // ── Poll for new messages (also drives AI auto-takeover) ──
@@ -148,7 +203,8 @@ export async function POST(req: Request) {
           const { data: claimed } = await sb.from('chat_conversations')
             .update({ ai_active: true }).eq('id', conversationId).eq('ai_active', false).select('id');
           if (claimed && claimed.length > 0) {
-            const reply = await aiReply(sb, msgs as any);
+            const inv = await loadInventory(sb);
+            const reply = await aiReply(sb, msgs as any, inv);
             await sb.from('chat_messages').insert({ conversation_id: conversationId, role: 'ai', text: reply });
             await fireWebhook(cfg.webhookUrl, { event: 'chat.ai_takeover', at: new Date().toISOString(), conversationId, url: `${SITE_URL}/admin/chat` });
           }
