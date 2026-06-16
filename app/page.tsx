@@ -11,9 +11,10 @@ import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
 import { InstagramGrid, BeholdWidget, useInstagram } from '@/components/InstagramGrid';
 import { ShopByStyle } from '@/components/ShopByStyle';
 import { WelcomeBack } from '@/components/WelcomeBack';
+import { BannerCarousel } from '@/components/BannerCarousel';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles } from '@/lib/format';
-import { listVehicles, getSettings, getDealVehicleId, getHomepageSections, DEFAULT_HOME_SECTIONS, HomeSections, AdminVehicle } from '@/lib/db';
+import { listVehicles, getSettings, getDealVehicleId, getHomepageSections, listActiveBanners, DEFAULT_HOME_SECTIONS, HomeSections, MarketingBanner, AdminVehicle } from '@/lib/db';
 
 export default function Home() {
   const router = useRouter();
@@ -22,14 +23,16 @@ export default function Home() {
   const [vehicles, setVehicles] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   const [dealId, setDealId] = useState('');
   const [sections, setSections] = useState<HomeSections>(DEFAULT_HOME_SECTIONS);
+  const [banners, setBanners] = useState<MarketingBanner[]>([]);
 
   useEffect(() => {
     (async () => {
-      const [s, v, d, sec] = await Promise.all([getSettings(), listVehicles(), getDealVehicleId(), getHomepageSections()]);
+      const [s, v, d, sec, b] = await Promise.all([getSettings(), listVehicles(), getDealVehicleId(), getHomepageSections(), listActiveBanners()]);
       setHero(s);
       if (v.length) setVehicles(v);
       setDealId(d);
       setSections(sec);
+      setBanners(b);
     })();
   }, []);
 
@@ -55,7 +58,30 @@ export default function Home() {
 
   return (
     <div className="page fade-in">
-      {/* Hero — full-bleed background video/image. Optional overlay + banner link. */}
+      {/* Marketing-banner carousel takes the hero slot when active banners exist;
+          otherwise the configured video/image hero shows. */}
+      {banners.length > 0 ? (
+        <>
+          <BannerCarousel banners={banners} />
+          {/* Slim AI search bar under the carousel */}
+          <div style={{ margin: '0 -20px', background: 'var(--bg-soft)', borderBottom: '1px solid var(--line)' }}>
+            <div className="container" style={{ maxWidth: 760, padding: '16px 20px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                <Icon name="sparkles" size={13} style={{ verticalAlign: '-2px', color: 'var(--teal)' }} /> Find your car
+              </span>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && search()}
+                placeholder="e.g., 'SUV under $30k, great on gas'"
+                style={{ flex: 1, minWidth: 200, padding: '11px 14px', border: '1px solid var(--line)', borderRadius: 12, fontSize: 14, fontFamily: 'inherit' }}
+              />
+              <button onClick={search} className="btn btn-primary btn-sm"><Icon name="sparkles" size={14} /> Search</button>
+            </div>
+          </div>
+        </>
+      ) : (
       <section
         onClick={heroClickable ? goToHeroLink : undefined}
         style={{
@@ -123,6 +149,7 @@ export default function Home() {
           </div>
         )}
       </section>
+      )}
 
       {/* Returning-visitor personalization */}
       {sections.welcomeBack && <WelcomeBack vehicles={vehicles} />}

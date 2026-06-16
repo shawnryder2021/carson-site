@@ -3,65 +3,94 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { getBrowserClient } from '@/lib/supabase/client';
+import { complete } from '@/lib/ai';
 import {
-  getSettings, saveSettings, listBanners, addBanner, deleteBanner,
-  isSupabaseConfigured, MarketingBanner, SiteSettings,
+  listBanners, addBanner, saveAllBanners, deleteBanner, listVehicles,
+  isSupabaseConfigured, MarketingBanner, AdminVehicle,
 } from '@/lib/db';
 
-const PRESETS = [
-  { label: 'Spring sale', prompt: 'Bright spring car sale banner: a clean modern SUV on a sunlit road with cherry blossoms, cheerful and fresh, lots of clean empty space on the left for a headline.' },
-  { label: '0% financing', prompt: 'Premium financing promotion banner: a luxury sedan in a sleek studio with soft blue lighting, confident and trustworthy mood, generous clean negative space on the left for text.' },
-  { label: 'New arrivals', prompt: 'Dynamic "new arrivals" banner: a row of shiny vehicles on a dealership lot at golden hour, exciting and aspirational, open sky area for a headline.' },
-  { label: 'Winter ready', prompt: 'Winter-ready AWD banner: a rugged SUV driving through light snow on a scenic mountain road, cool tones, safe and capable feeling, clean space on the left for text.' },
-  { label: 'Trade-in event', prompt: 'Trade-in event banner: a happy handshake over car keys in a bright modern showroom, friendly and welcoming, soft bokeh, clean area for a headline.' },
-];
+const OCCASIONS = ['', 'Spring Sale', 'Summer Clearance', 'Year-End Event', '0% Financing', 'New Arrivals', 'Trade-In Bonus', 'Winter-Ready', 'Long Weekend Sale', 'Certified Pre-Owned'];
+const MOODS = ['Energetic & bold', 'Premium & sleek', 'Warm & friendly', 'Adventurous & rugged', 'Fresh & bright', 'Cozy winter'];
+const SETTINGS = ['Coastal Nova Scotia highway', 'Sunlit dealership lot', 'Snowy mountain road', 'Modern showroom', 'City street at golden hour', 'Autumn countryside'];
+const BODY_SUBJECTS = ['a sleek SUV', 'a family SUV', 'a pickup truck', 'a modern sedan', 'a sporty coupe', 'a row of vehicles'];
 
-const STYLE_SUFFIX = ' Photorealistic, professional advertising photography, wide cinematic 3:2 composition, high detail, no text, no logos, no watermarks.';
+const lbl: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.04em' };
+const uid = () => `b_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+function styleSuffix(side: string) {
+  const where = side === 'left' ? 'left' : side === 'right' ? 'right' : 'center';
+  return ` Cinematic automotive advertising photograph, photorealistic, dramatic natural lighting, shallow depth of field, rule-of-thirds, subtle teal (#007C92) color accents, ultra-detailed, professional commercial quality. Keep a clean, uncluttered ${where} area with a simple background for text overlay. Absolutely no text, no words, no logos, no watermarks.`;
+}
 
 export default function AdminBanners() {
-  const [prompt, setPrompt] = useState('');
-  const [size, setSize] = useState<'3:2' | '1:1' | '2:3'>('3:2');
+  const [banners, setBanners] = useState<MarketingBanner[]>([]);
+  const [vehicles, setVehicles] = useState<AdminVehicle[]>([]);
+  const [editing, setEditing] = useState<string | null>(null); // banner id open in editor
   const [status, setStatus] = useState<'idle' | 'working' | 'error'>('idle');
   const [statusText, setStatusText] = useState('');
-  const [preview, setPreview] = useState<MarketingBanner | null>(null);
-  const [library, setLibrary] = useState<MarketingBanner[]>([]);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
-  // Hero text options applied when setting a banner live
-  const [headline, setHeadline] = useState('');
-  const [subtext, setSubtext] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
-  const [showOverlay, setShowOverlay] = useState(true);
-  const [settingLive, setSettingLive] = useState<string | null>(null);
-  const [liveMsg, setLiveMsg] = useState<string | null>(null);
+  // Structured builder
+  const [occasion, setOccasion] = useState('');
+  const [subject, setSubject] = useState(BODY_SUBJECTS[0]);
+  const [vehicleId, setVehicleId] = useState('');
+  const [mood, setMood] = useState(MOODS[0]);
+  const [setting, setSetting] = useState(SETTINGS[0]);
+  const [side, setSide] = useState<'left' | 'center' | 'right'>('left');
+  const [finalPrompt, setFinalPrompt] = useState('');
 
-  useEffect(() => { listBanners().then(setLibrary); }, []);
+  useEffect(() => { listBanners().then(setBanners); listVehicles().then(setVehicles); }, []);
+
+  // Compose the structured fields into the editable final prompt.
+  useEffect(() => {
+    const veh = vehicles.find(v => v.id === vehicleId);
+    const subjectDesc = veh ? `a ${veh.year} ${veh.make} ${veh.model} (${veh.body})` : subject;
+    const occ = occasion ? `${occasion} promotion. ` : '';
+    setFinalPrompt(`${occ}A ${mood.toLowerCase()} car dealership marketing banner featuring ${subjectDesc} on ${setting.toLowerCase()}.${styleSuffix(side)}`);
+  }, [occasion, subject, vehicleId, mood, setting, side, vehicles]);
 
   const token = async () => {
     const sb = getBrowserClient();
     const { data } = await sb!.auth.getSession();
     return data?.session?.access_token || '';
   };
-
   const api = async (payload: any) => {
-    const res = await fetch('/api/banner', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await token()}` },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch('/api/banner', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await token()}` }, body: JSON.stringify(payload) });
     return res.json();
   };
 
+  const persist = async (list: MarketingBanner[]) => {
+    setBanners(list);
+    const { error } = await saveAllBanners(list);
+    setSavedMsg(error ? `Error: ${error}` : '✓ Saved');
+    setTimeout(() => setSavedMsg(null), 2000);
+  };
+
+  const update = (id: string, patch: Partial<MarketingBanner>) =>
+    persist(banners.map(b => b.id === id ? { ...b, ...patch } : b));
+
+  const move = (id: string, dir: -1 | 1) => {
+    const idx = banners.findIndex(b => b.id === id);
+    const j = idx + dir;
+    if (j < 0 || j >= banners.length) return;
+    const next = [...banners];
+    [next[idx], next[j]] = [next[j], next[idx]];
+    persist(next);
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm('Delete this banner?')) return;
+    await deleteBanner(id);
+    setBanners(await listBanners());
+  };
+
   const generate = async () => {
-    if (!prompt.trim()) return;
     setStatus('working');
     setStatusText('Sending your prompt to GPT Image 2…');
-    setPreview(null);
     try {
-      const start = await api({ action: 'generate', prompt: prompt.trim() + STYLE_SUFFIX, size });
+      const start = await api({ action: 'generate', prompt: finalPrompt, size: '3:2' });
       if (start.error || !start.taskId) throw new Error(start.error || 'Could not start generation');
-
-      // Poll up to ~2.5 minutes.
-      setStatusText('Painting your banner… this usually takes 20–60 seconds.');
+      setStatusText('Painting your banner… 20–60 seconds.');
       let urls: string[] = [];
       for (let i = 0; i < 50; i++) {
         await new Promise(r => setTimeout(r, 3000));
@@ -69,148 +98,169 @@ export default function AdminBanners() {
         if (st.status === 'done' && st.urls?.length) { urls = st.urls; break; }
         if (st.status === 'failed') throw new Error(st.error || 'Generation failed');
       }
-      if (urls.length === 0) throw new Error('Timed out waiting for the image. Try again.');
-
-      // Persist into Supabase storage so it never expires.
-      setStatusText('Saving your banner…');
+      if (!urls.length) throw new Error('Timed out. Try again.');
+      setStatusText('Saving…');
       const saved = await api({ action: 'save', url: urls[0] });
-      if (saved.error || !saved.publicUrl) throw new Error(saved.error || 'Could not save the image');
+      if (saved.error || !saved.publicUrl) throw new Error(saved.error || 'Could not save image');
 
-      const banner: MarketingBanner = { url: saved.publicUrl, prompt: prompt.trim(), createdAt: new Date().toISOString() };
+      const banner: MarketingBanner = {
+        id: uid(), url: saved.publicUrl, prompt: finalPrompt,
+        headline: '', subhead: '', offerBadge: '', ctaLabel: 'Shop now', ctaUrl: '/inventory',
+        align: side, theme: 'dark', active: false, sortOrder: 0, createdAt: new Date().toISOString(),
+      };
       await addBanner(banner);
-      setPreview(banner);
-      setLibrary(await listBanners());
-      setStatus('idle');
-      setStatusText('');
+      const list = await listBanners();
+      setBanners(list);
+      setEditing(banner.id);
+      setStatus('idle'); setStatusText('');
+      draftCopy(banner.id, finalPrompt);  // auto-draft copy
     } catch (e: any) {
       setStatus('error');
       setStatusText(e?.message || 'Something went wrong.');
     }
   };
 
-  const setAsHero = async (banner: MarketingBanner) => {
-    setSettingLive(banner.url);
-    setLiveMsg(null);
-    const current = await getSettings();
-    const next: SiteSettings = {
-      ...current,
-      mode: 'image',
-      imageUrl: banner.url,
-      headline: headline.trim() || current.headline,
-      subtext: subtext.trim() || current.subtext,
-      linkUrl: linkUrl.trim(),
-      showOverlay,
-    };
-    const { error } = await saveSettings(next);
-    setSettingLive(null);
-    setLiveMsg(error ? `Error: ${error}` : '✓ Live! Your homepage hero now shows this banner.');
+  const draftCopy = async (id: string, promptText: string) => {
+    try {
+      const reply = await complete(
+        `You write punchy car-dealership banner copy. Occasion: "${occasion || 'general promotion'}". Scene: "${promptText}". ` +
+        `Return ONLY JSON with keys headline, subhead, offerBadge, ctaLabel, ctaUrl. ` +
+        `headline: 2-5 words, bold. subhead: one short sentence. offerBadge: a short tag like "$0 DOWN" or "0% APR" or "" if none. ` +
+        `ctaLabel: 2-3 words. ctaUrl: a site path — one of /inventory, /carfinder, /finance, /tradein, /p/service.`);
+      const json = JSON.parse(reply.replace(/```json|```/g, '').trim());
+      update(id, {
+        headline: json.headline || '', subhead: json.subhead || '', offerBadge: json.offerBadge || '',
+        ctaLabel: json.ctaLabel || 'Shop now', ctaUrl: json.ctaUrl || '/inventory',
+      });
+    } catch { /* leave fields for manual entry */ }
   };
 
-  const remove = async (url: string) => {
-    if (!confirm('Remove this banner from your library? (It won’t change your live hero.)')) return;
-    await deleteBanner(url);
-    setLibrary(await listBanners());
-    if (preview?.url === url) setPreview(null);
-  };
+  const activeCount = banners.filter(b => b.active).length;
 
   return (
     <div style={{ padding: '32px 40px 60px', maxWidth: 1000 }}>
       <h1 style={{ fontFamily: 'var(--display)', fontSize: 30, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 6px' }}>Banner Studio</h1>
       <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 24px' }}>
-        Describe a marketing banner and GPT Image 2 creates it. Set any banner as your homepage hero in one click.
+        Build marketing banners — AI paints the background, you set the headline, offer & button. Active banners rotate in the homepage hero. {activeCount} active.
       </p>
 
       {!isSupabaseConfigured && (
-        <div style={{ background: '#FFF4E5', color: '#8A5400', borderRadius: 12, padding: '14px 16px', fontSize: 14, marginBottom: 20 }}>
-          Connect Supabase to save and publish banners.
-        </div>
+        <div style={{ background: '#FFF4E5', color: '#8A5400', borderRadius: 12, padding: '14px 16px', fontSize: 14, marginBottom: 20 }}>Connect Supabase to create banners.</div>
       )}
 
-      {/* Composer */}
+      {/* Builder */}
       <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 16, padding: '22px 24px', marginBottom: 24 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-          {PRESETS.map(p => (
-            <button key={p.label} onClick={() => setPrompt(p.prompt)} style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', color: 'var(--ink)' }}>
-              {p.label}
-            </button>
-          ))}
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 14 }}>1 · Design the image</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }} className="rg">
+          <div><label style={lbl}>Occasion</label>
+            <select className="input" value={occasion} onChange={e => setOccasion(e.target.value)}>{OCCASIONS.map(o => <option key={o} value={o}>{o || 'General'}</option>)}</select></div>
+          <div><label style={lbl}>Vehicle subject</label>
+            <select className="input" value={vehicleId || subject} onChange={e => { const v = vehicles.find(x => x.id === e.target.value); if (v) { setVehicleId(v.id); } else { setVehicleId(''); setSubject(e.target.value); } }}>
+              {BODY_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+              <option disabled>── from inventory ──</option>
+              {vehicles.slice(0, 30).map(v => <option key={v.id} value={v.id}>{v.year} {v.make} {v.model}</option>)}
+            </select></div>
+          <div><label style={lbl}>Mood</label>
+            <select className="input" value={mood} onChange={e => setMood(e.target.value)}>{MOODS.map(m => <option key={m}>{m}</option>)}</select></div>
+          <div><label style={lbl}>Setting</label>
+            <select className="input" value={setting} onChange={e => setSetting(e.target.value)}>{SETTINGS.map(s => <option key={s}>{s}</option>)}</select></div>
+          <div><label style={lbl}>Text sits on the</label>
+            <select className="input" value={side} onChange={e => setSide(e.target.value as any)}>
+              <option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>
+            </select></div>
         </div>
-        <textarea
-          className="input"
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          placeholder="Describe your banner… e.g. 'Summer clearance event, red convertible on a coastal road, bold and exciting, space on the left for a headline.'"
-          style={{ minHeight: 90, fontFamily: 'inherit', resize: 'vertical', marginBottom: 12 }}
-        />
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {([['3:2', 'Wide (hero)'], ['1:1', 'Square'], ['2:3', 'Tall']] as const).map(([v, lbl]) => (
-              <button key={v} onClick={() => setSize(v)} style={{
-                padding: '8px 14px', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 13, fontFamily: 'inherit',
-                background: size === v ? 'var(--teal)' : 'var(--bg-soft)', color: size === v ? 'white' : 'var(--ink)',
-                border: '1px solid ' + (size === v ? 'var(--teal)' : 'var(--line)'),
-              }}>{lbl}</button>
-            ))}
-          </div>
-          <button onClick={generate} disabled={status === 'working' || !prompt.trim()} className="btn btn-primary" style={{ marginLeft: 'auto' }}>
-            <Icon name="sparkles" size={15} /> {status === 'working' ? 'Generating…' : 'Generate banner'}
-          </button>
-        </div>
+        <label style={lbl}>Final prompt (editable)</label>
+        <textarea className="input" value={finalPrompt} onChange={e => setFinalPrompt(e.target.value)} style={{ minHeight: 80, fontFamily: 'inherit', fontSize: 13, resize: 'vertical', marginBottom: 12 }} />
+        <button onClick={generate} disabled={status === 'working' || !finalPrompt.trim()} className="btn btn-primary">
+          <Icon name="sparkles" size={15} /> {status === 'working' ? 'Generating…' : 'Generate banner'}
+        </button>
         {status !== 'idle' && statusText && (
-          <div style={{ marginTop: 14, fontSize: 13.5, fontWeight: 600, color: status === 'error' ? '#A8232C' : 'var(--teal-2)' }}>
-            {status === 'working' && <Icon name="sparkles" size={13} style={{ verticalAlign: '-2px', marginRight: 6 }} />}
-            {statusText}
-          </div>
+          <span style={{ marginLeft: 12, fontSize: 13.5, fontWeight: 600, color: status === 'error' ? '#A8232C' : 'var(--teal-2)' }}>{statusText}</span>
         )}
       </div>
 
-      {/* Fresh result + go-live controls */}
-      {preview && (
-        <div style={{ background: 'white', border: '1px solid var(--teal)', borderRadius: 16, padding: '22px 24px', marginBottom: 28 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--teal-2)', letterSpacing: '.05em', textTransform: 'uppercase', marginBottom: 12 }}>Fresh off the press</div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={preview.url} alt="Generated banner" style={{ width: '100%', borderRadius: 12, marginBottom: 16, display: 'block' }} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }} className="rg">
-            <input className="input" value={headline} onChange={e => setHeadline(e.target.value)} placeholder="Headline text (optional)" />
-            <input className="input" value={subtext} onChange={e => setSubtext(e.target.value)} placeholder="Subtext (optional)" />
-            <input className="input" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="Banner click link (optional, e.g. /inventory)" />
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600 }}>
-              <input type="checkbox" checked={showOverlay} onChange={e => setShowOverlay(e.target.checked)} style={{ accentColor: 'var(--teal)' }} />
-              Show headline + search box over the banner
-            </label>
-          </div>
-          <button onClick={() => setAsHero(preview)} disabled={settingLive === preview.url} className="btn btn-dark">
-            <Icon name="check" size={14} /> {settingLive === preview.url ? 'Publishing…' : 'Set as homepage hero'}
-          </button>
-          {liveMsg && <span style={{ marginLeft: 12, fontSize: 13.5, fontWeight: 700, color: liveMsg.startsWith('Error') ? '#A8232C' : 'var(--teal-2)' }}>{liveMsg}</span>}
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
-            Tip: turn the overlay off for a banner that already has its own text baked in, and add a click link to send shoppers to a sale page.
-          </div>
-        </div>
-      )}
+      {/* Library / editor */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h2 style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 600, letterSpacing: '-.02em', margin: 0 }}>Your banners</h2>
+        {savedMsg && <span style={{ fontSize: 13, fontWeight: 700, color: savedMsg.startsWith('Error') ? '#A8232C' : 'var(--teal-2)' }}>{savedMsg}</span>}
+      </div>
 
-      {/* Library */}
-      <h2 style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 14px' }}>Your banner library</h2>
-      {library.length === 0 ? (
-        <div style={{ fontSize: 13.5, color: 'var(--muted)', background: 'var(--bg-soft)', borderRadius: 12, padding: '20px' }}>
-          No banners yet. Generate your first one above.
-        </div>
+      {banners.length === 0 ? (
+        <div style={{ fontSize: 13.5, color: 'var(--muted)', background: 'var(--bg-soft)', borderRadius: 12, padding: 20 }}>No banners yet — generate your first above.</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
-          {library.map(b => (
-            <div key={b.url} style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, overflow: 'hidden' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={b.url} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover', display: 'block' }} />
-              <div style={{ padding: '12px 14px' }}>
-                <div style={{ fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.4, marginBottom: 10, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>{b.prompt}</div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => { setPreview(b); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="btn btn-ghost btn-sm" style={{ flex: 1 }}>Use</button>
-                  <button onClick={() => remove(b.url)} className="btn btn-ghost btn-sm" style={{ color: '#A8232C' }}><Icon name="trash" size={13} /></button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {banners.map((b, i) => (
+            <div key={b.id} style={{ background: 'white', border: '1px solid ' + (b.active ? 'var(--teal)' : 'var(--line)'), borderRadius: 14, overflow: 'hidden' }}>
+              {/* Preview with live overlay */}
+              <BannerPreview b={b} />
+              <div style={{ padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontWeight: 700 }}>
+                    <input type="checkbox" checked={b.active} onChange={e => update(b.id, { active: e.target.checked })} style={{ accentColor: 'var(--teal)' }} />
+                    {b.active ? 'Live on homepage' : 'Off'}
+                  </label>
+                  <span style={{ flex: 1 }} />
+                  <button onClick={() => move(b.id, -1)} disabled={i === 0} className="btn btn-ghost btn-sm"><Icon name="chevronUp" size={13} /></button>
+                  <button onClick={() => move(b.id, 1)} disabled={i === banners.length - 1} className="btn btn-ghost btn-sm"><Icon name="chevronDown" size={13} /></button>
+                  <button onClick={() => setEditing(editing === b.id ? null : b.id)} className="btn btn-ghost btn-sm">{editing === b.id ? 'Close' : 'Edit'}</button>
+                  <button onClick={() => remove(b.id)} className="btn btn-ghost btn-sm" style={{ color: '#A8232C' }}><Icon name="trash" size={13} /></button>
                 </div>
+
+                {editing === b.id && (
+                  <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 14 }}>
+                    <button onClick={() => draftCopy(b.id, b.prompt)} className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }}><Icon name="sparkles" size={13} /> Draft copy with AI</button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }} className="rg">
+                      <div><label style={lbl}>Headline</label><input className="input" value={b.headline} onChange={e => update(b.id, { headline: e.target.value })} /></div>
+                      <div><label style={lbl}>Offer badge</label><input className="input" value={b.offerBadge} onChange={e => update(b.id, { offerBadge: e.target.value })} placeholder="$0 DOWN" /></div>
+                      <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Subhead</label><input className="input" value={b.subhead} onChange={e => update(b.id, { subhead: e.target.value })} /></div>
+                      <div><label style={lbl}>Button text</label><input className="input" value={b.ctaLabel} onChange={e => update(b.id, { ctaLabel: e.target.value })} /></div>
+                      <div><label style={lbl}>Button link</label><input className="input" value={b.ctaUrl} onChange={e => update(b.id, { ctaUrl: e.target.value })} placeholder="/inventory" /></div>
+                      <div><label style={lbl}>Text position</label>
+                        <select className="input" value={b.align} onChange={e => update(b.id, { align: e.target.value as any })}>
+                          <option value="left">Left</option><option value="center">Center</option><option value="right">Right</option>
+                        </select></div>
+                      <div><label style={lbl}>Text color</label>
+                        <select className="input" value={b.theme} onChange={e => update(b.id, { theme: e.target.value as any })}>
+                          <option value="dark">Light text (dark image)</option><option value="light">Dark text (light image)</option>
+                        </select></div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// Compact preview mirroring the live carousel overlay.
+function BannerPreview({ b }: { b: MarketingBanner }) {
+  const dark = b.theme !== 'light';
+  const fg = dark ? 'white' : '#0b0f14';
+  const justify = b.align === 'left' ? 'flex-start' : b.align === 'right' ? 'flex-end' : 'center';
+  const textAlign = b.align === 'center' ? 'center' : 'left';
+  const scrim = b.align === 'right'
+    ? `linear-gradient(to left, ${dark ? 'rgba(8,12,18,.72)' : 'rgba(255,255,255,.78)'} 0%, transparent 65%)`
+    : b.align === 'left'
+      ? `linear-gradient(to right, ${dark ? 'rgba(8,12,18,.72)' : 'rgba(255,255,255,.78)'} 0%, transparent 65%)`
+      : `linear-gradient(to bottom, rgba(8,12,18,.3), ${dark ? 'rgba(8,12,18,.7)' : 'rgba(255,255,255,.55)'})`;
+  return (
+    <div style={{ position: 'relative', aspectRatio: '3 / 1.1', overflow: 'hidden', background: 'var(--bg-soft)' }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={b.url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div style={{ position: 'absolute', inset: 0, background: scrim }} />
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: justify, padding: '0 6%' }}>
+        <div style={{ maxWidth: '60%', textAlign, color: fg }}>
+          {b.offerBadge && <span style={{ display: 'inline-block', background: 'var(--teal)', color: 'white', fontWeight: 800, fontSize: 10, letterSpacing: '.04em', textTransform: 'uppercase', padding: '3px 9px', borderRadius: 999, marginBottom: 6 }}>{b.offerBadge}</span>}
+          {b.headline && <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(18px,3.4vw,30px)', fontWeight: 700, lineHeight: 1.05 }}>{b.headline}</div>}
+          {b.subhead && <div style={{ fontSize: 12.5, opacity: dark ? 0.9 : 0.7, marginTop: 4 }}>{b.subhead}</div>}
+          {b.ctaLabel && <span style={{ display: 'inline-block', marginTop: 8, background: 'var(--teal)', color: 'white', fontSize: 11.5, fontWeight: 700, padding: '6px 12px', borderRadius: 8 }}>{b.ctaLabel} →</span>}
+        </div>
+      </div>
+      {!b.headline && !b.ctaLabel && (
+        <div style={{ position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,.5)', color: 'white', fontSize: 11, padding: '3px 8px', borderRadius: 6 }}>Add copy →</div>
       )}
     </div>
   );

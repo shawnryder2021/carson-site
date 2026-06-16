@@ -907,29 +907,77 @@ export async function saveHomepageSections(sections: HomeSections): Promise<{ er
 
 // ───────────────────────── Marketing banners (AI-generated) ─────────────────────────
 
-export type MarketingBanner = { url: string; prompt: string; createdAt: string };
+export type MarketingBanner = {
+  id: string;
+  url: string;            // AI-generated background image
+  prompt: string;
+  headline: string;
+  subhead: string;
+  offerBadge: string;     // e.g. "$0 down" — small pill
+  ctaLabel: string;       // button text
+  ctaUrl: string;         // where the button (and banner) links
+  align: 'left' | 'center' | 'right';
+  theme: 'dark' | 'light';
+  active: boolean;        // included in the homepage carousel
+  sortOrder: number;
+  createdAt: string;
+};
+
+// Old library rows were just {url, prompt, createdAt} — fill the new fields.
+function normalizeBanner(b: any, i = 0): MarketingBanner {
+  return {
+    id: b.id || `b_${b.createdAt || ''}_${i}` || `b_${i}`,
+    url: b.url || '',
+    prompt: b.prompt || '',
+    headline: b.headline || '',
+    subhead: b.subhead || '',
+    offerBadge: b.offerBadge || '',
+    ctaLabel: b.ctaLabel || '',
+    ctaUrl: b.ctaUrl || '',
+    align: b.align === 'left' || b.align === 'right' ? b.align : 'center',
+    theme: b.theme === 'light' ? 'light' : 'dark',
+    active: !!b.active,
+    sortOrder: typeof b.sortOrder === 'number' ? b.sortOrder : i,
+    createdAt: b.createdAt || new Date().toISOString(),
+  };
+}
 
 export async function listBanners(): Promise<MarketingBanner[]> {
   const sb = getBrowserClient();
   if (!sb) return [];
   const { data } = await sb.from('site_settings').select('marketing_banners').eq('id', 1).maybeSingle();
-  return Array.isArray(data?.marketing_banners) ? data!.marketing_banners : [];
+  const raw = Array.isArray(data?.marketing_banners) ? data!.marketing_banners : [];
+  return raw.map(normalizeBanner).sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+// Active banners only, ordered — what the homepage carousel renders.
+export async function listActiveBanners(): Promise<MarketingBanner[]> {
+  return (await listBanners()).filter(b => b.active && b.url);
 }
 
 export async function addBanner(b: MarketingBanner): Promise<{ error?: string }> {
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
   const existing = await listBanners();
-  const next = [b, ...existing].slice(0, 24); // keep a reasonable library
+  const next = [normalizeBanner(b), ...existing].slice(0, 24);
   const { error } = await sb.from('site_settings').update({ marketing_banners: next }).eq('id', 1);
   return { error: error?.message };
 }
 
-export async function deleteBanner(url: string): Promise<{ error?: string }> {
+// Persist the whole list (used for edits, active toggles, reorder).
+export async function saveAllBanners(list: MarketingBanner[]): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const normalized = list.map((b, i) => ({ ...normalizeBanner(b, i), sortOrder: i }));
+  const { error } = await sb.from('site_settings').update({ marketing_banners: normalized }).eq('id', 1);
+  return { error: error?.message };
+}
+
+export async function deleteBanner(id: string): Promise<{ error?: string }> {
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
   const existing = await listBanners();
-  const { error } = await sb.from('site_settings').update({ marketing_banners: existing.filter(b => b.url !== url) }).eq('id', 1);
+  const { error } = await sb.from('site_settings').update({ marketing_banners: existing.filter(b => b.id !== id) }).eq('id', 1);
   return { error: error?.message };
 }
 
