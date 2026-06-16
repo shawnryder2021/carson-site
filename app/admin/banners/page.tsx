@@ -59,24 +59,31 @@ export default function AdminBanners() {
     return res.json();
   };
 
-  const persist = async (list: MarketingBanner[]) => {
-    setBanners(list);
+  const saveList = async (list: MarketingBanner[]) => {
     const { error } = await saveAllBanners(list);
     setSavedMsg(error ? `Error: ${error}` : '✓ Saved');
-    setTimeout(() => setSavedMsg(null), 2000);
+    setTimeout(() => setSavedMsg(null), 1800);
   };
 
+  // Functional updates so we never persist a stale list (e.g. right after a
+  // generate, when React state hasn't yet flushed the new banner).
   const update = (id: string, patch: Partial<MarketingBanner>) =>
-    persist(banners.map(b => b.id === id ? { ...b, ...patch } : b));
+    setBanners(prev => {
+      const next = prev.map(b => b.id === id ? { ...b, ...patch } : b);
+      saveList(next);
+      return next;
+    });
 
-  const move = (id: string, dir: -1 | 1) => {
-    const idx = banners.findIndex(b => b.id === id);
-    const j = idx + dir;
-    if (j < 0 || j >= banners.length) return;
-    const next = [...banners];
-    [next[idx], next[j]] = [next[j], next[idx]];
-    persist(next);
-  };
+  const move = (id: string, dir: -1 | 1) =>
+    setBanners(prev => {
+      const idx = prev.findIndex(b => b.id === id);
+      const j = idx + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[j]] = [next[j], next[idx]];
+      saveList(next);
+      return next;
+    });
 
   const remove = async (id: string) => {
     if (!confirm('Delete this banner?')) return;
