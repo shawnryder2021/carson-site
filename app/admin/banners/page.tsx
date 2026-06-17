@@ -21,7 +21,7 @@ const uid = () => `b_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
 function styleSuffix(side: string) {
   const where = side === 'left' ? 'left' : side === 'right' ? 'right' : 'center';
-  return ` Cinematic automotive advertising photograph, photorealistic, dramatic natural lighting, shallow depth of field, rule-of-thirds, subtle teal (#007C92) color accents, ultra-detailed, professional commercial quality. Keep a clean, uncluttered ${where} area with a simple background for text overlay. Absolutely no text, no words, no logos, no watermarks.`;
+  return ` Cinematic automotive advertising photograph, photorealistic, dramatic natural lighting, shallow depth of field, rule-of-thirds, subtle blue (#1E8FC4) brand color accents, ultra-detailed, professional commercial quality. Keep a clean, uncluttered ${where} area with a simple background for text overlay. Absolutely no text, no words, no logos, no watermarks.`;
 }
 
 export default function AdminBanners() {

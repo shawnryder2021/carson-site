@@ -10,7 +10,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <pre style={{ background: '#FDECEE', color: '#A8232C', borderRadius: 10, padding: 14, fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
             {error?.message || 'Unknown error'}{error?.digest ? `\ndigest: ${error.digest}` : ''}
           </pre>
-          <button onClick={reset} style={{ padding: '10px 16px', borderRadius: 8, background: '#007C92', color: 'white', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
+          <button onClick={reset} style={{ padding: '10px 16px', borderRadius: 8, background: '#1E8FC4', color: 'white', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
             Try again
           </button>
         </div>

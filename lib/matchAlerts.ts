@@ -95,7 +95,7 @@ async function sendEmail(to: string, name: string, matches: Veh[], siteUrl: stri
       <td style="padding:14px 16px;border-bottom:1px solid #eee;">
         <div style="font-weight:700;font-size:15px;color:#111;">${v.year} ${v.make} ${v.model}</div>
         <div style="font-size:13px;color:#667;margin-top:2px;">$${v.price.toLocaleString()} &middot; ${v.mileage.toLocaleString()} km &middot; ${v.fuel} &middot; ${v.drive}</div>
-        <a href="${siteUrl}/vehicle/${v.id}" style="display:inline-block;margin-top:8px;background:#007C92;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;">View this vehicle</a>
+        <a href="${siteUrl}/vehicle/${v.id}" style="display:inline-block;margin-top:8px;background:#1E8FC4;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;">View this vehicle</a>
       </td>
     </tr>`).join('');
 
@@ -206,7 +206,7 @@ async function sendWatchEmail(kind: 'price_drop' | 'sold', w: WatchRow, v: Veh, 
     : `${title} just sold — but we can find you another`;
   const body = kind === 'price_drop'
     ? `<p>Good news${w.name ? ', ' + w.name.split(' ')[0] : ''} — the <strong>${title}</strong> you're watching just dropped from <s>$${w.last_notified_price.toLocaleString()}</s> to <strong>$${v.price.toLocaleString()}</strong> (save $${(w.last_notified_price - v.price).toLocaleString()}).</p>
-       <p><a href="${siteUrl}/vehicle/${v.id}" style="display:inline-block;background:#007C92;color:#fff;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:8px;">See the new price</a></p>
+       <p><a href="${siteUrl}/vehicle/${v.id}" style="display:inline-block;background:#1E8FC4;color:#fff;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:8px;">See the new price</a></p>
        <p style="color:#889;font-size:12px;">Price drops attract attention — this one may not last. Carson Exports · 550 Windmill Rd, Dartmouth, NS</p>`
     : `<p>${w.name ? w.name.split(' ')[0] + ', the' : 'The'} <strong>${title}</strong> you were watching has been sold. Want us to watch for a similar one? <a href="${siteUrl}/carfinder">Set up a CarFinder alert</a> and you'll get first dibs.</p>`;
   try {

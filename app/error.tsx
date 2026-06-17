@@ -21,7 +21,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           </details>
         )}
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={reset} style={{ padding: '10px 16px', borderRadius: 8, background: '#007C92', color: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 600 }}>
+          <button onClick={reset} style={{ padding: '10px 16px', borderRadius: 8, background: '#1E8FC4', color: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 600 }}>
             Try again
           </button>
           <a href="/" style={{ padding: '10px 16px', borderRadius: 8, background: 'white', color: '#000', border: '1px solid #e8e8e8', cursor: 'pointer', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>

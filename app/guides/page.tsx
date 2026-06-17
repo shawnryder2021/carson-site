@@ -11,7 +11,7 @@ import { listGuides } from '@/lib/db';
 const CATEGORIES = ['All', 'Buying', 'Financing', 'Ownership', 'Trade-in', 'EV & Hybrid'] as const;
 
 const catColor: Record<Guide['category'], string> = {
-  'Buying': '#007C92',
+  'Buying': '#1E8FC4',
   'Financing': '#8A5400',
   'Ownership': '#5a6acf',
   'Trade-in': '#0F6B2D',

@@ -9,7 +9,7 @@ const typeLabel: Record<Lead['type'], string> = {
   finance: 'Financing', video: 'Video request', delivery: 'Delivery',
   carfinder: 'CarFinder', service: 'Service', page: 'Page form', other: 'Other',
 };
-const statusColor: Record<Lead['status'], string> = { new: '#007C92', contacted: '#8A5400', closed: '#8A8A8A' };
+const statusColor: Record<Lead['status'], string> = { new: '#1E8FC4', contacted: '#8A5400', closed: '#8A8A8A' };
 
 export default function AdminLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
