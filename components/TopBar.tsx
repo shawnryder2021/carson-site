@@ -173,7 +173,7 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
         </nav>
 
         <div className="topbar-cta">
-          <button className="icon-btn" title="Saved" onClick={() => router.push('/inventory')} style={{ position: 'relative' }}>
+          <button className="icon-btn" title="Saved" onClick={() => router.push('/saved')} style={{ position: 'relative' }}>
             <Icon name="heart" size={18} />
             {saved.length > 0 && (
               <span style={{ position: 'absolute', top: -4, right: -4, background: 'var(--teal)', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
