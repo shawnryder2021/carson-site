@@ -383,13 +383,12 @@ export type NavItem = {
 // Default menu used when Supabase has no nav rows (or isn't configured).
 export const DEFAULT_NAV: NavItem[] = [
   { label: 'Home', href: '/' },
-  { label: 'Inventory', href: '/inventory', autoCategories: true },
-  { label: 'Find Your Car', href: '/inventory-search', children: [
-    { label: 'AI Search', href: '/inventory-search' },
-    { label: 'CarFinder Alerts', href: '/carfinder' },
+  { label: 'Inventory', href: '/inventory', autoCategories: true, children: [
+    { label: 'Browse all inventory', href: '/inventory' },
+    { label: 'Find your car (AI search)', href: '/inventory-search' },
+    { label: 'AI Finder', href: '/finder' },
+    { label: 'CarFinder alerts', href: '/carfinder' },
   ] },
-  { label: 'AI Finder', href: '/finder' },
-  { label: 'Trade-in', href: '/tradein' },
   { label: 'Service', href: '/p/service', children: [
     { label: 'Service Department', href: '/p/service' },
     { label: 'Tire & Wheel Centre', href: '/p/tire-centre' },
@@ -397,15 +396,16 @@ export const DEFAULT_NAV: NavItem[] = [
     { label: 'Parts & Accessories', href: '/p/parts-accessories' },
   ] },
   { label: 'Financing', href: '/finance', children: [
-    { label: 'Financing Options', href: '/finance' },
-    { label: 'Ask AI', href: '/financing-explainer' },
+    { label: 'Financing options', href: '/finance' },
+    { label: 'Ask AI about payments', href: '/financing-explainer' },
+    { label: 'Value my trade-in', href: '/tradein' },
   ] },
-  { label: 'Guides', href: '/guides' },
   { label: 'About', href: '/about', children: [
     { label: 'About Carson', href: '/about' },
-    { label: 'Meet the Team', href: '/team' },
-    { label: 'Social', href: '/social' },
+    { label: 'Meet the team', href: '/team' },
+    { label: 'Guides', href: '/guides' },
     { label: 'Reviews', href: '/testimonials' },
+    { label: 'Social', href: '/social' },
     { label: 'FAQ', href: '/faq' },
     { label: 'Contact', href: '/contact' },
   ] },
