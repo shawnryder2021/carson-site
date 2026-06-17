@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Carson Exports — Website Overview</title>
+<style>
+  :root{
+    --teal:#007C92; --teal2:#005f75; --tint:#e3f7fa; --ink:#0b0f14;
+    --muted:#5b6770; --line:#e7eaec; --soft:#f6f8f9; --amber:#8A5400;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+  a{color:var(--teal2)}
+
+  /* Hero */
+  .hero{background:linear-gradient(135deg,var(--teal),#5a8aff);color:#fff;padding:64px 0 56px;text-align:center}
+  .hero .badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:18px}
+  .hero h1{font-size:clamp(30px,5vw,46px);font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-bottom:12px}
+  .hero p{font-size:17px;opacity:.95;max-width:620px;margin:0 auto}
+  .hero .meta{margin-top:22px;font-size:13px;opacity:.85}
+
+  /* Stat band */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--ink);color:#fff}
+  .stats div{padding:26px 18px;text-align:center;border-right:1px solid #1d242b}
+  .stats div:last-child{border-right:none}
+  .stats .n{font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-.02em;line-height:1}
+  .stats .l{font-size:11.5px;color:#9fb0ba;margin-top:8px;text-transform:uppercase;letter-spacing:.05em}
+
+  section{padding:48px 0;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--teal2);margin-bottom:8px}
+  h2{font-size:clamp(22px,3.2vw,30px);font-weight:800;letter-spacing:-.02em;margin-bottom:8px}
+  h2 + .lede{font-size:15.5px;color:var(--muted);max-width:680px;margin-bottom:26px}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{border:1px solid var(--line);border-radius:14px;padding:20px 22px;background:#fff}
+  .card .ic{width:38px;height:38px;border-radius:10px;background:var(--tint);color:var(--teal2);display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:12px}
+  .card h3{font-size:16px;font-weight:800;margin-bottom:5px}
+  .card p{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+  ul.feat{list-style:none}
+  ul.feat li{position:relative;padding:8px 0 8px 28px;font-size:14.5px;border-bottom:1px solid var(--line)}
+  ul.feat li:last-child{border-bottom:none}
+  ul.feat li::before{content:"✓";position:absolute;left:0;top:8px;color:var(--teal);font-weight:800}
+  ul.feat li b{font-weight:700}
+  ul.feat li span{color:var(--muted);font-size:13.5px}
+
+  .pill{display:inline-block;background:var(--tint);color:var(--teal2);font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;margin:0 6px 6px 0}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:start}
+  .panel{background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:24px 26px}
+  .panel h3{font-size:16px;font-weight:800;margin-bottom:12px}
+
+  .note{background:#FFF7E8;border:1px solid #f0deb6;border-radius:12px;padding:16px 18px;font-size:13.5px;color:var(--amber)}
+  .note b{color:#6e4400}
+
+  .stack{display:grid;grid-template-columns:1fr;gap:10px}
+  .row{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .row .k{font-size:20px;flex-shrink:0}
+  .row .t{font-size:14.5px;font-weight:700}
+  .row .d{font-size:13px;color:var(--muted)}
+
+  footer{padding:40px 0 60px;text-align:center;color:var(--muted);font-size:13px}
+  footer .brand{font-weight:800;color:var(--ink);font-size:15px}
+
+  @media(max-width:720px){
+    .grid,.grid-3,.two,.stats{grid-template-columns:1fr 1fr}
+    .two{grid-template-columns:1fr}
+  }
+  @media print{
+    .hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    section{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="wrap">
+      <span class="badge">Website Build Overview</span>
+      <h1>Carson Exports — AI-Powered Dealership Website</h1>
+      <p>A modern, mobile-first car dealership site with live inventory, an AI sales assistant, automated lead capture, and a full self-serve admin — built on Next.js + Supabase.</p>
+      <div class="meta">Prepared for client review · 550 Windmill Rd, Dartmouth, NS</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div><div class="n">40+</div><div class="l">Pages &amp; tools</div></div>
+    <div><div class="n">14</div><div class="l">Admin sections</div></div>
+    <div><div class="n">100%</div><div class="l">Mobile responsive</div></div>
+    <div><div class="n">Live</div><div class="l">Inventory &amp; pricing</div></div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- What it is -->
+    <section>
+      <div class="eyebrow">The big picture</div>
+      <h2>One platform that sells cars and runs itself</h2>
+      <p class="lede">Shoppers get a fast, helpful, Carvana-style experience. The dealership gets a control panel to manage every part of the site — inventory, marketing, leads, chat, content and analytics — without touching code.</p>
+      <div class="grid-3">
+        <div class="card"><div class="ic">🚗</div><h3>Live inventory</h3><p>Vehicles sync automatically from a Google Sheet every day — add, price, photograph and sell from one source.</p></div>
+        <div class="card"><div class="ic">🤖</div><h3>AI throughout</h3><p>An AI assistant trained on the lot helps shoppers find, compare, and finance cars — 24/7.</p></div>
+        <div class="card"><div class="ic">⚙️</div><h3>Self-serve admin</h3><p>A friendly back office to manage everything — no developer needed for day-to-day changes.</p></div>
+      </div>
+    </section>
+
+    <!-- Shopper experience -->
+    <section>
+      <div class="eyebrow">For your customers</div>
+      <h2>The shopping experience</h2>
+      <p class="lede">Designed to feel like the big national brands — clean, fast, and helpful — while keeping Carson's honest, family-run voice.</p>
+      <ul class="feat">
+        <li><b>Inventory browsing</b> — <span>filter by body type, make, price and monthly payment; "shop by style / budget / payment" tiles on the home page.</span></li>
+        <li><b>Vehicle detail pages</b> — <span>photos, specs, AI overview, financing math, and live "X people viewing / just arrived" social proof.</span></li>
+        <li><b>AI Car Finder</b> — <span>shoppers describe what they want in plain English and get matched instantly.</span></li>
+        <li><b>CarFinder alerts</b> — <span>can't find it? Customers save a request and get auto-notified (text/email) the moment a match arrives.</span></li>
+        <li><b>Watch this car</b> — <span>price-drop alerts on a specific vehicle, capturing fence-sitters.</span></li>
+        <li><b>Financing tools</b> — <span>payment calculator, an AI financing explainer, and trade-in valuation.</span></li>
+        <li><b>Live + AI chat</b> — <span>real salesperson during business hours, AI after hours — and AI auto-covers if the team is slow to reply.</span></li>
+        <li><b>Service department</b> — <span>dedicated pages for service, tires, specials and parts with booking forms.</span></li>
+        <li><b>Meet the team, guides, reviews &amp; Instagram</b> — <span>trust-building content that's all editable in admin.</span></li>
+      </ul>
+    </section>
+
+    <!-- AI features -->
+    <section>
+      <div class="eyebrow">The differentiator</div>
+      <h2>Artificial intelligence, used honestly</h2>
+      <p class="lede">AI is woven through the site to save the customer time and the team effort — always pointed at real inventory and dealership facts.</p>
+      <div class="two">
+        <div class="panel">
+          <h3>Helps the shopper</h3>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">
+            • Natural-language car finder &amp; inventory search<br/>
+            • Chat assistant that knows live stock and suggests real vehicles<br/>
+            • Financing &amp; payment explanations<br/>
+            • Honest, plain-spoken answers — even after hours
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Helps the dealership</h3>
+          <div style="font-size:14px;color:var(--muted);line-height:1.7">
+            • AI writes vehicle descriptions from specs<br/>
+            • AI drafts marketing-banner copy &amp; generates banner artwork<br/>
+            • A trainable "Knowledge Base" so the AI speaks for <em>this</em> store<br/>
+            • After-hours coverage so no lead goes cold
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Admin -->
+    <section>
+      <div class="eyebrow">For the dealership</div>
+      <h2>The admin control panel</h2>
+      <p class="lede">Everything below is editable in a simple, organized dashboard — grouped so it's easy to find.</p>
+      <div class="grid">
+        <div class="card"><h3>📊 Overview</h3><p>Dashboard, sales analytics (top-viewed cars, aging stock), and live website traffic.</p></div>
+        <div class="card"><h3>💼 Sales</h3><p>Inventory manager, leads inbox, live chat console, and CarFinder requests.</p></div>
+        <div class="card"><h3>🖼️ Homepage</h3><p>Section on/off toggles, the Hero &amp; Banners studio, and the Instagram feed.</p></div>
+        <div class="card"><h3>📝 Content</h3><p>Custom page builder, guides, team profiles, and the AI Knowledge Base.</p></div>
+        <div class="card"><h3>🧭 Settings</h3><p>Drag-and-drop navigation editor, contact details and hours.</p></div>
+        <div class="card"><h3>🎨 Marketing</h3><p>AI banner creation, rotating homepage hero, "Deal of the Week," and seasonal campaigns.</p></div>
+      </div>
+    </section>
+
+    <!-- Lead capture & automation -->
+    <section>
+      <div class="eyebrow">Turning visits into sales</div>
+      <h2>Lead capture &amp; automation</h2>
+      <p class="lede">Every interested visitor has a path to raise their hand — and the team gets notified fast.</p>
+      <div class="stack">
+        <div class="row"><div class="k">📥</div><div><div class="t">One central leads inbox</div><div class="d">Test drives, contact forms, trade-ins, financing, service bookings, CarFinder and chat — all captured and tagged in one place.</div></div></div>
+        <div class="row"><div class="k">🔔</div><div><div class="t">Instant team notifications</div><div class="d">New chats and matches push to the team (via webhook → text/email), so speed-to-lead stays high.</div></div></div>
+        <div class="row"><div class="k">🤝</div><div><div class="t">Automatic follow-up</div><div class="d">CarFinder &amp; price-drop alerts re-engage shoppers automatically when the right car (or price) appears.</div></div></div>
+      </div>
+    </section>
+
+    <!-- SEO & performance -->
+    <section>
+      <div class="eyebrow">Found &amp; fast</div>
+      <h2>Built for Google &amp; for phones</h2>
+      <div class="grid">
+        <div class="card"><div class="ic">🔎</div><h3>SEO foundation</h3><p>Auto-generated sitemap, per-vehicle page titles &amp; social cards, and structured data so cars can show with price &amp; mileage in Google results.</p></div>
+        <div class="card"><div class="ic">📱</div><h3>Mobile-first</h3><p>Fully responsive with a dedicated mobile menu and sticky call/finder buttons — most car shopping happens on a phone.</p></div>
+        <div class="card"><div class="ic">🇨🇦</div><h3>Localized</h3><p>Canadian throughout — kilometres, CAD pricing, and province-aware HST in the financing math.</p></div>
+        <div class="card"><div class="ic">🎯</div><h3>On-brand</h3><p>The dealership's Impact-style headline font and teal identity applied site-wide.</p></div>
+      </div>
+    </section>
+
+    <!-- Tech -->
+    <section>
+      <div class="eyebrow">Under the hood</div>
+      <h2>Technology &amp; integrations</h2>
+      <div>
+        <span class="pill">Next.js 14</span>
+        <span class="pill">Supabase (database)</span>
+        <span class="pill">OpenAI (AI features)</span>
+        <span class="pill">kie.ai · GPT Image 2 (banner art)</span>
+        <span class="pill">Google Sheets (inventory sync)</span>
+        <span class="pill">Web analytics</span>
+        <span class="pill">Webhook → Twilio (SMS alerts)</span>
+        <span class="pill">Netlify hosting</span>
+        <span class="pill">Instagram (Behold)</span>
+      </div>
+      <div class="note" style="margin-top:20px">
+        <b>A few items need accounts/keys to go fully live</b> — e.g. the SMS/Twilio automation, the banner-generation key, and email delivery. These are configuration steps, not new development, and can be switched on whenever the client is ready.
+      </div>
+    </section>
+
+    <!-- Roadmap -->
+    <section style="border-bottom:none">
+      <div class="eyebrow">What's next (optional)</div>
+      <h2>Ideas on the roadmap</h2>
+      <p class="lede">Natural extensions that build on what's already in place:</p>
+      <div class="grid-3">
+        <div class="card"><h3>Compare vehicles</h3><p>Side-by-side specs &amp; payments with an AI "which fits you" verdict.</p></div>
+        <div class="card"><h3>AI Deal Score</h3><p>An honest 0–100 value badge on every car, from real price &amp; market data.</p></div>
+        <div class="card"><h3>Saved &amp; financing pre-approval</h3><p>A saved-cars page and a soft-pull pre-approval form for high-intent leads.</p></div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <div class="brand">Carson Exports</div>
+    <div>Website build overview · prepared for client review</div>
+  </footer>
+
+</body>
+</html>
