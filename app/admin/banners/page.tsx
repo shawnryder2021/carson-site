@@ -187,10 +187,19 @@ export default function AdminBanners() {
       </div>
 
       {/* Library / editor */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <h2 style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 600, letterSpacing: '-.02em', margin: 0 }}>Your banners</h2>
         {savedMsg && <span style={{ fontSize: 13, fontWeight: 700, color: savedMsg.startsWith('Error') ? '#A8232C' : 'var(--teal-2)' }}>{savedMsg}</span>}
       </div>
+      {banners.length > 0 && (
+        <div style={{ background: 'var(--teal-tint)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'var(--teal-2)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Icon name="info" size={14} />
+          <span>
+            <strong>{activeCount} of {banners.length}</strong> on the homepage. Tap <strong>Add to homepage</strong> on any banner — the headline, offer &amp; button you set appear as the overlay. Multiple = an auto-rotating hero.
+          </span>
+          <a href="/" target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', fontWeight: 700, textDecoration: 'underline' }}>View homepage ↗</a>
+        </div>
+      )}
 
       {banners.length === 0 ? (
         <div style={{ fontSize: 13.5, color: 'var(--muted)', background: 'var(--bg-soft)', borderRadius: 12, padding: 20 }}>No banners yet — generate your first above.</div>
@@ -202,14 +211,22 @@ export default function AdminBanners() {
               <BannerPreview b={b} />
               <div style={{ padding: '12px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontWeight: 700 }}>
-                    <input type="checkbox" checked={b.active} onChange={e => update(b.id, { active: e.target.checked })} style={{ accentColor: 'var(--teal)' }} />
-                    {b.active ? 'Live on homepage' : 'Off'}
-                  </label>
+                  {b.active ? (
+                    <button onClick={() => update(b.id, { active: false })} className="btn btn-sm" style={{ background: 'var(--teal)', color: 'white', border: '1px solid var(--teal)' }}>
+                      <Icon name="check" size={14} /> On homepage
+                    </button>
+                  ) : (
+                    <button onClick={() => update(b.id, { active: true })} className="btn btn-primary btn-sm">
+                      <Icon name="plus" size={14} /> Add to homepage
+                    </button>
+                  )}
+                  {!b.headline && !b.ctaLabel && (
+                    <span style={{ fontSize: 12, color: '#8A5400', fontWeight: 600 }}>← add a headline first (Edit)</span>
+                  )}
                   <span style={{ flex: 1 }} />
                   <button onClick={() => move(b.id, -1)} disabled={i === 0} className="btn btn-ghost btn-sm"><Icon name="chevronUp" size={13} /></button>
                   <button onClick={() => move(b.id, 1)} disabled={i === banners.length - 1} className="btn btn-ghost btn-sm"><Icon name="chevronDown" size={13} /></button>
-                  <button onClick={() => setEditing(editing === b.id ? null : b.id)} className="btn btn-ghost btn-sm">{editing === b.id ? 'Close' : 'Edit'}</button>
+                  <button onClick={() => setEditing(editing === b.id ? null : b.id)} className="btn btn-ghost btn-sm">{editing === b.id ? 'Close' : (b.headline || b.ctaLabel ? 'Edit text' : '✏️ Add text')}</button>
                   <button onClick={() => remove(b.id)} className="btn btn-ghost btn-sm" style={{ color: '#A8232C' }}><Icon name="trash" size={13} /></button>
                 </div>
 
