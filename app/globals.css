@@ -191,7 +191,9 @@ footer { border-top: 1px solid var(--line); }
     flex-direction: row !important; align-items: center !important;
     overflow-x: auto; padding: 10px 12px !important; gap: 10px;
   }
-  .admin-side nav { flex-direction: row !important; gap: 4px !important; }
+  .admin-side nav { flex-direction: row !important; gap: 4px !important; overflow-y: visible !important; }
+  .admin-group { display: contents; }
+  .admin-group-label { display: none !important; }
   .admin-side nav button { white-space: nowrap; padding: 8px 10px !important; font-size: 13px !important; }
   .admin-logo { padding: 0 !important; }
   .admin-logo div { display: none; }
