@@ -20,7 +20,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: s
   ] },
   { title: 'Homepage', items: [
     { href: '/admin/homepage', label: 'Homepage sections', icon: 'star' },
-    { href: '/admin/banners', label: 'Banner Studio', icon: 'sparkles' },
+    { href: '/admin/banners', label: 'Hero & Banners', icon: 'sparkles' },
     { href: '/admin/social', label: 'Social feed', icon: 'heart' },
   ] },
   { title: 'Content', items: [

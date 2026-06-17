@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
+import { HeroMedia } from '@/components/HeroMedia';
+import { youTubeId, HeroMode } from '@/data/heroConfig';
 import { getBrowserClient } from '@/lib/supabase/client';
 import { complete } from '@/lib/ai';
 import {
   listBanners, addBanner, saveAllBanners, deleteBanner, listVehicles,
-  isSupabaseConfigured, MarketingBanner, AdminVehicle,
+  getSettings, saveSettings, isSupabaseConfigured, MarketingBanner, AdminVehicle, SiteSettings,
 } from '@/lib/db';
 
 const OCCASIONS = ['', 'Spring Sale', 'Summer Clearance', 'Year-End Event', '0% Financing', 'New Arrivals', 'Trade-In Bonus', 'Winter-Ready', 'Long Weekend Sale', 'Certified Pre-Owned'];
@@ -39,7 +41,22 @@ export default function AdminBanners() {
   const [side, setSide] = useState<'left' | 'center' | 'right'>('left');
   const [finalPrompt, setFinalPrompt] = useState('');
 
-  useEffect(() => { listBanners().then(setBanners); listVehicles().then(setVehicles); }, []);
+  // Fallback hero (shown when no banners are active)
+  const [hero, setHero] = useState<SiteSettings | null>(null);
+  const [heroSaved, setHeroSaved] = useState(false);
+  const [heroErr, setHeroErr] = useState<string | null>(null);
+
+  useEffect(() => { listBanners().then(setBanners); listVehicles().then(setVehicles); getSettings().then(setHero); }, []);
+
+  const setHeroField = (patch: Partial<SiteSettings>) => setHero(prev => prev ? { ...prev, ...patch } : prev);
+  const saveHero = async () => {
+    if (!hero) return;
+    setHeroErr(null);
+    if (hero.mode === 'video' && !youTubeId(hero.videoUrl)) { setHeroErr('Enter a valid YouTube URL.'); return; }
+    const { error } = await saveSettings(hero);
+    if (error) { setHeroErr(error); return; }
+    setHeroSaved(true); setTimeout(() => setHeroSaved(false), 2200);
+  };
 
   // Compose the structured fields into the editable final prompt.
   useEffect(() => {
@@ -153,6 +170,71 @@ export default function AdminBanners() {
 
       {!isSupabaseConfigured && (
         <div style={{ background: '#FFF4E5', color: '#8A5400', borderRadius: 12, padding: '14px 16px', fontSize: 14, marginBottom: 20 }}>Connect Supabase to create banners.</div>
+      )}
+
+      {/* Fallback hero (video/image) — shown when no banners are active */}
+      {hero && (
+        <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 16, padding: '22px 24px', marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 19, fontWeight: 600, margin: 0 }}>Homepage hero (video / image)</h2>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>Shows when no banners are live above.</span>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>
+            Your homepage shows live banners as a rotating carousel. When none are active, it falls back to this video or image hero.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }} className="rg">
+            <div>
+              <label style={lbl}>Type</label>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                {(['video', 'image'] as HeroMode[]).map(m => (
+                  <button key={m} onClick={() => setHeroField({ mode: m })} style={{
+                    flex: 1, padding: '10px', borderRadius: 10, textTransform: 'capitalize',
+                    background: hero.mode === m ? 'var(--ink)' : 'white', color: hero.mode === m ? 'white' : 'var(--ink)',
+                    border: '1px solid ' + (hero.mode === m ? 'var(--ink)' : 'var(--line)'), cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                  }}>{m}</button>
+                ))}
+              </div>
+              {hero.mode === 'video' ? (
+                <>
+                  <label style={lbl}>YouTube URL</label>
+                  <input className="input" value={hero.videoUrl} onChange={e => setHeroField({ videoUrl: e.target.value })} style={{ marginBottom: 4, borderColor: youTubeId(hero.videoUrl) ? undefined : '#A8232C' }} />
+                  <div style={{ fontSize: 12, color: youTubeId(hero.videoUrl) ? 'var(--teal-2)' : '#A8232C', marginBottom: 14 }}>{youTubeId(hero.videoUrl) ? '✓ Valid' : '⚠ Enter a valid YouTube link'}</div>
+                </>
+              ) : (
+                <>
+                  <label style={lbl}>Image URL</label>
+                  <input className="input" value={hero.imageUrl} onChange={e => setHeroField({ imageUrl: e.target.value })} placeholder="https://…/showroom.jpg" style={{ marginBottom: 14 }} />
+                </>
+              )}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, fontWeight: 600, marginBottom: 14 }}>
+                <input type="checkbox" checked={hero.showOverlay} onChange={e => setHeroField({ showOverlay: e.target.checked })} style={{ accentColor: 'var(--teal)' }} />
+                Show text &amp; search over the hero
+              </label>
+              {hero.showOverlay ? (
+                <>
+                  <label style={lbl}>Headline</label>
+                  <input className="input" value={hero.headline} onChange={e => setHeroField({ headline: e.target.value })} style={{ marginBottom: 14 }} />
+                  <label style={lbl}>Subtext</label>
+                  <textarea className="input" value={hero.subtext} onChange={e => setHeroField({ subtext: e.target.value })} style={{ minHeight: 60, fontFamily: 'inherit', resize: 'vertical' }} />
+                </>
+              ) : (
+                <>
+                  <label style={lbl}>Banner link (where clicks go)</label>
+                  <input className="input" value={hero.linkUrl} onChange={e => setHeroField({ linkUrl: e.target.value })} placeholder="/inventory or https://…" />
+                </>
+              )}
+            </div>
+            <div>
+              <label style={lbl}>Preview</label>
+              <HeroMedia hero={hero} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
+            <button onClick={saveHero} className="btn btn-dark btn-sm"><Icon name="check" size={14} /> Save hero</button>
+            {heroSaved && <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal-2)' }}>✓ Saved</span>}
+            {heroErr && <span style={{ fontSize: 13, fontWeight: 700, color: '#A8232C' }}>{heroErr}</span>}
+          </div>
+        </div>
       )}
 
       {/* Builder */}
