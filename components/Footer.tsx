@@ -2,9 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { Icon } from './Icon';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 export function Footer() {
   const router = useRouter();
+  const { contactPhone, contactAddress } = useSiteSettings();
+  const phone = contactPhone || '(555) 234-9090';
+  const address = contactAddress || '550 Windmill Rd, Dartmouth, NS B3B 1B3';
 
   return (
     <footer style={{ background: 'var(--ink)', color: 'white', padding: '60px 0 40px' }}>
@@ -39,8 +43,8 @@ export function Footer() {
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#9ad', marginBottom: 20 }}>Visit</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
               <button onClick={() => router.push('/contact')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit' }}>Contact</button>
-              <a href="tel:(555)234-9090" style={{ color: 'white', textDecoration: 'none' }}>(555) 234-9090</a>
-              <div style={{ fontSize: 12, color: '#9ad' }}>550 Windmill Rd<br/>Dartmouth, NS B3B 1B3</div>
+              <a href={`tel:${phone.replace(/\s/g, '')}`} style={{ color: 'white', textDecoration: 'none' }}>{phone}</a>
+              <div style={{ fontSize: 12, color: '#9ad' }}>{address}</div>
             </div>
           </div>
         </div>

@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
 import { createLead } from '@/lib/db';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const { contactPhone, contactEmail, contactAddress } = useSiteSettings();
 
   const handleChange = (e: any) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -72,9 +74,9 @@ export default function ContactPage() {
               <h3 style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-.02em' }}>Find us</h3>
               <div style={{ display: 'grid', gap: 14 }}>
                 {[
-                  { icon: 'location', label: 'Showroom', value: '550 Windmill Rd, Dartmouth, NS B3B 1B3' },
-                  { icon: 'phone', label: 'Call us', value: '(555) 234-9090' },
-                  { icon: 'mail', label: 'Email', value: 'hello@carsonexports.com' },
+                  { icon: 'location', label: 'Showroom', value: contactAddress || '550 Windmill Rd, Dartmouth, NS B3B 1B3' },
+                  { icon: 'phone', label: 'Call us', value: contactPhone || '(555) 234-9090' },
+                  { icon: 'mail', label: 'Email', value: contactEmail || 'hello@carsonexports.com' },
                 ].map(c => (
                   <div key={c.label} style={{ display: 'flex', gap: 12 }}>
                     <Icon name={c.icon as any} size={20} style={{ color: 'var(--teal)', flexShrink: 0, marginTop: 2 }}/>

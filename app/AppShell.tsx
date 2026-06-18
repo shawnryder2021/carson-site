@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { Footer } from '@/components/Footer';
 import { ChatLauncher, ChatWidget } from '@/components/ChatWidget';
+import { SiteSettingsProvider } from '@/context/SiteSettingsContext';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [aiOpen, setAiOpen] = useState(false);
@@ -34,15 +35,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="app" style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
-      {fontStyle}
-      <TopBar onAIClick={() => setAiOpen(true)} />
-      <main style={{ flex: 1 }}>
-        {children}
-      </main>
-      <Footer />
-      {!aiOpen && <ChatLauncher onClick={() => setAiOpen(true)} />}
-      <ChatWidget open={aiOpen} onClose={() => setAiOpen(false)} />
-    </div>
+    <SiteSettingsProvider>
+      <div className="app" style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
+        {fontStyle}
+        <TopBar onAIClick={() => setAiOpen(true)} />
+        <main style={{ flex: 1 }}>
+          {children}
+        </main>
+        <Footer />
+        {!aiOpen && <ChatLauncher onClick={() => setAiOpen(true)} />}
+        <ChatWidget open={aiOpen} onClose={() => setAiOpen(false)} />
+      </div>
+    </SiteSettingsProvider>
   );
 }

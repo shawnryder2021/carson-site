@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from './Icon';
 import { useSaved } from '@/context/SavedContext';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { listNav, listVehicles, DEFAULT_NAV, NavItem, AdminVehicle } from '@/lib/db';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice } from '@/lib/format';
@@ -24,6 +25,8 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { saved } = useSaved();
+  const { contactPhone } = useSiteSettings();
+  const phone = contactPhone || '(555) 234-9090';
   const [nav, setNav] = useState<NavItem[]>(DEFAULT_NAV);
   const [vehicles, setVehicles] = useState<AdminVehicle[]>([]);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -181,8 +184,8 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
               </span>
             )}
           </button>
-          <button className="btn btn-ghost btn-sm topbar-phone" onClick={() => window.open('tel:(555)234-9090')}>
-            <Icon name="phone" size={14} /> (555) 234-9090
+          <button className="btn btn-ghost btn-sm topbar-phone" onClick={() => window.open(`tel:${phone.replace(/\s/g, '')}`)}>
+            <Icon name="phone" size={14} /> {phone}
           </button>
           <button className="btn btn-dark btn-sm" onClick={onAIClick}>
             <Icon name="sparkles" size={14} /> Find my car
@@ -233,8 +236,8 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
             <button className="btn btn-dark btn-lg" style={{ width: '100%' }} onClick={() => { setMobileOpen(false); onAIClick(); }}>
               <Icon name="sparkles" size={15} /> Find my car with AI
             </button>
-            <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} onClick={() => window.open('tel:(555)234-9090')}>
-              <Icon name="phone" size={15} /> Call (555) 234-9090
+            <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} onClick={() => window.open(`tel:${phone.replace(/\s/g, '')}`)}>
+              <Icon name="phone" size={15} /> Call {phone}
             </button>
           </div>
         </div>
