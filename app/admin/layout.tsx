@@ -53,9 +53,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="admin-shell" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', minHeight: '100vh' }}>
       {/* Sidebar (top bar on mobile via .admin-* media queries) */}
       <aside className="admin-side" style={{ background: 'var(--ink)', color: 'white', padding: '20px 14px', display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh' }}>
-        <div className="admin-logo" style={{ padding: '0 8px 16px', flexShrink: 0 }}>
-          <img src="/carson-logo.png" alt="Carson" style={{ height: 26, filter: 'brightness(0) invert(1)' }} />
-          <div style={{ fontSize: 11, color: '#9ad', marginTop: 6, letterSpacing: '.08em', textTransform: 'uppercase' }}>Admin</div>
+        <div className="admin-logo" style={{ padding: '0 0 16px', flexShrink: 0 }}>
+          <span style={{ background: '#fff', borderRadius: 10, padding: '7px 10px', display: 'inline-block', lineHeight: 0 }}>
+            <img src="/carson-logo.png" alt="Carson Exports" style={{ height: 24, display: 'block' }} />
+          </span>
+          <div style={{ fontSize: 11, color: '#9ad', marginTop: 8, letterSpacing: '.08em', textTransform: 'uppercase' }}>Admin</div>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0, overflowY: 'auto' }}>
