@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const description =
     `${v.aiSummary ? v.aiSummary.slice(0, 120) + '. ' : ''}${v.mileage.toLocaleString()} km · ${v.fuel} · ${v.drive}. ` +
     `142-point inspected with a 7-day return at Carson Exports, Dartmouth NS.`;
-  const image = v.images[0] || `${SITE_URL}/carson-logo.svg`;
+  const image = v.images[0] || `${SITE_URL}/carson-logo.png`;
 
   return {
     title,

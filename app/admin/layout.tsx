@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       {/* Sidebar (top bar on mobile via .admin-* media queries) */}
       <aside className="admin-side" style={{ background: 'var(--ink)', color: 'white', padding: '20px 14px', display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh' }}>
         <div className="admin-logo" style={{ padding: '0 8px 16px', flexShrink: 0 }}>
-          <img src="/carson-logo.svg" alt="Carson" style={{ height: 26, filter: 'brightness(0) invert(1)' }} />
+          <img src="/carson-logo.png" alt="Carson" style={{ height: 26, filter: 'brightness(0) invert(1)' }} />
           <div style={{ fontSize: 11, color: '#9ad', marginTop: 6, letterSpacing: '.08em', textTransform: 'uppercase' }}>Admin</div>
         </div>
 

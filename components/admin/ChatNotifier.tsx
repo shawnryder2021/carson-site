@@ -51,7 +51,7 @@ export function ChatNotifier() {
             const c = fresh[0];
             const n = new Notification(fresh.length > 1 ? `${fresh.length} new chat messages` : `New chat — ${c.name || 'Website visitor'}`, {
               body: c.contact ? `Contact: ${c.contact}` : 'A visitor is chatting on the site. Click to reply.',
-              tag: 'carson-chat', icon: '/carson-logo.svg',
+              tag: 'carson-chat', icon: '/carson-logo.png',
             });
             n.onclick = () => { window.focus(); router.push('/admin/chat'); n.close(); };
           }

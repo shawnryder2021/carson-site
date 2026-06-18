@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     siteName: 'Carson Exports',
     type: 'website',
     url: SITE_URL,
-    images: [{ url: `${SITE_URL}/carson-logo.svg` }],
+    images: [{ url: `${SITE_URL}/carson-logo.png` }],
   },
 };
 

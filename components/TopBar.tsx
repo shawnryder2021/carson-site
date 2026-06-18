@@ -59,7 +59,7 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
     <header className="topbar">
       <div className="topbar-inner">
         <div className="logo" onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>
-          <img src="/carson-logo.svg" alt="Carson Exports" style={{ height: 32 }} />
+          <img src="/carson-logo.png" alt="Carson Exports" style={{ height: 32 }} />
         </div>
 
         <nav className="nav">

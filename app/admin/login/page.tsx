@@ -39,7 +39,7 @@ function LoginForm() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-soft)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <img src="/carson-logo.svg" alt="Carson Exports" style={{ height: 34 }} />
+          <img src="/carson-logo.png" alt="Carson Exports" style={{ height: 34 }} />
           <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 10 }}>Admin sign in</div>
         </div>
 
