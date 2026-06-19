@@ -799,7 +799,14 @@ export async function saveChatSettings(s: ChatSettings): Promise<{ error?: strin
 export type PageBlock =
   | { type: 'html'; html: string }
   | { type: 'inventory'; title?: string; body?: string; make?: string; priceMax?: number; limit?: number }
-  | { type: 'leadform'; title?: string; subtitle?: string; leadType?: string; fields?: string[]; buttonText?: string };
+  | { type: 'leadform'; title?: string; subtitle?: string; leadType?: string; fields?: string[]; buttonText?: string }
+  | { type: 'hero'; headline: string; subhead?: string; imageUrl?: string; ctaLabel?: string; ctaUrl?: string; overlay?: 'dark' | 'light' | 'none' }
+  | { type: 'image'; url: string; alt?: string; caption?: string; width?: 'full' | 'wide' | 'medium' }
+  | { type: 'video'; embedUrl: string; title?: string }
+  | { type: 'cta'; headline: string; subhead?: string; buttonText: string; buttonUrl: string; style?: 'filled' | 'outline' }
+  | { type: 'testimonial'; quote: string; author: string; role?: string }
+  | { type: 'faq'; items: { q: string; a: string }[] }
+  | { type: 'spacer'; size?: 'sm' | 'md' | 'lg' };
 
 export type CustomPage = {
   id?: string;
@@ -809,6 +816,8 @@ export type CustomPage = {
   blocks: PageBlock[];
   published?: boolean;
   sortOrder?: number;
+  ogImage?: string;
+  focusKeyword?: string;
 };
 
 function rowToPage(r: any): CustomPage {
@@ -820,6 +829,8 @@ function rowToPage(r: any): CustomPage {
     blocks: Array.isArray(r.blocks) ? r.blocks : [],
     published: r.published,
     sortOrder: r.sort_order,
+    ogImage: r.og_image ?? '',
+    focusKeyword: r.focus_keyword ?? '',
   };
 }
 
@@ -852,6 +863,8 @@ export async function savePage(p: CustomPage): Promise<{ error?: string }> {
     blocks: p.blocks ?? [],
     published: p.published ?? true,
     sort_order: p.sortOrder ?? 0,
+    og_image: p.ogImage ?? '',
+    focus_keyword: p.focusKeyword ?? '',
     updated_at: new Date().toISOString(),
   }, { onConflict: 'slug' });
   return { error: error?.message };

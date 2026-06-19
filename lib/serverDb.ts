@@ -100,6 +100,7 @@ export async function fetchTeamMember(slug: string): Promise<ServerTeamMember | 
 }
 
 export type ServerPage = { slug: string; title: string; description: string };
+export type ServerPageFull = ServerPage & { ogImage: string; blocks: any[] };
 
 export async function fetchPages(): Promise<ServerPage[]> {
   const sb = client();
@@ -116,4 +117,16 @@ export async function fetchPages(): Promise<ServerPage[]> {
 export async function fetchPage(slug: string): Promise<ServerPage | null> {
   const all = await fetchPages();
   return all.find(p => p.slug === slug) ?? null;
+}
+
+export async function fetchPageFull(slug: string): Promise<ServerPageFull | null> {
+  const sb = client();
+  if (!sb) return null;
+  try {
+    const { data, error } = await sb.from('pages').select('slug,title,description,og_image,blocks').eq('slug', slug).eq('published', true).maybeSingle();
+    if (error || !data) return null;
+    return { slug: data.slug, title: data.title, description: data.description ?? '', ogImage: data.og_image ?? '', blocks: Array.isArray(data.blocks) ? data.blocks : [] };
+  } catch {
+    return null;
+  }
 }
