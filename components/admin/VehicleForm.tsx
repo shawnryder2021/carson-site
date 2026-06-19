@@ -7,6 +7,17 @@ import { fmtPrice } from '@/lib/format';
 import { complete, generateDescriptionPrompt } from '@/lib/ai';
 import { saveVehicle, uploadImage, getPriceHistory, isSupabaseConfigured, AdminVehicle, PricePoint, VehicleDisplayOptions } from '@/lib/db';
 
+const OR_MODELS = [
+  { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
+  { id: 'openai/gpt-4o', label: 'GPT-4o' },
+  { id: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
+  { id: 'anthropic/claude-haiku-4', label: 'Claude Haiku 4' },
+  { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'meta-llama/llama-4-maverick', label: 'Llama 4 Maverick' },
+  { id: 'deepseek/deepseek-chat-v3-0324', label: 'DeepSeek V3' },
+];
+
 const EMPTY: AdminVehicle = {
   id: '', year: new Date().getFullYear(), make: '', model: '', price: 0, mileage: 0,
   body: 'Sedan', fuel: 'Gas', drive: 'FWD', exterior: '', interior: '', aiSummary: '',
@@ -30,6 +41,9 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const [writing, setWriting] = useState(false);
+  const [aiSource, setAiSource] = useState<'default' | 'openrouter'>('openrouter');
+  const [orModel, setOrModel] = useState(OR_MODELS[0].id);
+  const [lastModel, setLastModel] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<PricePoint[]>([]);
   const set = (patch: Partial<AdminVehicle>) => setV(prev => ({ ...prev, ...patch }));
@@ -172,26 +186,76 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
 
           <Field label="Description">
             <textarea className="input" value={v.aiSummary} onChange={e => set({ aiSummary: e.target.value })} placeholder="Reliable sedan, great for daily commute" style={{ ...inputStyle, minHeight: 70, fontFamily: 'inherit', resize: 'vertical' }} />
-            <button
-              type="button"
-              onClick={async () => {
-                if (!v.make || !v.model) { setError('Add year, make, and model first so the AI has something to work with.'); return; }
-                setWriting(true); setError(null);
-                try {
-                  const reply = await complete(generateDescriptionPrompt(v));
-                  set({ aiSummary: reply.trim().replace(/^["']|["']$/g, '') });
-                } catch {
-                  setError('AI writing failed — try again in a moment.');
-                }
-                setWriting(false);
-              }}
-              disabled={writing}
-              className="btn btn-ghost btn-sm"
-              style={{ marginTop: 8 }}
-            >
-              <Icon name="sparkles" size={13} /> {writing ? 'Writing…' : 'Write with AI'}
-            </button>
-            <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 10 }}>Generates from the specs above — edit before saving.</span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              <select
+                className="select"
+                value={aiSource}
+                onChange={e => setAiSource(e.target.value as 'default' | 'openrouter')}
+                style={{ width: 'auto', fontSize: 13 }}
+              >
+                <option value="default">Default (OpenAI)</option>
+                <option value="openrouter">OpenRouter</option>
+              </select>
+
+              {aiSource === 'openrouter' && (
+                <select
+                  className="select"
+                  value={orModel}
+                  onChange={e => setOrModel(e.target.value)}
+                  style={{ width: 'auto', fontSize: 13 }}
+                >
+                  {OR_MODELS.map(m => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+              )}
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!v.make || !v.model) { setError('Add year, make, and model first so the AI has something to work with.'); return; }
+                  setWriting(true); setError(null); setLastModel(null);
+                  try {
+                    const prompt = generateDescriptionPrompt(v);
+                    let reply: string;
+                    if (aiSource === 'openrouter') {
+                      const res = await fetch('/api/openrouter', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, model: orModel }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.reply || 'OpenRouter error');
+                      reply = data.reply;
+                      setLastModel(data.model || orModel);
+                    } else {
+                      reply = await complete(prompt);
+                      setLastModel('OpenAI');
+                    }
+                    set({ aiSummary: reply.trim().replace(/^["']|["']$/g, '') });
+                  } catch {
+                    setError('AI writing failed — try again in a moment.');
+                  }
+                  setWriting(false);
+                }}
+                disabled={writing}
+                className="btn btn-primary btn-sm"
+              >
+                <Icon name="sparkles" size={13} /> {writing ? 'Writing…' : 'Generate'}
+              </button>
+            </div>
+
+            {lastModel && (
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
+                Generated by {lastModel} — edit before saving.
+              </div>
+            )}
+            {!lastModel && (
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
+                Pick a model and generate a description from the vehicle specs.
+              </div>
+            )}
           </Field>
 
           <Field label="Photos">
