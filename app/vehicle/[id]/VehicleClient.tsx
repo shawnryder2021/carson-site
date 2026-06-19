@@ -11,6 +11,7 @@ import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { getVehicleById, listVehicles, createLead, recordVehicleView, createVehicleWatch, AdminVehicle } from '@/lib/db';
 import { recordRecentlyViewed } from '@/lib/recentlyViewed';
 
@@ -24,6 +25,7 @@ const PRESET_QUESTIONS = [
 export default function VehicleClient({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { saved, toggleSave } = useSaved();
+  const { contactPhone } = useSiteSettings();
   const [vehicle, setVehicle] = useState<AdminVehicle | null | undefined>(undefined);
   const [allVehicles, setAllVehicles] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   const isSaved = saved.includes(params.id);
@@ -51,8 +53,39 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
-  const [modal, setModal] = useState<null | 'testdrive' | 'video' | 'delivery' | 'otd' | 'watch'>(null);
+  const [modal, setModal] = useState<null | 'testdrive' | 'video' | 'delivery' | 'otd' | 'watch' | 'interested'>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  // "I'm Interested" state
+  const [intName, setIntName] = useState('');
+  const [intContact, setIntContact] = useState('');
+  const [intMessage, setIntMessage] = useState('');
+  const [intBusy, setIntBusy] = useState(false);
+
+  const submitInterest = async () => {
+    if (!vehicle || !intName.trim() || !intContact.trim()) return;
+    setIntBusy(true);
+    const isEmail = intContact.includes('@');
+    await createLead({
+      type: 'contact',
+      name: intName.trim(),
+      email: isEmail ? intContact.trim() : '',
+      phone: isEmail ? '' : intContact.trim(),
+      vehicleId: vehicle.id,
+      payload: { vehicle: `${vehicle.year} ${vehicle.make} ${vehicle.model}`, message: intMessage, source: 'interested_button' },
+    });
+    setIntBusy(false);
+    setSubmitted(true);
+    setTimeout(() => { setModal(null); setSubmitted(false); setIntName(''); setIntContact(''); setIntMessage(''); }, 2000);
+  };
+
+  // Sticky bar scroll visibility
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowStickyBar(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Watch-this-car state
   const [watchContact, setWatchContact] = useState('');
@@ -216,17 +249,17 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button onClick={() => setModal('testdrive')} className="btn btn-primary btn-sm">
+            <button onClick={() => setModal('interested')} className="btn btn-primary btn-sm">
+              <Icon name="heart" size={13} /> I'm interested
+            </button>
+            <button onClick={() => setModal('testdrive')} className="btn btn-dark btn-sm">
               <Icon name="car" size={13} /> Book test drive
             </button>
-            <button onClick={() => setModal('otd')} className="btn btn-dark btn-sm">
+            <button onClick={() => setModal('otd')} className="btn btn-ghost btn-sm">
               <Icon name="dollar" size={13} /> Out-the-door price
             </button>
             <button onClick={() => setModal('video')} className="btn btn-ghost btn-sm">
               <Icon name="sparkles" size={13} /> Request video
-            </button>
-            <button onClick={() => setModal('delivery')} className="btn btn-ghost btn-sm">
-              <Icon name="location" size={13} /> Deliver to me
             </button>
           </div>
         </div>
@@ -411,10 +444,13 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
 
             {/* CTAs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-              <button onClick={() => setModal('testdrive')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+              <button onClick={() => setModal('interested')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                <Icon name="heart" size={14} /> I'm interested in this car
+              </button>
+              <button onClick={() => setModal('testdrive')} className="btn btn-dark" style={{ width: '100%' }}>
                 <Icon name="car" size={14} /> Book a test drive
               </button>
-              <button onClick={() => setModal('otd')} className="btn btn-dark" style={{ width: '100%' }}>
+              <button onClick={() => setModal('otd')} className="btn btn-ghost" style={{ width: '100%' }}>
                 <Icon name="dollar" size={14} /> Get out-the-door price
               </button>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -807,20 +843,82 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
         })()}
       </Modal>
 
-      {/* ── STICKY MOBILE CTA BAR ── */}
-      <div className="vdp-mobile-cta">
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>
-            {fmtPrice(vehicle.price)}
+      {/* ── I'M INTERESTED MODAL ── */}
+      <Modal open={modal === 'interested'} onClose={() => setModal(null)} title="I'm interested in this car">
+        {submitted ? (
+          <div style={{ textAlign: 'center', padding: '20px 0 8px' }}>
+            <div style={{ width: 52, height: 52, margin: '0 auto 16px', borderRadius: '50%', background: 'var(--teal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="check" size={26} style={{ color: 'var(--teal-2)' }} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>We got your message!</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>Someone from our team will reach out shortly.</div>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--muted)' }}>or est. ${estMonthly(vehicle.price)}/mo</div>
+        ) : (
+          <div>
+            <div style={{ background: 'var(--bg-soft)', borderRadius: 12, padding: '14px 16px', marginBottom: 18, display: 'flex', gap: 14, alignItems: 'center' }}>
+              <div style={{ width: 56, height: 42, borderRadius: 8, overflow: 'hidden', background: 'var(--line)', flexShrink: 0 }}>
+                <img
+                  src={(vehicle as any).images?.[0] || vehicleImageURL(vehicle, { size: 200 })}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{vehicle.year} {vehicle.make} {vehicle.model}</div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>{fmtPrice(vehicle.price)} · {fmtMiles(vehicle.mileage)}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input className="input" placeholder="Your name" value={intName} onChange={e => setIntName(e.target.value)} />
+              <input className="input" placeholder="Email or phone number" value={intContact} onChange={e => setIntContact(e.target.value)} />
+              <textarea
+                className="input"
+                placeholder="Any questions or details? (optional)"
+                value={intMessage}
+                onChange={e => setIntMessage(e.target.value)}
+                style={{ minHeight: 72, fontFamily: 'inherit', resize: 'vertical' }}
+              />
+              <button onClick={submitInterest} disabled={intBusy || !intName.trim() || !intContact.trim()} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                {intBusy ? 'Sending…' : 'Send my interest'}
+              </button>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
+                <Icon name="shield" size={10} style={{ verticalAlign: '-1px' }} /> No obligation. We'll respond within the hour during business hours.
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── STICKY CTA BAR (mobile + desktop) ── */}
+      <div className={`vdp-sticky-bar${showStickyBar ? ' vdp-sticky-bar--visible' : ''}`}>
+        <div className="vdp-sticky-bar__inner">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+            <div>
+              <div style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>
+                {fmtPrice(vehicle.price)}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>est. ${estMonthly(vehicle.price)}/mo</div>
+            </div>
+            <div className="vdp-sticky-bar__title">
+              {vehicle.year} {vehicle.make} {vehicle.model}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+            {contactPhone && (
+              <a href={`tel:${contactPhone}`} className="btn btn-ghost btn-sm vdp-sticky-bar__call">
+                <Icon name="phone" size={14} /> Call
+              </a>
+            )}
+            {contactPhone && (
+              <a href={`sms:${contactPhone}`} className="btn btn-ghost btn-sm vdp-sticky-bar__call">
+                <Icon name="send" size={14} /> Text
+              </a>
+            )}
+            <button onClick={() => setModal('interested')} className="btn btn-primary">
+              <Icon name="heart" size={14} /> <span className="vdp-sticky-bar__label">I'm interested</span>
+            </button>
+          </div>
         </div>
-        <button onClick={() => setModal('otd')} className="btn btn-ghost btn-sm">
-          Price
-        </button>
-        <button onClick={() => setModal('testdrive')} className="btn btn-primary">
-          <Icon name="car" size={14} /> Test drive
-        </button>
       </div>
     </div>
   );

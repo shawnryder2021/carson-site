@@ -120,9 +120,8 @@ footer { border-top: 1px solid var(--line); }
   border: 0;
 }
 
-/* Sticky mobile CTA bar (vehicle page) */
-.vdp-mobile-cta {
-  display: none;
+/* Sticky CTA bar (vehicle page — desktop + mobile) */
+.vdp-sticky-bar {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -130,16 +129,35 @@ footer { border-top: 1px solid var(--line); }
   z-index: 80;
   background: white;
   border-top: 1px solid var(--line);
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
-  padding: 12px 16px;
-  gap: 10px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.vdp-sticky-bar--visible {
+  transform: translateY(0);
+}
+.vdp-sticky-bar__inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
-
+.vdp-sticky-bar__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.vdp-sticky-bar__call { }
+.vdp-sticky-bar__label { }
 @media (max-width: 860px) {
-  .vdp-mobile-cta { display: flex; }
-  .vdp-mobile-cta + * { padding-bottom: 80px; }
+  .vdp-sticky-bar__title { display: none; }
+  .vdp-sticky-bar__label { display: none; }
+  .vdp-sticky-bar__inner { padding: 10px 14px; gap: 8px; }
 }
+.vdp-sticky-bar--visible ~ .page { padding-bottom: 72px; }
 
 /* ───────── Responsive grid utility ─────────
    Add className="rg" to any inline-styled grid: desktop keeps the inline
