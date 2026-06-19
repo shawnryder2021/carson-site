@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { fmtPrice } from '@/lib/format';
 import { complete, generateDescriptionPrompt } from '@/lib/ai';
-import { saveVehicle, uploadImage, getPriceHistory, isSupabaseConfigured, AdminVehicle, PricePoint } from '@/lib/db';
+import { saveVehicle, uploadImage, getPriceHistory, isSupabaseConfigured, AdminVehicle, PricePoint, VehicleDisplayOptions } from '@/lib/db';
 
 const EMPTY: AdminVehicle = {
   id: '', year: new Date().getFullYear(), make: '', model: '', price: 0, mileage: 0,
@@ -147,6 +147,27 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, height: 40, fontSize: 14 }}>
               <input type="checkbox" checked={!!v.featured} onChange={e => set({ featured: e.target.checked })} style={{ accentColor: 'var(--teal)' }} /> Show as featured
             </label>
+          </Field>
+
+          <Field label="Page sections">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {([
+                { key: 'showPros', label: 'Pros' },
+                { key: 'showThingsToKnow', label: 'Things to know' },
+                { key: 'showIncluded', label: 'Included with every Carson' },
+              ] as { key: keyof VehicleDisplayOptions; label: string }[]).map(opt => (
+                <label key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                  <input
+                    type="checkbox"
+                    checked={!!(v.displayOptions?.[opt.key])}
+                    onChange={e => set({ displayOptions: { ...v.displayOptions, [opt.key]: e.target.checked } })}
+                    style={{ accentColor: 'var(--teal)' }}
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>Toggle which sections appear on the public vehicle page.</div>
           </Field>
 
           <Field label="Description">

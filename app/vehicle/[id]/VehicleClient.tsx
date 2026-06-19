@@ -174,6 +174,7 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
   }
 
   const similar = allVehicles.filter(v => v.id !== vehicle.id && (v.body === vehicle.body || v.fuel === vehicle.fuel)).slice(0, 4);
+  const opts = vehicle.displayOptions ?? {};
 
   // Fair price estimate
   const marketLow = Math.round(vehicle.price * 0.96);
@@ -344,29 +345,35 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                   </p>
                 </div>
 
-                <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                  <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '22px 24px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal-2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>
-                      <Icon name="check" size={14} style={{ verticalAlign: '-2px', marginRight: 4 }} /> Pros
-                    </div>
-                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, color: 'var(--ink)', lineHeight: 1.7 }}>
-                      <li>Passed 142-point inspection</li>
-                      <li>Low mileage for the year</li>
-                      <li>{vehicle.fuel === 'Hybrid' ? 'Excellent fuel economy' : vehicle.fuel === 'Electric' ? 'Zero emissions' : 'Trusted powertrain'}</li>
-                      <li>{isBelowMarket ? 'Priced below market' : 'Fair market pricing'}</li>
-                    </ul>
+                {(opts.showPros || opts.showThingsToKnow) && (
+                  <div className="rg" style={{ display: 'grid', gridTemplateColumns: opts.showPros && opts.showThingsToKnow ? '1fr 1fr' : '1fr', gap: 20 }}>
+                    {opts.showPros && (
+                      <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '22px 24px' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal-2)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>
+                          <Icon name="check" size={14} style={{ verticalAlign: '-2px', marginRight: 4 }} /> Pros
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, color: 'var(--ink)', lineHeight: 1.7 }}>
+                          <li>Passed 142-point inspection</li>
+                          <li>Low mileage for the year</li>
+                          <li>{vehicle.fuel === 'Hybrid' ? 'Excellent fuel economy' : vehicle.fuel === 'Electric' ? 'Zero emissions' : 'Trusted powertrain'}</li>
+                          <li>{isBelowMarket ? 'Priced below market' : 'Fair market pricing'}</li>
+                        </ul>
+                      </div>
+                    )}
+                    {opts.showThingsToKnow && (
+                      <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '22px 24px' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#8A5400', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>
+                          <Icon name="info" size={14} style={{ verticalAlign: '-2px', marginRight: 4 }} /> Things to know
+                        </div>
+                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, color: 'var(--ink)', lineHeight: 1.7 }}>
+                          <li>{vehicle.mileage > 30000 ? 'Higher mileage — review service records' : 'Lower mileage may have longer break-in period'}</li>
+                          <li>{vehicle.body === 'Truck' ? 'Consider fuel costs for daily commute' : 'Typical of its segment'}</li>
+                          <li>Schedule a test drive to confirm fit</li>
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '22px 24px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#8A5400', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 14 }}>
-                      <Icon name="info" size={14} style={{ verticalAlign: '-2px', marginRight: 4 }} /> Things to know
-                    </div>
-                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, color: 'var(--ink)', lineHeight: 1.7 }}>
-                      <li>{vehicle.mileage > 30000 ? 'Higher mileage — review service records' : 'Lower mileage may have longer break-in period'}</li>
-                      <li>{vehicle.body === 'Truck' ? 'Consider fuel costs for daily commute' : 'Typical of its segment'}</li>
-                      <li>Schedule a test drive to confirm fit</li>
-                    </ul>
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -516,16 +523,18 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             </div>
 
             {/* Included */}
-            <div style={{ marginTop: 20, padding: '16px 0', borderTop: '1px solid var(--line)' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 12 }}>Included with every Carson</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-                {['7-day return policy', '142-point inspection', '30-day powertrain warranty', 'Free CarFax history'].map(item => (
-                  <div key={item} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <Icon name="check" size={14} style={{ color: 'var(--teal)' }} /> {item}
-                  </div>
-                ))}
+            {opts.showIncluded && (
+              <div style={{ marginTop: 20, padding: '16px 0', borderTop: '1px solid var(--line)' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 12 }}>Included with every Carson</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                  {['7-day return policy', '142-point inspection', '30-day powertrain warranty', 'Free CarFax history'].map(item => (
+                    <div key={item} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <Icon name="check" size={14} style={{ color: 'var(--teal)' }} /> {item}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </aside>
         </div>
 

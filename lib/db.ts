@@ -28,6 +28,9 @@ export type Lead = {
 // ───────────────────────── Mappers ─────────────────────────
 
 function rowToVehicle(r: any): AdminVehicle {
+  const rawImages: any[] = Array.isArray(r.images) ? r.images : [];
+  const metaEntry = rawImages.find((e: any) => typeof e === 'object' && e?._type === 'display_options');
+  const images = rawImages.filter((e: any) => typeof e === 'string');
   return {
     id: r.id,
     year: r.year,
@@ -41,10 +44,11 @@ function rowToVehicle(r: any): AdminVehicle {
     exterior: r.exterior,
     interior: r.interior,
     aiSummary: r.ai_summary ?? '',
-    images: Array.isArray(r.images) ? r.images : [],
+    images,
     status: r.status,
     featured: r.featured,
     views: r.views ?? 0,
+    displayOptions: metaEntry ? { showPros: metaEntry.showPros, showThingsToKnow: metaEntry.showThingsToKnow, showIncluded: metaEntry.showIncluded } : {},
     hiddenOverride: r.hidden_override ?? false,
     createdAt: r.created_at,
   };
@@ -52,7 +56,13 @@ function rowToVehicle(r: any): AdminVehicle {
 
 // Deliberately omits views / hidden_override / created_at: upserts (admin save,
 // sheet sync) must never reset counters, the hide flag, or the arrival date.
-export function vehicleToRow(v: Partial<Vehicle> & { images?: string[]; status?: string; featured?: boolean }) {
+export function vehicleToRow(v: Partial<Vehicle> & { images?: string[]; status?: string; featured?: boolean; displayOptions?: VehicleDisplayOptions }) {
+  const imageUrls: string[] = (v.images ?? []).filter((e: any) => typeof e === 'string');
+  const opts = v.displayOptions;
+  const hasOpts = opts && (opts.showPros || opts.showThingsToKnow || opts.showIncluded);
+  const images: any[] = hasOpts
+    ? [...imageUrls, { _type: 'display_options', showPros: !!opts.showPros, showThingsToKnow: !!opts.showThingsToKnow, showIncluded: !!opts.showIncluded }]
+    : imageUrls;
   return {
     id: v.id,
     year: v.year,
@@ -66,7 +76,7 @@ export function vehicleToRow(v: Partial<Vehicle> & { images?: string[]; status?:
     exterior: v.exterior ?? '',
     interior: v.interior ?? '',
     ai_summary: v.aiSummary ?? '',
-    images: v.images ?? [],
+    images,
     status: v.status ?? 'available',
     featured: v.featured ?? false,
     updated_at: new Date().toISOString(),
@@ -103,11 +113,18 @@ export function guideToRow(g: Partial<Guide> & { published?: boolean }) {
 
 // ───────────────────────── Vehicles ─────────────────────────
 
+export type VehicleDisplayOptions = {
+  showPros?: boolean;
+  showThingsToKnow?: boolean;
+  showIncluded?: boolean;
+};
+
 export type AdminVehicle = Vehicle & {
   images?: string[];
   status?: string;
   featured?: boolean;
   views?: number;
+  displayOptions?: VehicleDisplayOptions;
   // Admin "never show on site" flag. Lives only in the DB — the sheet sync
   // never writes it, so it survives daily imports.
   hiddenOverride?: boolean;
