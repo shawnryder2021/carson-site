@@ -232,34 +232,28 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
           </button>
         </div>
 
-        {/* Top quick-actions strip */}
+        {/* Top bar */}
         <div style={{
-          background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 14,
-          padding: '14px 18px', marginBottom: 24,
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          gap: 12, marginBottom: 20, flexWrap: 'wrap',
         }}>
-          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>
-                {vehicle.year} {vehicle.make} {vehicle.model}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                {fmtPrice(vehicle.price)} · {fmtMiles(vehicle.mileage)}
-              </div>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(20px,3vw,26px)', fontWeight: 700, letterSpacing: '-.02em', margin: 0, lineHeight: 1.2 }}>
+              {vehicle.year} {vehicle.make} {vehicle.model}
+            </h1>
+            <span style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+              {fmtPrice(vehicle.price)} · {fmtMiles(vehicle.mileage)}
+            </span>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={() => setModal('interested')} className="btn btn-primary btn-sm">
-              <Icon name="heart" size={13} /> I'm interested
+              <Icon name="heart" size={13} /> Interested
             </button>
             <button onClick={() => setModal('testdrive')} className="btn btn-dark btn-sm">
-              <Icon name="car" size={13} /> Book test drive
-            </button>
-            <button onClick={() => setModal('otd')} className="btn btn-ghost btn-sm">
-              <Icon name="dollar" size={13} /> Out-the-door price
+              <Icon name="car" size={13} /> Test drive
             </button>
             <button onClick={() => setModal('video')} className="btn btn-ghost btn-sm">
-              <Icon name="sparkles" size={13} /> Request video
+              <Icon name="sparkles" size={13} /> Video
             </button>
           </div>
         </div>
@@ -391,9 +385,9 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
           {/* Right column - sticky sidebar */}
           <aside style={{ position: 'sticky', top: 90 }}>
             <div style={{ marginBottom: 4, fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>{vehicle.year}</div>
-            <h1 style={{ fontFamily: 'var(--display)', fontSize: 32, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 14px', lineHeight: 1.1 }}>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 14px', lineHeight: 1.1 }}>
               {vehicle.make} {vehicle.model}
-            </h1>
+            </h2>
 
             <div style={{ display: 'flex', gap: 14, fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
               <span><Icon name="gauge" size={13} style={{ verticalAlign: '-2px' }}/> {fmtMiles(vehicle.mileage)}</span>
