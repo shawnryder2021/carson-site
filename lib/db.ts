@@ -821,16 +821,19 @@ export type CustomPage = {
 };
 
 function rowToPage(r: any): CustomPage {
+  const rawBlocks: any[] = Array.isArray(r.blocks) ? r.blocks : [];
+  const meta = rawBlocks.find((b: any) => b.type === '_meta') ?? {};
+  const blocks = rawBlocks.filter((b: any) => b.type !== '_meta');
   return {
     id: r.id,
     slug: r.slug,
     title: r.title,
     description: r.description ?? '',
-    blocks: Array.isArray(r.blocks) ? r.blocks : [],
+    blocks,
     published: r.published,
     sortOrder: r.sort_order,
-    ogImage: r.og_image ?? '',
-    focusKeyword: r.focus_keyword ?? '',
+    ogImage: meta.ogImage ?? '',
+    focusKeyword: meta.focusKeyword ?? '',
   };
 }
 
@@ -856,15 +859,17 @@ export async function savePage(p: CustomPage): Promise<{ error?: string }> {
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
   if (!p.slug || !p.title) return { error: 'Title and slug are required' };
+  const blocksWithMeta = [
+    ...(p.blocks ?? []).filter((b: any) => b.type !== '_meta'),
+    { type: '_meta', ogImage: p.ogImage ?? '', focusKeyword: p.focusKeyword ?? '' },
+  ];
   const { error } = await sb.from('pages').upsert({
     slug: p.slug,
     title: p.title,
     description: p.description ?? '',
-    blocks: p.blocks ?? [],
+    blocks: blocksWithMeta,
     published: p.published ?? true,
     sort_order: p.sortOrder ?? 0,
-    og_image: p.ogImage ?? '',
-    focus_keyword: p.focusKeyword ?? '',
     updated_at: new Date().toISOString(),
   }, { onConflict: 'slug' });
   return { error: error?.message };

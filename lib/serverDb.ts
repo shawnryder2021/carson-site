@@ -123,9 +123,12 @@ export async function fetchPageFull(slug: string): Promise<ServerPageFull | null
   const sb = client();
   if (!sb) return null;
   try {
-    const { data, error } = await sb.from('pages').select('slug,title,description,og_image,blocks').eq('slug', slug).eq('published', true).maybeSingle();
+    const { data, error } = await sb.from('pages').select('slug,title,description,blocks').eq('slug', slug).eq('published', true).maybeSingle();
     if (error || !data) return null;
-    return { slug: data.slug, title: data.title, description: data.description ?? '', ogImage: data.og_image ?? '', blocks: Array.isArray(data.blocks) ? data.blocks : [] };
+    const rawBlocks: any[] = Array.isArray(data.blocks) ? data.blocks : [];
+    const meta = rawBlocks.find((b: any) => b.type === '_meta') ?? {};
+    const blocks = rawBlocks.filter((b: any) => b.type !== '_meta');
+    return { slug: data.slug, title: data.title, description: data.description ?? '', ogImage: meta.ogImage ?? '', blocks };
   } catch {
     return null;
   }
