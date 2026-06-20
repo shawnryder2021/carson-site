@@ -8,14 +8,41 @@ import { complete, generateDescriptionPrompt } from '@/lib/ai';
 import { saveVehicle, uploadImage, getPriceHistory, isSupabaseConfigured, AdminVehicle, PricePoint, VehicleDisplayOptions } from '@/lib/db';
 
 const OR_MODELS = [
+  // OpenAI
   { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
   { id: 'openai/gpt-4o', label: 'GPT-4o' },
+  { id: 'openai/gpt-4.1', label: 'GPT-4.1' },
+  { id: 'openai/gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+  { id: 'openai/gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+  { id: 'openai/o4-mini', label: 'o4-mini' },
+  // Anthropic
+  { id: 'anthropic/claude-opus-4', label: 'Claude Opus 4' },
   { id: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
   { id: 'anthropic/claude-haiku-4', label: 'Claude Haiku 4' },
+  { id: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku' },
+  // Google
   { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
   { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'google/gemma-3-27b-it', label: 'Gemma 3 27B' },
+  // Meta
   { id: 'meta-llama/llama-4-maverick', label: 'Llama 4 Maverick' },
+  { id: 'meta-llama/llama-4-scout', label: 'Llama 4 Scout' },
+  { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
+  // DeepSeek
   { id: 'deepseek/deepseek-chat-v3-0324', label: 'DeepSeek V3' },
+  { id: 'deepseek/deepseek-r1', label: 'DeepSeek R1' },
+  // Mistral
+  { id: 'mistralai/mistral-large-2', label: 'Mistral Large 2' },
+  { id: 'mistralai/mistral-small-3.2', label: 'Mistral Small 3.2' },
+  // Qwen
+  { id: 'qwen/qwen3-235b-a22b', label: 'Qwen 3 235B' },
+  { id: 'qwen/qwen3-32b', label: 'Qwen 3 32B' },
+  // xAI
+  { id: 'x-ai/grok-3-mini', label: 'Grok 3 Mini' },
+  // Cohere
+  { id: 'cohere/command-a', label: 'Command A' },
+  // Amazon
+  { id: 'amazon/nova-pro-v1', label: 'Nova Pro' },
 ];
 
 const EMPTY: AdminVehicle = {
