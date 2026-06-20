@@ -6,11 +6,13 @@ import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
 import { DotsAnim } from '@/components/DotsAnim';
 import { INVENTORY, Vehicle } from '@/data/inventory';
-import { fmtPrice, estMonthly } from '@/lib/format';
+import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
 import { PriceModeToggle } from '@/context/PriceModeContext';
 import { listVehicles, AdminVehicle } from '@/lib/db';
+import { getRecentlyViewed } from '@/lib/recentlyViewed';
+import { vehicleImageURL } from '@/data/vehicleImage';
 
 type Filters = {
   body: string[];
@@ -70,6 +72,9 @@ function InventoryContent() {
 
   const [inventory, setInventory] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   useEffect(() => { listVehicles().then(v => { if (v.length) setInventory(v); }); }, []);
+
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+  useEffect(() => { setRecentIds(getRecentlyViewed()); }, []);
 
   const [filters, setFilters] = useState<Filters>({
     ...DEFAULT_FILTERS,
@@ -199,6 +204,96 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
           )}
         </div>
       </div>
+
+      {/* Quick filter chips */}
+      <div style={{ borderBottom: '1px solid var(--line)', background: 'white' }}>
+        <div className="container" style={{ maxWidth: 1400, padding: '12px 20px', display: 'flex', gap: 8, overflowX: 'auto', alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', whiteSpace: 'nowrap', marginRight: 4 }}>Quick:</span>
+          {([
+            { label: 'SUVs', apply: () => setFilters(f => ({ ...f, body: f.body.includes('SUV') ? f.body.filter(b => b !== 'SUV') : [...f.body, 'SUV'] })), active: filters.body.includes('SUV') },
+            { label: 'Trucks', apply: () => setFilters(f => ({ ...f, body: f.body.includes('Truck') ? f.body.filter(b => b !== 'Truck') : [...f.body, 'Truck'] })), active: filters.body.includes('Truck') },
+            { label: 'Sedans', apply: () => setFilters(f => ({ ...f, body: f.body.includes('Sedan') ? f.body.filter(b => b !== 'Sedan') : [...f.body, 'Sedan'] })), active: filters.body.includes('Sedan') },
+            { label: 'Under $25k', apply: () => setFilters(f => ({ ...f, priceMax: f.priceMax === 25000 ? 100000 : 25000 })), active: filters.priceMax === 25000 },
+            { label: 'Under $35k', apply: () => setFilters(f => ({ ...f, priceMax: f.priceMax === 35000 ? 100000 : 35000 })), active: filters.priceMax === 35000 },
+            { label: 'AWD', apply: () => setFilters(f => ({ ...f, drive: f.drive.includes('AWD') ? f.drive.filter(d => d !== 'AWD') : [...f.drive, 'AWD'] })), active: filters.drive.includes('AWD') },
+            { label: 'Low KM', apply: () => setFilters(f => ({ ...f, milesMax: f.milesMax === 30000 ? 100000 : 30000 })), active: filters.milesMax === 30000 },
+            { label: 'Hybrid / EV', apply: () => { const has = filters.fuel.includes('Hybrid') && filters.fuel.includes('Electric'); setFilters(f => ({ ...f, fuel: has ? [] : ['Hybrid', 'Electric'] })); }, active: filters.fuel.includes('Hybrid') || filters.fuel.includes('Electric') },
+            { label: 'Under $400/mo', apply: () => setFilters(f => ({ ...f, monthlyMax: f.monthlyMax === 400 ? MONTHLY_CAP : 400 })), active: filters.monthlyMax === 400 },
+          ]).map(chip => (
+            <button
+              key={chip.label}
+              onClick={chip.apply}
+              style={{
+                padding: '7px 14px', borderRadius: 999, whiteSpace: 'nowrap',
+                background: chip.active ? 'var(--ink)' : 'var(--bg-soft)',
+                color: chip.active ? 'white' : 'var(--ink)',
+                border: '1px solid ' + (chip.active ? 'var(--ink)' : 'var(--line)'),
+                cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                transition: 'all 150ms',
+              }}
+            >
+              {chip.label}
+            </button>
+          ))}
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearFilters}
+              style={{
+                padding: '7px 14px', borderRadius: 999, whiteSpace: 'nowrap',
+                background: 'transparent', color: 'var(--teal-2)',
+                border: '1px solid var(--teal)', cursor: 'pointer',
+                fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+              }}
+            >
+              Clear all
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Recently viewed */}
+      {(() => {
+        const recentVehicles = recentIds
+          .map(id => inventory.find(v => v.id === id))
+          .filter((v): v is AdminVehicle => !!v && v.status !== 'sold')
+          .slice(0, 6);
+        if (recentVehicles.length < 2) return null;
+        const photo = (v: AdminVehicle) => (v as any).images?.[0] || vehicleImageURL(v, { size: 200 });
+        return (
+          <div style={{ background: 'white', borderBottom: '1px solid var(--line)' }}>
+            <div className="container" style={{ maxWidth: 1400, padding: '14px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                  <Icon name="car" size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Recently viewed
+                </span>
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', flex: 1, paddingBottom: 2 }}>
+                  {recentVehicles.map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => router.push(`/vehicle/${v.id}`)}
+                      style={{
+                        flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 10,
+                        background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 10,
+                        padding: '6px 12px 6px 6px', cursor: 'pointer', fontFamily: 'inherit',
+                        textAlign: 'left', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <div style={{ width: 40, height: 30, borderRadius: 6, overflow: 'hidden', background: 'var(--line)', flexShrink: 0 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={photo(v)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>{v.year} {v.make} {v.model}</div>
+                        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{fmtPrice(v.price)} · {fmtMiles(v.mileage)}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Main */}
       <div className="container" style={{ maxWidth: 1400, padding: '32px 20px 80px' }}>
