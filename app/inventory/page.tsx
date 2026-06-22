@@ -100,11 +100,22 @@ function InventoryContent() {
     if (!aiQuery) return;
     setAiThinking(true);
 
-    const prompt = `Parse this car shopping query into JSON filters. Reply ONLY with JSON:
-Query: "${aiQuery}"
-{"body":["Sedan"|"Coupe"|"SUV"|"Truck"|"Wagon"],"fuel":["Gas"|"Hybrid"|"Electric"],"drive":["FWD"|"RWD"|"AWD"],"priceMax":<number or 100000>,"milesMax":<number or 100000>,"insight":"1 friendly sentence about what you understood and your top pick approach.","topPickId":"vehicle id from this list: ${inventory.map(v => v.id + '=' + v.year + ' ' + v.make + ' ' + v.model + ' $' + v.price).slice(0, 24).join(', ')}"}
+    const vehicleList = inventory
+      .filter(v => v.status !== 'sold')
+      .map(v => `${v.id}=${v.year} ${v.make} ${v.model} $${v.price} ${v.mileage}km ${v.body} ${v.fuel} ${v.drive}`)
+      .slice(0, 24)
+      .join(', ');
 
-Only fill arrays if the query specifically mentions that filter. Return empty arrays for unmentioned filters.`;
+    const prompt = `Parse this car shopping query into JSON filters. Reply ONLY with valid JSON, no markdown:
+Query: "${aiQuery}"
+{"body":["Sedan"|"Coupe"|"SUV"|"Truck"|"Wagon"],"fuel":["Gas"|"Hybrid"|"Electric"],"drive":["FWD"|"RWD"|"AWD"],"priceMax":<number or 100000>,"milesMax":<number or 100000>,"topPickId":"<exact vehicle id from the list below that best matches the query>","topPickReason":"<1 sentence explaining why this specific vehicle is your top pick for the customer>"}
+
+Available vehicles: ${vehicleList}
+
+Rules:
+- topPickId MUST be an exact id from the list above.
+- topPickReason should mention the vehicle by name, year, make, model and price.
+- Only fill filter arrays if the query specifically mentions that filter. Return empty arrays for unmentioned filters.`;
 
     complete(prompt)
       .then(reply => {
@@ -117,8 +128,10 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
           priceMax: json.priceMax || 100000,
           milesMax: json.milesMax || 100000,
         }));
-        setAiInsight(json.insight || null);
-        setTopPickId(json.topPickId || null);
+        const pickedId = json.topPickId || null;
+        const matchedVehicle = pickedId ? inventory.find(v => v.id === pickedId) : null;
+        setTopPickId(matchedVehicle ? pickedId : null);
+        setAiInsight(matchedVehicle ? (json.topPickReason || null) : (json.topPickReason || "Here's what matches your search. Use filters to narrow down."));
       })
       .catch(() => {
         setAiInsight("I'll show you everything that might match. Use filters to narrow down.");
@@ -193,15 +206,48 @@ Only fill arrays if the query specifically mentions that filter. Return empty ar
             </div>
           )}
 
-          {aiInsight && !aiThinking && (
-            <div style={{ marginTop: 20, background: 'white', border: '1px solid var(--line)', borderRadius: 12, padding: '16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start', maxWidth: 800 }}>
-              <Icon name="sparkles" size={18} style={{ color: 'var(--teal)', flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--teal-2)', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 4 }}>Carson AI says</div>
-                <p style={{ margin: 0, fontSize: 14, color: 'var(--ink)', lineHeight: 1.5 }}>{aiInsight}</p>
+          {aiInsight && !aiThinking && (() => {
+            const pick = topPickId ? inventory.find(v => v.id === topPickId) : null;
+            const pickPhoto = pick ? ((pick as any).images?.[0] || vehicleImageURL(pick, { size: 200 })) : '';
+            return (
+              <div style={{ marginTop: 20, background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '18px 22px', maxWidth: 800 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <Icon name="sparkles" size={18} style={{ color: 'var(--teal)', flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--teal-2)', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 4 }}>Carson AI's pick for you</div>
+                    <p style={{ margin: 0, fontSize: 14, color: 'var(--ink)', lineHeight: 1.5 }}>{aiInsight}</p>
+                  </div>
+                </div>
+                {pick && (
+                  <button
+                    onClick={() => router.push(`/vehicle/${pick.id}`)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14, width: '100%',
+                      marginTop: 14, padding: '10px 14px', background: 'var(--bg-soft)',
+                      border: '1px solid var(--line)', borderRadius: 10, cursor: 'pointer',
+                      fontFamily: 'inherit', textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ width: 72, height: 54, borderRadius: 8, overflow: 'hidden', background: 'var(--line)', flexShrink: 0 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={pickPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
+                        {pick.year} {pick.make} {pick.model}
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                        {fmtPrice(pick.price)} · {fmtMiles(pick.mileage)}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--teal-2)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      View <Icon name="arrowRight" size={13} />
+                    </span>
+                  </button>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 
