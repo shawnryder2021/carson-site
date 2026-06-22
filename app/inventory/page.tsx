@@ -71,7 +71,8 @@ function InventoryContent() {
   const maxMonthlyParam = searchParams.get('maxMonthly');
 
   const [inventory, setInventory] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
-  useEffect(() => { listVehicles().then(v => { if (v.length) setInventory(v); }); }, []);
+  const [inventoryLoaded, setInventoryLoaded] = useState(false);
+  useEffect(() => { listVehicles().then(v => { if (v.length) setInventory(v); setInventoryLoaded(true); }).catch(() => setInventoryLoaded(true)); }, []);
 
   const [recentIds, setRecentIds] = useState<string[]>([]);
   useEffect(() => { setRecentIds(getRecentlyViewed()); }, []);
@@ -95,26 +96,29 @@ function InventoryContent() {
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [topPickId, setTopPickId] = useState<string | null>(null);
 
-  // Process AI query on mount
+  // Process AI query once inventory is loaded
+  const [aiRan, setAiRan] = useState(false);
   useEffect(() => {
-    if (!aiQuery) return;
+    if (!aiQuery || !inventoryLoaded || aiRan) return;
+    setAiRan(true);
     setAiThinking(true);
 
-    const vehicleList = inventory
-      .filter(v => v.status !== 'sold')
+    const available = inventory.filter(v => v.status !== 'sold');
+    const vehicleList = available
       .map(v => `${v.id}=${v.year} ${v.make} ${v.model} $${v.price} ${v.mileage}km ${v.body} ${v.fuel} ${v.drive}`)
-      .slice(0, 24)
-      .join(', ');
+      .slice(0, 30)
+      .join('\n');
 
     const prompt = `Parse this car shopping query into JSON filters. Reply ONLY with valid JSON, no markdown:
 Query: "${aiQuery}"
 {"body":["Sedan"|"Coupe"|"SUV"|"Truck"|"Wagon"],"fuel":["Gas"|"Hybrid"|"Electric"],"drive":["FWD"|"RWD"|"AWD"],"priceMax":<number or 100000>,"milesMax":<number or 100000>,"topPickId":"<exact vehicle id from the list below that best matches the query>","topPickReason":"<1 sentence explaining why this specific vehicle is your top pick for the customer>"}
 
-Available vehicles: ${vehicleList}
+Available vehicles (id=details):
+${vehicleList}
 
 Rules:
-- topPickId MUST be an exact id from the list above.
-- topPickReason should mention the vehicle by name, year, make, model and price.
+- topPickId MUST be copied exactly from an id on the left side of the = sign above.
+- topPickReason should mention the vehicle by year, make, model and price.
 - Only fill filter arrays if the query specifically mentions that filter. Return empty arrays for unmentioned filters.`;
 
     complete(prompt)
@@ -129,15 +133,20 @@ Rules:
           milesMax: json.milesMax || 100000,
         }));
         const pickedId = json.topPickId || null;
-        const matchedVehicle = pickedId ? inventory.find(v => v.id === pickedId) : null;
-        setTopPickId(matchedVehicle ? pickedId : null);
-        setAiInsight(matchedVehicle ? (json.topPickReason || null) : (json.topPickReason || "Here's what matches your search. Use filters to narrow down."));
+        const matched = pickedId ? available.find(v => v.id === pickedId) : null;
+        if (!matched && pickedId) {
+          const fuzzy = available.find(v => v.id.includes(pickedId) || pickedId.includes(v.id));
+          setTopPickId(fuzzy?.id || null);
+        } else {
+          setTopPickId(matched ? pickedId : null);
+        }
+        setAiInsight(json.topPickReason || "Here's what matches your search.");
       })
       .catch(() => {
         setAiInsight("I'll show you everything that might match. Use filters to narrow down.");
       })
       .finally(() => setAiThinking(false));
-  }, [aiQuery]);
+  }, [aiQuery, inventoryLoaded, aiRan, inventory]);
 
   // Apply filters
   const filtered = useMemo(() => {
