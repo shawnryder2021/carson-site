@@ -22,8 +22,19 @@ function base64url(input: Buffer | string): string {
   return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+const KEY_PASTE_HINT =
+  'GA4_PRIVATE_KEY could not be parsed — paste the private_key value from the service-account JSON exactly, without surrounding quotes, keeping the \\n sequences.';
+
+// Tolerates the common ways the key gets mangled when pasted into an env var:
+// wrapping quotes (copied straight from the JSON file, quotes included),
+// double-escaped \\n sequences, or real newlines (which need no unescaping).
 function privateKeyPem(): string {
-  return PRIVATE_KEY_RAW.replace(/\\n/g, '\n');
+  let k = PRIVATE_KEY_RAW.trim();
+  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
+    k = k.slice(1, -1);
+  }
+  k = k.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n');
+  return k.trim();
 }
 
 function buildAssertion(): string {
@@ -37,7 +48,14 @@ function buildAssertion(): string {
     exp: now + 3600,
   };
   const input = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(claims))}`;
-  const signature = createSign('RSA-SHA256').update(input).sign(privateKeyPem());
+  const pem = privateKeyPem();
+  if (!pem.includes('-----BEGIN')) throw new Error(KEY_PASTE_HINT);
+  let signature: Buffer;
+  try {
+    signature = createSign('RSA-SHA256').update(input).sign(pem);
+  } catch {
+    throw new Error(KEY_PASTE_HINT);
+  }
   return `${input}.${base64url(signature)}`;
 }
 
