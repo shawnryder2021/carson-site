@@ -11,6 +11,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: s
     { href: '/admin', label: 'Dashboard', icon: 'gauge' },
     { href: '/admin/analytics', label: 'Analytics', icon: 'trend' },
     { href: '/admin/traffic', label: 'Traffic', icon: 'trend' },
+    { href: '/admin/reports', label: 'Reports', icon: 'award' },
     { href: 'https://analytics.google.com/analytics/web/', label: 'Google Analytics (GA4)', icon: 'trend', external: true },
   ] },
   { title: 'Sales', items: [

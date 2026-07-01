@@ -219,3 +219,12 @@ footer { border-top: 1px solid var(--line); }
   .admin-foot button { white-space: nowrap; }
   .admin-main > div { padding-left: 16px !important; padding-right: 16px !important; }
 }
+
+/* ───────── Admin report printing (window.print → Save as PDF) ───────── */
+@media print {
+  .admin-side, .admin-foot, .no-print { display: none !important; }
+  .admin-shell { display: block !important; }
+  .admin-main { background: white !important; }
+  .report-print-area { max-width: 100% !important; padding: 0 !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
