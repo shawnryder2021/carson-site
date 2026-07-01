@@ -6,11 +6,12 @@ import { Icon } from '@/components/Icon';
 import { ChatNotifier } from '@/components/admin/ChatNotifier';
 import { getBrowserClient } from '@/lib/supabase/client';
 
-const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: string }[] }[] = [
+const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: string; external?: boolean }[] }[] = [
   { title: '', items: [
     { href: '/admin', label: 'Dashboard', icon: 'gauge' },
     { href: '/admin/analytics', label: 'Analytics', icon: 'trend' },
     { href: '/admin/traffic', label: 'Traffic', icon: 'trend' },
+    { href: 'https://analytics.google.com/analytics/web/', label: 'Google Analytics (GA4)', icon: 'trend', external: true },
   ] },
   { title: 'Sales', items: [
     { href: '/admin/inventory', label: 'Inventory', icon: 'car' },
@@ -70,11 +71,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 </div>
               )}
               {group.items.map(item => {
-                const active = item.href === '/admin' ? pathname === '/admin' : pathname?.startsWith(item.href);
+                const active = !item.external && (item.href === '/admin' ? pathname === '/admin' : pathname?.startsWith(item.href));
                 return (
                   <button
                     key={item.href}
-                    onClick={() => router.push(item.href)}
+                    onClick={() => item.external ? window.open(item.href, '_blank', 'noopener') : router.push(item.href)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 9,
                       background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
@@ -83,6 +84,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     }}
                   >
                     <Icon name={item.icon as any} size={16} /> {item.label}
+                    {item.external && <Icon name="arrowRight" size={11} style={{ marginLeft: 'auto', opacity: 0.6, transform: 'rotate(-45deg)' }} />}
                   </button>
                 );
               })}
