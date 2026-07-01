@@ -13,6 +13,7 @@ import { PriceModeToggle } from '@/context/PriceModeContext';
 import { listVehicles, AdminVehicle } from '@/lib/db';
 import { getRecentlyViewed } from '@/lib/recentlyViewed';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { gaEvent } from '@/lib/gtag';
 
 type Filters = {
   body: string[];
@@ -102,6 +103,7 @@ function InventoryContent() {
     if (!aiQuery || !inventoryLoaded || aiRan) return;
     setAiRan(true);
     setAiThinking(true);
+    gaEvent('search', { search_term: aiQuery, source: 'inventory' });
 
     const available = inventory.filter(v => v.status !== 'sold');
     const vehicleList = available

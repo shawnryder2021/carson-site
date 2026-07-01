@@ -14,6 +14,7 @@ import { useSaved } from '@/context/SavedContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { getVehicleById, listVehicles, createLead, recordVehicleView, createVehicleWatch, AdminVehicle } from '@/lib/db';
 import { recordRecentlyViewed } from '@/lib/recentlyViewed';
+import { gaEvent } from '@/lib/gtag';
 
 const PRESET_QUESTIONS = [
   'Is this a fair price?',
@@ -39,6 +40,12 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
       // Count one view per vehicle per browser session.
       if (v && !(v as any).hiddenOverride) {
         recordRecentlyViewed(params.id);
+        gaEvent('view_item', {
+          item_id: v.id,
+          item_name: `${v.year} ${v.make} ${v.model}`,
+          value: v.price,
+          currency: 'CAD',
+        });
         const key = `cx_viewed_${params.id}`;
         if (!sessionStorage.getItem(key)) {
           sessionStorage.setItem(key, '1');

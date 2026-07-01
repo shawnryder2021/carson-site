@@ -5,6 +5,7 @@ import { SavedProvider } from '@/context/SavedContext';
 import { PriceModeProvider } from '@/context/PriceModeContext';
 import { HeroConfigProvider } from '@/context/HeroConfigContext';
 import { SITE_URL } from '@/lib/serverDb';
+import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { AppShell } from './AppShell';
 import './globals.css';
 
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           data-dnt="false"
           strategy="afterInteractive"
         />
+        <GoogleAnalytics />
         <SavedProvider>
           <PriceModeProvider>
             <HeroConfigProvider>

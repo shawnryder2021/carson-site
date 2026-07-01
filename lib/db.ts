@@ -3,6 +3,7 @@ import { isSupabaseConfigured } from './supabase/config';
 import { INVENTORY, Vehicle } from '@/data/inventory';
 import { GUIDES, Guide } from '@/data/guides';
 import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
+import { gaEvent } from './gtag';
 
 // ───────────────────────── Types ─────────────────────────
 
@@ -310,6 +311,10 @@ export async function saveSettings(s: SiteSettings): Promise<{ error?: string }>
 // ───────────────────────── Leads ─────────────────────────
 
 export async function createLead(lead: Omit<Lead, 'id' | 'status' | 'createdAt'>): Promise<{ error?: string }> {
+  // GA4's recommended conversion event — fires even without Supabase configured
+  // so demo/preview traffic still shows up in reporting.
+  gaEvent('generate_lead', { lead_type: lead.type, vehicle_id: lead.vehicleId || undefined });
+
   const sb = getBrowserClient();
   if (!sb) return {}; // silently no-op if not configured (forms still "work")
   const { error } = await sb.from('leads').insert({
@@ -672,6 +677,7 @@ export type VehicleWatch = {
 };
 
 export async function createVehicleWatch(w: Omit<VehicleWatch, 'id' | 'active' | 'createdAt'>): Promise<{ error?: string }> {
+  gaEvent('price_alert_signup', { vehicle_id: w.vehicleId, contact_pref: w.contactPref });
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
   const { error } = await sb.from('vehicle_watches').insert({
