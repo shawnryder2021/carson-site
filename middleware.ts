@@ -7,9 +7,10 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publi
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only guard /admin (but never the login page itself)
   const isAdmin = pathname.startsWith('/admin');
-  const isLogin = pathname === '/admin/login';
+  const isAdminLogin = pathname === '/admin/login';
+  const isGarage = pathname.startsWith('/garage');
+  const isGarageLogin = pathname === '/garage/login';
 
   // If Supabase isn't configured, let everything through (site still works)
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return NextResponse.next();
@@ -31,25 +32,47 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Not logged in and trying to reach a protected admin page → login
-  if (isAdmin && !isLogin && !user) {
+  const redirect = (path: string, next?: string) => {
     const url = request.nextUrl.clone();
-    url.pathname = '/admin/login';
-    url.searchParams.set('next', pathname);
+    url.pathname = path;
+    url.search = '';
+    if (next) url.searchParams.set('next', next);
     return NextResponse.redirect(url);
+  };
+
+  // Customers have Supabase accounts too, so a session alone no longer means
+  // admin — check admin_users membership (own-row RLS permits this lookup).
+  const checkAdmin = async () => {
+    const { data, error } = await supabase.from('admin_users').select('user_id').eq('user_id', user!.id).maybeSingle();
+    if (error) {
+      // Pre-migration DB (admin_users doesn't exist yet): only admins have
+      // accounts in that world, so a valid session is sufficient.
+      return /admin_users/i.test(error.message) || error.code === '42P01';
+    }
+    return !!data;
+  };
+
+  if (isAdmin && !isAdminLogin) {
+    if (!user) return redirect('/admin/login', pathname);
+    if (!(await checkAdmin())) return redirect('/garage');
   }
 
-  // Already logged in and on the login page → dashboard
-  if (isLogin && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/admin';
-    url.search = '';
-    return NextResponse.redirect(url);
+  if (isAdminLogin && user) {
+    return (await checkAdmin()) ? redirect('/admin') : redirect('/garage');
+  }
+
+  // Garage requires any signed-in session (admin or customer).
+  if (isGarage && !isGarageLogin && !user) {
+    return redirect('/garage/login', pathname);
+  }
+
+  if (isGarageLogin && user) {
+    return redirect('/garage');
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/garage/:path*'],
 };

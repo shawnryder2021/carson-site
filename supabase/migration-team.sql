@@ -1,3 +1,4 @@
+-- NOTE: admin policies here use public.is_admin() — run migration-garage.sql FIRST (it defines the function and the admin_users table).
 -- Run in the Supabase SQL Editor.
 -- Team members for the /team page.
 
@@ -22,6 +23,6 @@ alter table public.team_members enable row level security;
 drop policy if exists "team public read" on public.team_members;
 drop policy if exists "team admin write" on public.team_members;
 create policy "team public read"  on public.team_members for select using (true);
-create policy "team admin write"  on public.team_members for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "team admin write"  on public.team_members for all using (public.is_admin()) with check (public.is_admin());
 
 notify pgrst, 'reload schema';

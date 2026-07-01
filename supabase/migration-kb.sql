@@ -1,3 +1,4 @@
+-- NOTE: admin policies here use public.is_admin() — run migration-garage.sql FIRST (it defines the function and the admin_users table).
 -- AI Knowledge Base for system prompts
 -- Run in the Supabase SQL Editor.
 
@@ -16,7 +17,7 @@ alter table public.ai_knowledge_base enable row level security;
 drop policy if exists "kb public read" on public.ai_knowledge_base;
 drop policy if exists "kb admin write" on public.ai_knowledge_base;
 create policy "kb public read"  on public.ai_knowledge_base for select using (true);
-create policy "kb admin write"  on public.ai_knowledge_base for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "kb admin write"  on public.ai_knowledge_base for all using (public.is_admin()) with check (public.is_admin());
 
 -- Seed with templates (optional — delete and add your own via admin UI)
 insert into public.ai_knowledge_base (category, title, content) values

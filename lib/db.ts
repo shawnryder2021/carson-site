@@ -317,6 +317,9 @@ export async function createLead(lead: Omit<Lead, 'id' | 'status' | 'createdAt'>
 
   const sb = getBrowserClient();
   if (!sb) return {}; // silently no-op if not configured (forms still "work")
+  // Only include user_id when signed in — keeps anonymous inserts working on
+  // databases where migration-garage.sql hasn't added the column yet.
+  const userId = (await sb.auth.getSession()).data.session?.user.id ?? null;
   const { error } = await sb.from('leads').insert({
     type: lead.type,
     name: lead.name,
@@ -324,6 +327,7 @@ export async function createLead(lead: Omit<Lead, 'id' | 'status' | 'createdAt'>
     phone: lead.phone,
     vehicle_id: lead.vehicleId ?? null,
     payload: lead.payload ?? {},
+    ...(userId ? { user_id: userId } : {}),
   });
   return { error: error?.message };
 }
@@ -615,11 +619,13 @@ function rowToCarRequest(r: any): CarRequest {
 export async function createCarRequest(req: Omit<CarRequest, 'id' | 'active' | 'notifiedVehicleIds' | 'createdAt'>): Promise<{ error?: string }> {
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
+  const userId = (await sb.auth.getSession()).data.session?.user.id ?? null;
   const { error } = await sb.from('car_requests').insert({
     name: req.name, email: req.email, phone: req.phone, contact_pref: req.contactPref,
     body: req.body, make: req.make, model: req.model,
     year_min: req.yearMin || null, price_max: req.priceMax || null, mileage_max: req.mileageMax || null,
     fuel: req.fuel, drive: req.drive, notes: req.notes,
+    ...(userId ? { user_id: userId } : {}),
   });
   return { error: error?.message };
 }
@@ -680,9 +686,11 @@ export async function createVehicleWatch(w: Omit<VehicleWatch, 'id' | 'active' |
   gaEvent('price_alert_signup', { vehicle_id: w.vehicleId, contact_pref: w.contactPref });
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
+  const userId = (await sb.auth.getSession()).data.session?.user.id ?? null;
   const { error } = await sb.from('vehicle_watches').insert({
     vehicle_id: w.vehicleId, name: w.name, email: w.email, phone: w.phone,
     contact_pref: w.contactPref, last_notified_price: w.lastNotifiedPrice,
+    ...(userId ? { user_id: userId } : {}),
   });
   return { error: error?.message };
 }

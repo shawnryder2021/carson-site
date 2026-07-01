@@ -11,6 +11,7 @@ import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
+import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { getVehicleById, listVehicles, createLead, recordVehicleView, createVehicleWatch, AdminVehicle } from '@/lib/db';
 import { recordRecentlyViewed } from '@/lib/recentlyViewed';
@@ -95,12 +96,17 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
   }, []);
 
   // Watch-this-car state
+  const { user } = useCustomerAuth();
   const [watchContact, setWatchContact] = useState('');
   const [watching, setWatching] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);
   useEffect(() => {
     setWatching(typeof window !== 'undefined' && !!localStorage.getItem(`cx_watch_${params.id}`));
   }, [params.id]);
+  // Signed-in shoppers shouldn't have to retype their email.
+  useEffect(() => {
+    if (user?.email) setWatchContact(c => c || user.email!);
+  }, [user?.email]);
 
   const startWatch = async () => {
     if (!vehicle || !watchContact.trim()) return;

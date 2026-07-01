@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { Inter, Fraunces, Anton } from 'next/font/google';
+import { CustomerAuthProvider } from '@/context/CustomerAuthContext';
 import { SavedProvider } from '@/context/SavedContext';
 import { PriceModeProvider } from '@/context/PriceModeContext';
 import { HeroConfigProvider } from '@/context/HeroConfigContext';
@@ -62,13 +63,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           strategy="afterInteractive"
         />
         <GoogleAnalytics />
-        <SavedProvider>
-          <PriceModeProvider>
-            <HeroConfigProvider>
-              <AppShell>{children}</AppShell>
-            </HeroConfigProvider>
-          </PriceModeProvider>
-        </SavedProvider>
+        <CustomerAuthProvider>
+          <SavedProvider>
+            <PriceModeProvider>
+              <HeroConfigProvider>
+                <AppShell>{children}</AppShell>
+              </HeroConfigProvider>
+            </PriceModeProvider>
+          </SavedProvider>
+        </CustomerAuthProvider>
       </body>
     </html>
   );

@@ -1,3 +1,4 @@
+-- NOTE: admin policies here use public.is_admin() — run migration-garage.sql FIRST (it defines the function and the admin_users table).
 -- Run this in the Supabase SQL Editor to add the admin-editable navigation.
 create table if not exists public.nav_items (
   id          uuid primary key default gen_random_uuid(),
@@ -14,4 +15,4 @@ alter table public.nav_items enable row level security;
 drop policy if exists "nav public read" on public.nav_items;
 drop policy if exists "nav admin write" on public.nav_items;
 create policy "nav public read"  on public.nav_items for select using (true);
-create policy "nav admin write"  on public.nav_items for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "nav admin write"  on public.nav_items for all using (public.is_admin()) with check (public.is_admin());

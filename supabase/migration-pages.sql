@@ -1,3 +1,4 @@
+-- NOTE: admin policies here use public.is_admin() — run migration-garage.sql FIRST (it defines the function and the admin_users table).
 -- Custom pages (admin page builder) + a starter Service Department page.
 -- Run in the Supabase SQL Editor (project sfxswebjrzzdqtuzfmvd).
 
@@ -17,7 +18,7 @@ alter table public.pages enable row level security;
 drop policy if exists "pages public read" on public.pages;
 drop policy if exists "pages admin write" on public.pages;
 create policy "pages public read"  on public.pages for select using (true);
-create policy "pages admin write"  on public.pages for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "pages admin write"  on public.pages for all using (public.is_admin()) with check (public.is_admin());
 
 -- Starter Service Department page (edit it in Admin → Pages)
 insert into public.pages (slug, title, description, blocks) values (

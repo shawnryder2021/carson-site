@@ -1,3 +1,4 @@
+-- NOTE: admin policies here use public.is_admin() — run migration-garage.sql FIRST (it defines the function and the admin_users table).
 -- CarFinder: shopper vehicle requests + automatic match alerts
 -- Run in the Supabase SQL Editor.
 
@@ -28,7 +29,7 @@ drop policy if exists "car requests public insert" on public.car_requests;
 drop policy if exists "car requests admin all" on public.car_requests;
 create policy "car requests public insert" on public.car_requests for insert with check (true);
 create policy "car requests admin all" on public.car_requests for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 
 -- Alert delivery webhook (configured from Admin → CarFinder, no env var needed).
 -- site_settings may not exist on databases where the full schema.sql was never
@@ -54,7 +55,7 @@ alter table public.site_settings enable row level security;
 drop policy if exists "settings public read" on public.site_settings;
 drop policy if exists "settings admin write" on public.site_settings;
 create policy "settings public read"  on public.site_settings for select using (true);
-create policy "settings admin write"  on public.site_settings for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "settings admin write"  on public.site_settings for all using (public.is_admin()) with check (public.is_admin());
 
 alter table public.site_settings add column if not exists alert_webhook_url text not null default '';
 

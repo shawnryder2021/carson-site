@@ -1,3 +1,4 @@
+-- NOTE: admin policies here use public.is_admin() — run migration-garage.sql FIRST (it defines the function and the admin_users table).
 -- ============================================================
 --  Carson Exports — Supabase schema
 --  Run this in the Supabase SQL Editor (one time).
@@ -101,24 +102,24 @@ alter table public.nav_items     enable row level security;
 
 -- nav_items: public read, admin write
 create policy "nav public read"  on public.nav_items for select using (true);
-create policy "nav admin write"  on public.nav_items for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "nav admin write"  on public.nav_items for all using (public.is_admin()) with check (public.is_admin());
 
 -- vehicles: public read, admin write
 create policy "vehicles public read"  on public.vehicles for select using (true);
-create policy "vehicles admin write"  on public.vehicles for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "vehicles admin write"  on public.vehicles for all using (public.is_admin()) with check (public.is_admin());
 
 -- site_settings: public read, admin write
 create policy "settings public read"  on public.site_settings for select using (true);
-create policy "settings admin write"  on public.site_settings for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "settings admin write"  on public.site_settings for all using (public.is_admin()) with check (public.is_admin());
 
 -- guides: public read, admin write
 create policy "guides public read"     on public.guides for select using (true);
-create policy "guides admin write"     on public.guides for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "guides admin write"     on public.guides for all using (public.is_admin()) with check (public.is_admin());
 
 -- leads: anyone can insert (public forms); only admins can read/update
 create policy "leads public insert"    on public.leads for insert with check (true);
-create policy "leads admin read"       on public.leads for select using (auth.role() = 'authenticated');
-create policy "leads admin update"     on public.leads for update using (auth.role() = 'authenticated');
+create policy "leads admin read"       on public.leads for select using (public.is_admin());
+create policy "leads admin update"     on public.leads for update using (public.is_admin());
 
 -- ============================================================
 --  STORAGE: bucket for vehicle photos & hero images
@@ -128,6 +129,6 @@ values ('media', 'media', true)
 on conflict (id) do nothing;
 
 create policy "media public read"   on storage.objects for select using (bucket_id = 'media');
-create policy "media admin write"   on storage.objects for insert with check (bucket_id = 'media' and auth.role() = 'authenticated');
-create policy "media admin update"  on storage.objects for update using (bucket_id = 'media' and auth.role() = 'authenticated');
-create policy "media admin delete"  on storage.objects for delete using (bucket_id = 'media' and auth.role() = 'authenticated');
+create policy "media admin write"   on storage.objects for insert with check (bucket_id = 'media' and public.is_admin());
+create policy "media admin update"  on storage.objects for update using (bucket_id = 'media' and public.is_admin());
+create policy "media admin delete"  on storage.objects for delete using (bucket_id = 'media' and public.is_admin());

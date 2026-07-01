@@ -1,3 +1,4 @@
+-- NOTE: admin policies here use public.is_admin() — run migration-garage.sql FIRST (it defines the function and the admin_users table).
 -- Live + AI chat. Run in the Supabase SQL Editor (project sfxswebjrzzdqtuzfmvd).
 
 create table if not exists public.chat_conversations (
@@ -27,8 +28,8 @@ alter table public.chat_conversations enable row level security;
 alter table public.chat_messages enable row level security;
 drop policy if exists "chat convo admin" on public.chat_conversations;
 drop policy if exists "chat msg admin" on public.chat_messages;
-create policy "chat convo admin" on public.chat_conversations for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
-create policy "chat msg admin"   on public.chat_messages for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "chat convo admin" on public.chat_conversations for all using (public.is_admin()) with check (public.is_admin());
+create policy "chat msg admin"   on public.chat_messages for all using (public.is_admin()) with check (public.is_admin());
 
 -- Chat config on site_settings
 alter table public.site_settings add column if not exists chat_enabled boolean not null default true;

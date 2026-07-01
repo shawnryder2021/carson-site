@@ -1,3 +1,4 @@
+-- NOTE: admin policies here use public.is_admin() — run migration-garage.sql FIRST (it defines the function and the admin_users table).
 -- Watch-this-car alerts + social proof (deal of the week)
 -- Run in the Supabase SQL Editor (project sfxswebjrzzdqtuzfmvd!).
 
@@ -20,7 +21,7 @@ drop policy if exists "watches public insert" on public.vehicle_watches;
 drop policy if exists "watches admin all" on public.vehicle_watches;
 create policy "watches public insert" on public.vehicle_watches for insert with check (true);
 create policy "watches admin all" on public.vehicle_watches for all
-  using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  using (public.is_admin()) with check (public.is_admin());
 
 -- Deal of the week: admin-picked vehicle highlighted on the homepage
 alter table public.site_settings add column if not exists deal_vehicle_id text not null default '';

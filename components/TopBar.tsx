@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Icon } from './Icon';
 import { useSaved } from '@/context/SavedContext';
+import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { listNav, listVehicles, DEFAULT_NAV, NavItem, AdminVehicle } from '@/lib/db';
 import { vehicleImageURL } from '@/data/vehicleImage';
@@ -25,6 +26,7 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { saved } = useSaved();
+  const { user } = useCustomerAuth();
   const { contactPhone } = useSiteSettings();
   const phone = contactPhone || '(555) 234-9090';
   const [nav, setNav] = useState<NavItem[]>(DEFAULT_NAV);
@@ -184,6 +186,12 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
               </span>
             )}
           </button>
+          <button className="icon-btn" title={user ? 'My Garage' : 'Sign in to My Garage'} onClick={() => router.push(user ? '/garage' : '/garage/login')} style={{ position: 'relative' }}>
+            <Icon name="car" size={18} />
+            {user && (
+              <span style={{ position: 'absolute', top: -2, right: -2, background: 'var(--teal)', borderRadius: '50%', width: 9, height: 9, border: '2px solid white' }} />
+            )}
+          </button>
           <button className="btn btn-ghost btn-sm topbar-phone" onClick={() => window.open(`tel:${phone.replace(/\s/g, '')}`)}>
             <Icon name="phone" size={14} /> {phone}
           </button>
@@ -235,6 +243,9 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
             <button className="btn btn-dark btn-lg" style={{ width: '100%' }} onClick={() => { setMobileOpen(false); onAIClick(); }}>
               <Icon name="sparkles" size={15} /> Find my car with AI
+            </button>
+            <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} onClick={() => go(user ? '/garage' : '/garage/login')}>
+              <Icon name="car" size={15} /> {user ? 'My Garage' : 'Sign in / My Garage'}
             </button>
             <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} onClick={() => window.open(`tel:${phone.replace(/\s/g, '')}`)}>
               <Icon name="phone" size={15} /> Call {phone}
