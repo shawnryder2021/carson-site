@@ -1,17 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase/config';
 import { isGa4Configured, getGa4Totals, getGa4EventCounts, getGa4TopSearchTerms } from '@/lib/ga4';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-async function requireAdmin(req: Request) {
-  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  if (!token) return false;
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-  const { data } = await sb.auth.getUser(token);
-  return !!data?.user;
-}
 
 async function run(req: Request) {
   if (!isGa4Configured) {

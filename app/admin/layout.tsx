@@ -17,6 +17,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: s
   { title: 'Sales', items: [
     { href: '/admin/inventory', label: 'Inventory', icon: 'car' },
     { href: '/admin/leads', label: 'Leads', icon: 'mail' },
+    { href: '/admin/customers', label: 'Customers', icon: 'users' },
     { href: '/admin/chat', label: 'Chat', icon: 'send' },
     { href: '/admin/requests', label: 'CarFinder', icon: 'search' },
   ] },
