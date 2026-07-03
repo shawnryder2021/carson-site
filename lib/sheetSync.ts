@@ -7,10 +7,23 @@ import { AdminVehicle } from './db';
 // Default sheet (can be overridden by INVENTORY_SHEET_URL env or an explicit url).
 export const DEFAULT_SHEET_ID = '1gNiaM_TTswU8WmuP7O3Vdu_qj2ow1ZaUpHXulP1YUoI';
 
+// Only Google Sheets hosts may be fetched — prevents SSRF via a crafted ?url=.
+function isAllowedSheetHost(host: string): boolean {
+  return host === 'docs.google.com'
+    || host === 'spreadsheets.google.com'
+    || host.endsWith('.googleusercontent.com');
+}
+
 export function sheetCsvUrl(input?: string): string {
   const raw = (input || process.env.INVENTORY_SHEET_URL || DEFAULT_SHEET_ID).trim();
-  // If a full published-CSV URL is given, use it as-is.
-  if (/output=csv|format=csv/.test(raw)) return raw;
+  // If a full published-CSV URL is given, use it — but only if it points at a
+  // Google host. Anything else falls through to be treated as a sheet ID, so a
+  // hostile URL can never be fetched verbatim.
+  if (/output=csv|format=csv/.test(raw) && /^https?:\/\//i.test(raw)) {
+    try {
+      if (isAllowedSheetHost(new URL(raw).hostname)) return raw;
+    } catch { /* not a valid URL — fall through */ }
+  }
   // Extract an ID from a full edit URL, or use the raw as an ID.
   const m = raw.match(/\/d\/(?:e\/)?([a-zA-Z0-9_-]+)/);
   const id = m ? m[1] : raw;

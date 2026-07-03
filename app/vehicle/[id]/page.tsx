@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import VehicleClient from './VehicleClient';
 import { fetchVehicle, SITE_URL } from '@/lib/serverDb';
+import { jsonLdSafe } from '@/lib/escapeHtml';
 
 // Server wrapper: per-vehicle metadata + structured data for SEO.
 // All interactivity lives in VehicleClient.
@@ -61,7 +62,7 @@ export default async function VehiclePage({ params }: { params: { id: string } }
   return (
     <>
       {jsonLd && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
       )}
       <VehicleClient params={params} />
     </>

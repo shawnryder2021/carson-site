@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServerClient } from '@/lib/supabase/server';
+import { safeNext } from '@/lib/safeNext';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,8 +10,7 @@ export async function GET(request: NextRequest) {
   const url = request.nextUrl;
   const code = url.searchParams.get('code');
   // Only allow same-site relative redirects.
-  const nextParam = url.searchParams.get('next') || '/garage';
-  const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/garage';
+  const next = safeNext(url.searchParams.get('next'), '/garage');
 
   if (code) {
     const sb = getServerClient();

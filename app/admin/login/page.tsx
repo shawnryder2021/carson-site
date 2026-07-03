@@ -5,11 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { getBrowserClient } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
+import { safeNext } from '@/lib/safeNext';
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get('next') || '/admin';
+  const next = safeNext(params.get('next'), '/admin');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

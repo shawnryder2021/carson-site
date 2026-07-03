@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { fmtPrice } from '@/lib/format';
 import { complete, generateDescriptionPrompt } from '@/lib/ai';
+import { getBrowserClient } from '@/lib/supabase/client';
 import { saveVehicle, uploadImage, getPriceHistory, isSupabaseConfigured, AdminVehicle, PricePoint, VehicleDisplayOptions } from '@/lib/db';
 
 const OR_MODELS = [
@@ -247,9 +248,11 @@ export function VehicleForm({ initial, isNew }: { initial?: AdminVehicle; isNew:
                     const prompt = generateDescriptionPrompt(v);
                     let reply: string;
                     if (aiSource === 'openrouter') {
+                      const { data: sess } = await getBrowserClient()!.auth.getSession();
+                      const token = sess?.session?.access_token;
                       const res = await fetch('/api/openrouter', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
                         body: JSON.stringify({ prompt, model: orModel }),
                       });
                       const data = await res.json();

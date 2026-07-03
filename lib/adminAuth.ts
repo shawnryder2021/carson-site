@@ -18,11 +18,10 @@ export async function requireAdmin(req: Request): Promise<boolean> {
   const { data: userData } = await sb.auth.getUser(token);
   if (!userData?.user) return false;
 
+  // Fail closed: any error (including a transient PostgREST schema-cache
+  // reload, which happens on every deploy) must NOT grant admin. A customer
+  // JWT hitting that window would otherwise pass.
   const { data, error } = await sb.from('admin_users').select('user_id').eq('user_id', userData.user.id).maybeSingle();
-  if (error) {
-    // Pre-migration DB (admin_users doesn't exist yet): only admins have
-    // accounts in that world, so a valid session is sufficient.
-    return /admin_users/i.test(error.message) || error.code === '42P01';
-  }
+  if (error) return false;
   return !!data;
 }

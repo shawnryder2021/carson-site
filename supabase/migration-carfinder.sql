@@ -27,7 +27,8 @@ alter table public.car_requests enable row level security;
 -- Shoppers can submit requests; only admins can read them (they contain contact info).
 drop policy if exists "car requests public insert" on public.car_requests;
 drop policy if exists "car requests admin all" on public.car_requests;
-create policy "car requests public insert" on public.car_requests for insert with check (true);
+alter table public.car_requests add column if not exists user_id uuid references auth.users(id) on delete set null;
+create policy "car requests public insert" on public.car_requests for insert with check (user_id is null or user_id = auth.uid());
 create policy "car requests admin all" on public.car_requests for all
   using (public.is_admin()) with check (public.is_admin());
 

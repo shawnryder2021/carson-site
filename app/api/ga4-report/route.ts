@@ -1,5 +1,6 @@
 import { isGa4Configured, getGa4Totals, getGa4EventCounts, getGa4TopSearchTerms } from '@/lib/ga4';
 import { requireAdmin } from '@/lib/adminAuth';
+import { checkSyncSecret } from '@/lib/secretAuth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -11,11 +12,9 @@ async function run(req: Request) {
 
   const url = new URL(req.url);
 
-  // Auth: admin bearer token (UI) OR ?secret=SYNC_SECRET (server-to-server,
-  // used by the weekly digest job — no browser session available there).
-  const secret = url.searchParams.get('secret');
-  const secretOk = !!(process.env.SYNC_SECRET && secret === process.env.SYNC_SECRET);
-  if (!secretOk && !(await requireAdmin(req))) {
+  // Auth: admin bearer token (UI) OR SYNC_SECRET (server-to-server, used by the
+  // weekly digest job — no browser session available there).
+  if (!checkSyncSecret(req) && !(await requireAdmin(req))) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -30,7 +29,8 @@ async function run(req: Request) {
     ]);
     return Response.json({ from, to, totals, events, search });
   } catch (e: any) {
-    return Response.json({ error: e?.message || 'GA4 fetch failed' }, { status: 500 });
+    console.error('GA4 fetch error:', e?.message || e);
+    return Response.json({ error: 'Could not load analytics data.' }, { status: 500 });
   }
 }
 

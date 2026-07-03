@@ -4,6 +4,7 @@
 // or an admin's "send test digest" button).
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isGa4Configured, getGa4Totals, getGa4EventCounts } from './ga4';
+import { escapeHtml } from './escapeHtml';
 
 const DAY = 86400000;
 
@@ -47,7 +48,7 @@ function renderDigestHtml(opts: {
   leadRows.forEach(l => { typeCounts[l.type] = (typeCounts[l.type] || 0) + 1; });
   const typeRows = Object.entries(typeCounts)
     .sort((a, b) => b[1] - a[1])
-    .map(([t, n]) => `<span style="display:inline-block;background:#e6f3fb;color:#15688f;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;margin:0 6px 6px 0;text-transform:capitalize;">${t}: ${n}</span>`)
+    .map(([t, n]) => `<span style="display:inline-block;background:#e6f3fb;color:#15688f;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;margin:0 6px 6px 0;text-transform:capitalize;">${escapeHtml(t)}: ${n}</span>`)
     .join('');
 
   const active = vehRows.filter(v => v.status !== 'sold' && v.status !== 'hidden' && !v.hidden_override);
@@ -60,7 +61,7 @@ function renderDigestHtml(opts: {
   const agingRows = aging.map(({ v, days }) => `
     <tr>
       <td style="padding:6px 0;color:${days >= 60 ? '#A8232C' : '#8A5400'};font-weight:800;">${days}d</td>
-      <td style="padding:6px 0 6px 12px;">${v.year} ${v.make} ${v.model} — $${v.price.toLocaleString()}</td>
+      <td style="padding:6px 0 6px 12px;">${escapeHtml(`${v.year} ${v.make} ${v.model}`)} — $${v.price.toLocaleString()}</td>
     </tr>`).join('');
 
   const soldCount = vehRows.filter(v => v.status === 'sold').length;

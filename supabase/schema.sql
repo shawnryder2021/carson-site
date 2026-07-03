@@ -117,7 +117,9 @@ create policy "guides public read"     on public.guides for select using (true);
 create policy "guides admin write"     on public.guides for all using (public.is_admin()) with check (public.is_admin());
 
 -- leads: anyone can insert (public forms); only admins can read/update
-create policy "leads public insert"    on public.leads for insert with check (true);
+-- A signed-in shopper may only stamp their OWN id (or none); prevents forgery.
+alter table public.leads add column if not exists user_id uuid references auth.users(id) on delete set null;
+create policy "leads public insert"    on public.leads for insert with check (user_id is null or user_id = auth.uid());
 create policy "leads admin read"       on public.leads for select using (public.is_admin());
 create policy "leads admin update"     on public.leads for update using (public.is_admin());
 

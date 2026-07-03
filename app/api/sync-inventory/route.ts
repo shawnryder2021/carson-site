@@ -3,23 +3,22 @@ import { sheetCsvUrl, parseSheetToVehicles } from '@/lib/sheetSync';
 import { vehicleToRow } from '@/lib/db';
 import { runMatchAlerts } from '@/lib/matchAlerts';
 import { SITE_URL } from '@/lib/serverDb';
+import { checkSyncSecret } from '@/lib/secretAuth';
 
 export const dynamic = 'force-dynamic';
 
 // Unattended sync (for scheduled jobs). Requires:
 //   SUPABASE_SERVICE_ROLE_KEY  — server-only key that can write past RLS
-//   SYNC_SECRET                — shared secret; caller must pass ?secret=...
+//   SYNC_SECRET                — shared secret (x-sync-secret header or ?secret=)
 async function run(req: Request) {
   const url = new URL(req.url);
-  const secret = url.searchParams.get('secret');
-  const SYNC_SECRET = process.env.SYNC_SECRET;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://sfxswebjrzzdqtuzfmvd.supabase.co';
 
-  if (!SYNC_SECRET || !SERVICE_KEY) {
+  if (!process.env.SYNC_SECRET || !SERVICE_KEY) {
     return Response.json({ error: 'Scheduled sync not configured (set SYNC_SECRET and SUPABASE_SERVICE_ROLE_KEY).' }, { status: 503 });
   }
-  if (secret !== SYNC_SECRET) {
+  if (!checkSyncSecret(req)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

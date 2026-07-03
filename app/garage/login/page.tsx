@@ -5,14 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { getBrowserClient } from '@/lib/supabase/client';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
+import { safeNext } from '@/lib/safeNext';
 
 type Mode = 'signin' | 'signup' | 'magic';
 
 function GarageLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const nextParam = params.get('next') || '/garage';
-  const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/garage';
+  const next = safeNext(params.get('next'), '/garage');
   const linkError = params.get('error') === 'link';
 
   const [mode, setMode] = useState<Mode>('signin');

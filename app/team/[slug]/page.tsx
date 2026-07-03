@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import TeamClient from './TeamClient';
 import { fetchTeamMember, SITE_URL } from '@/lib/serverDb';
+import { jsonLdSafe } from '@/lib/escapeHtml';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const m = await fetchTeamMember(params.slug);
@@ -44,7 +45,7 @@ export default async function TeamMemberPage({ params }: { params: { slug: strin
   return (
     <>
       {jsonLd && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
       )}
       <TeamClient params={params} />
     </>

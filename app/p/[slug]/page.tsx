@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import PageClient from './PageClient';
 import { fetchPageFull, SITE_URL } from '@/lib/serverDb';
+import { jsonLdSafe } from '@/lib/escapeHtml';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const p = await fetchPageFull(params.slug);
@@ -69,7 +70,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
   return (
     <>
       {jsonLd.map((schema, i) => (
-        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(schema) }} />
       ))}
       <PageClient params={params} />
     </>

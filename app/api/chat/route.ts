@@ -3,9 +3,12 @@ import { OpenAI } from 'openai';
 import { SUPABASE_URL } from '@/lib/supabase/config';
 import { isChatOpen, DEFAULT_CHAT_HOURS } from '@/lib/chatHours';
 import { SITE_URL } from '@/lib/serverDb';
+import { rateLimit } from '@/lib/ratelimit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
+
+const MAX_CHAT_TEXT = 2000; // chars per visitor message
 
 // Service-role client (bypasses RLS). Chat needs it because anonymous visitors
 // must read their own thread without exposing everyone else's.
@@ -130,6 +133,10 @@ export async function POST(req: Request) {
 
     // ── Start a conversation ──
     if (action === 'start') {
+      // Cap new-conversation creation per IP to stop table flooding.
+      if (!(await rateLimit(req, 'chat-start', 10, 60))) {
+        return Response.json({ error: 'rate_limited' }, { status: 429 });
+      }
       const mode = open ? 'live' : 'ai';
       const { data, error } = await sb.from('chat_conversations').insert({ mode }).select('id, token').single();
       if (error || !data) return Response.json({ error: error?.message || 'could not start' }, { status: 500 });
@@ -142,6 +149,11 @@ export async function POST(req: Request) {
     if (action === 'send') {
       const { conversationId, token, text, name, contact } = body;
       if (!conversationId || !token || !text?.trim()) return Response.json({ error: 'bad request' }, { status: 400 });
+      if (typeof text !== 'string' || text.length > MAX_CHAT_TEXT) return Response.json({ error: 'message too long' }, { status: 400 });
+      // Cap message rate per IP (each 'send' can trigger an OpenAI call).
+      if (!(await rateLimit(req, 'chat-send', 30, 60))) {
+        return Response.json({ error: 'rate_limited' }, { status: 429 });
+      }
       const { data: convo } = await sb.from('chat_conversations').select('*').eq('id', conversationId).eq('token', token).maybeSingle();
       if (!convo) return Response.json({ error: 'not found' }, { status: 404 });
 

@@ -19,7 +19,8 @@ create index if not exists idx_watches_vehicle on public.vehicle_watches(vehicle
 alter table public.vehicle_watches enable row level security;
 drop policy if exists "watches public insert" on public.vehicle_watches;
 drop policy if exists "watches admin all" on public.vehicle_watches;
-create policy "watches public insert" on public.vehicle_watches for insert with check (true);
+alter table public.vehicle_watches add column if not exists user_id uuid references auth.users(id) on delete set null;
+create policy "watches public insert" on public.vehicle_watches for insert with check (user_id is null or user_id = auth.uid());
 create policy "watches admin all" on public.vehicle_watches for all
   using (public.is_admin()) with check (public.is_admin());
 

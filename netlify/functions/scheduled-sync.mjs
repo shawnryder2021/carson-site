@@ -9,7 +9,8 @@ export default async () => {
     return new Response('skipped', { status: 200 });
   }
   try {
-    const res = await fetch(`${base}/api/sync-inventory?secret=${encodeURIComponent(secret)}`, { method: 'POST' });
+    // Secret travels in a header, not the URL, so it can't land in access logs.
+    const res = await fetch(`${base}/api/sync-inventory`, { method: 'POST', headers: { 'x-sync-secret': secret } });
     const body = await res.text();
     console.log('scheduled-sync result:', res.status, body);
     return new Response(body, { status: res.status });

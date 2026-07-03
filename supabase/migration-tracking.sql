@@ -19,7 +19,7 @@ create policy "price history public read" on public.price_history for select usi
 -- Trigger: record every price change no matter where it comes from
 -- (admin edit, sheet sync button, or the scheduled sync).
 create or replace function public.record_price_change() returns trigger
-language plpgsql security definer as $$
+language plpgsql security definer set search_path = public as $$
 begin
   if (tg_op = 'INSERT') then
     insert into public.price_history (vehicle_id, price) values (new.id, new.price);
@@ -37,7 +37,7 @@ create trigger vehicles_price_history
 
 -- 3) Anonymous-safe view counter (RPC), so VDP visits can increment views
 create or replace function public.increment_vehicle_view(vid text) returns void
-language sql security definer as $$
+language sql security definer set search_path = public as $$
   update public.vehicles set views = views + 1 where id = vid;
 $$;
 grant execute on function public.increment_vehicle_view(text) to anon, authenticated;

@@ -3,6 +3,7 @@
 // with a service-role Supabase client.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CarRequest, newMatchesFor, describeRequest } from './carMatch';
+import { escapeHtml } from './escapeHtml';
 
 type Veh = { id: string; year: number; make: string; model: string; price: number; mileage: number; body: string; fuel: string; drive: string; status?: string; images?: string[] };
 
@@ -93,7 +94,7 @@ async function sendEmail(to: string, name: string, matches: Veh[], siteUrl: stri
   const rows = matches.map(v => `
     <tr>
       <td style="padding:14px 16px;border-bottom:1px solid #eee;">
-        <div style="font-weight:700;font-size:15px;color:#111;">${v.year} ${v.make} ${v.model}</div>
+        <div style="font-weight:700;font-size:15px;color:#111;">${escapeHtml(`${v.year} ${v.make} ${v.model}`)}</div>
         <div style="font-size:13px;color:#667;margin-top:2px;">$${v.price.toLocaleString()} &middot; ${v.mileage.toLocaleString()} km &middot; ${v.fuel} &middot; ${v.drive}</div>
         <a href="${siteUrl}/vehicle/${v.id}" style="display:inline-block;margin-top:8px;background:#1E8FC4;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;">View this vehicle</a>
       </td>
@@ -101,7 +102,7 @@ async function sendEmail(to: string, name: string, matches: Veh[], siteUrl: stri
 
   const html = `
     <div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;">
-      <h2 style="color:#111;">Good news, ${name.split(' ')[0]} — we found ${matches.length === 1 ? 'a match' : matches.length + ' matches'}!</h2>
+      <h2 style="color:#111;">Good news, ${escapeHtml(name.split(' ')[0])} — we found ${matches.length === 1 ? 'a match' : matches.length + ' matches'}!</h2>
       <p style="color:#445;font-size:14px;line-height:1.6;">${matches.length === 1 ? 'A vehicle' : 'Vehicles'} matching your CarFinder request just ${matches.length === 1 ? 'arrived' : 'arrived'} at Carson Exports:</p>
       <table style="width:100%;border:1px solid #eee;border-radius:12px;border-collapse:separate;overflow:hidden;">${rows}</table>
       <p style="color:#889;font-size:12px;margin-top:18px;">Carson Exports &middot; 550 Windmill Rd, Dartmouth, NS &middot; Reply to this email or call us to book a test drive. Vehicles sell fast — don't wait too long!</p>
@@ -201,14 +202,16 @@ async function sendWatchEmail(kind: 'price_drop' | 'sold', w: WatchRow, v: Veh, 
   if (!key || !w.email) return false;
   const from = process.env.ALERT_FROM_EMAIL || 'Carson Exports <onboarding@resend.dev>';
   const title = `${v.year} ${v.make} ${v.model}`;
+  const titleHtml = escapeHtml(title);
+  const firstName = w.name ? escapeHtml(w.name.split(' ')[0]) : '';
   const subject = kind === 'price_drop'
     ? `📉 Price drop: ${title} is now $${v.price.toLocaleString()} — Carson Exports`
     : `${title} just sold — but we can find you another`;
   const body = kind === 'price_drop'
-    ? `<p>Good news${w.name ? ', ' + w.name.split(' ')[0] : ''} — the <strong>${title}</strong> you're watching just dropped from <s>$${w.last_notified_price.toLocaleString()}</s> to <strong>$${v.price.toLocaleString()}</strong> (save $${(w.last_notified_price - v.price).toLocaleString()}).</p>
+    ? `<p>Good news${firstName ? ', ' + firstName : ''} — the <strong>${titleHtml}</strong> you're watching just dropped from <s>$${w.last_notified_price.toLocaleString()}</s> to <strong>$${v.price.toLocaleString()}</strong> (save $${(w.last_notified_price - v.price).toLocaleString()}).</p>
        <p><a href="${siteUrl}/vehicle/${v.id}" style="display:inline-block;background:#1E8FC4;color:#fff;text-decoration:none;font-weight:700;padding:10px 18px;border-radius:8px;">See the new price</a></p>
        <p style="color:#889;font-size:12px;">Price drops attract attention — this one may not last. Carson Exports · 550 Windmill Rd, Dartmouth, NS</p>`
-    : `<p>${w.name ? w.name.split(' ')[0] + ', the' : 'The'} <strong>${title}</strong> you were watching has been sold. Want us to watch for a similar one? <a href="${siteUrl}/carfinder">Set up a CarFinder alert</a> and you'll get first dibs.</p>`;
+    : `<p>${firstName ? firstName + ', the' : 'The'} <strong>${titleHtml}</strong> you were watching has been sold. Want us to watch for a similar one? <a href="${siteUrl}/carfinder">Set up a CarFinder alert</a> and you'll get first dibs.</p>`;
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',

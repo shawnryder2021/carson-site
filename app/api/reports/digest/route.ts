@@ -3,6 +3,7 @@ import { buildAndSendDigest } from '@/lib/reportDigest';
 import { SITE_URL } from '@/lib/serverDb';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase/config';
 import { requireAdmin } from '@/lib/adminAuth';
+import { checkSyncSecret } from '@/lib/secretAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,8 +20,7 @@ async function run(req: Request) {
 
   let sb = null;
 
-  const secret = url.searchParams.get('secret');
-  if (process.env.SYNC_SECRET && secret === process.env.SYNC_SECRET && SERVICE_KEY) {
+  if (checkSyncSecret(req) && SERVICE_KEY) {
     sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   } else if (await requireAdmin(req)) {
     const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');

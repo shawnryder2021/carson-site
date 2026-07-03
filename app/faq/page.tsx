@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
+import { jsonLdSafe } from '@/lib/escapeHtml';
 
 type FAQ = { q: string; a: string };
 
@@ -65,7 +66,7 @@ export default function FAQPage() {
 
   return (
     <div className="page fade-in">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(faqJsonLd) }} />
       <PageHeader eyebrow="FAQ" title="Answers to your questions." subtitle="Everything you need to know about buying from Carson — from financing to test drives to what happens if you change your mind."/>
       <div className="container" style={{ maxWidth: 880, paddingBottom: 80 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>

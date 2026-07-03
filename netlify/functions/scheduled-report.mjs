@@ -9,7 +9,7 @@ export default async () => {
     return new Response('skipped', { status: 200 });
   }
   try {
-    const res = await fetch(`${base}/api/reports/digest?secret=${encodeURIComponent(secret)}`, { method: 'POST' });
+    const res = await fetch(`${base}/api/reports/digest`, { method: 'POST', headers: { 'x-sync-secret': secret } });
     const body = await res.text();
     console.log('scheduled-report result:', res.status, body);
     return new Response(body, { status: res.status });

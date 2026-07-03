@@ -1,11 +1,16 @@
 import { sheetCsvUrl, parseSheetToVehicles } from '@/lib/sheetSync';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
 // GET: fetch the configured Google Sheet, parse it, return mapped vehicles.
 // Used by the admin "Sync from Google Sheet" button (reads only — the client
-// then upserts via the authenticated admin session).
+// then upserts via the authenticated admin session). Admin-gated because it
+// fetches a URL server-side and returns the body (SSRF surface otherwise).
 export async function GET(req: Request) {
+  if (!(await requireAdmin(req))) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const url = new URL(req.url);
   const override = url.searchParams.get('url') || undefined;
   const csvUrl = sheetCsvUrl(override);

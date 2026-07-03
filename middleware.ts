@@ -43,12 +43,10 @@ export async function middleware(request: NextRequest) {
   // Customers have Supabase accounts too, so a session alone no longer means
   // admin — check admin_users membership (own-row RLS permits this lookup).
   const checkAdmin = async () => {
+    // Fail closed on any error (e.g. a transient PostgREST schema-cache reload
+    // during deploys) — never grant admin to a customer session by accident.
     const { data, error } = await supabase.from('admin_users').select('user_id').eq('user_id', user!.id).maybeSingle();
-    if (error) {
-      // Pre-migration DB (admin_users doesn't exist yet): only admins have
-      // accounts in that world, so a valid session is sufficient.
-      return /admin_users/i.test(error.message) || error.code === '42P01';
-    }
+    if (error) return false;
     return !!data;
   };
 

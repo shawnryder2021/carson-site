@@ -47,15 +47,38 @@ function extractImageUrls(obj: any): string[] {
     .map(r => r.url);
 }
 
-async function requireAdmin(req: Request) {
+// Returns an authed, RLS-scoped client only if the caller is an ADMIN (not
+// just any logged-in customer). Fails closed on any error.
+async function requireAdminClient(req: Request) {
   const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   if (!token) return null;
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
-  const { data } = await sb.auth.getUser(token);
-  return data?.user ? sb : null;
+  const { data: u } = await sb.auth.getUser(token);
+  if (!u?.user) return null;
+  const { data: admin, error } = await sb.from('admin_users').select('user_id').eq('user_id', u.user.id).maybeSingle();
+  if (error || !admin) return null;
+  return sb;
+}
+
+// SSRF guard for the "save" action — only fetch images from kie.ai and the
+// CDN hosts its results live on, never an arbitrary caller-supplied URL.
+function isAllowedImageHost(u: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(u);
+    if (protocol !== 'https:') return false;
+    return /(^|\.)kie\.ai$/.test(hostname)
+      || hostname.endsWith('.r2.dev')
+      || hostname.endsWith('.r2.cloudflarestorage.com')
+      || hostname.endsWith('.amazonaws.com')
+      || hostname.endsWith('.cloudfront.net')
+      || hostname.includes('redpanda')
+      || hostname.includes('tempfile');
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(req: Request) {
@@ -64,7 +87,7 @@ export async function POST(req: Request) {
   const KEY = (process.env.KIE_API_KEY || '').trim().replace(/^["']|["']$/g, '');
   if (!KEY) return Response.json({ error: 'Banner generation not configured (set KIE_API_KEY).' }, { status: 503 });
 
-  const sb = await requireAdmin(req);
+  const sb = await requireAdminClient(req);
   if (!sb) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   let body: any = {};
@@ -87,8 +110,8 @@ export async function POST(req: Request) {
       const taskId = json?.data?.taskId || json?.data?.task_id || json?.taskId;
       if (!res.ok || !taskId) {
         const msg = json?.msg || json?.message || 'Generation failed to start.';
-        // Surface kie's HTTP status + key length (not the key) for diagnosis.
-        return Response.json({ error: `${msg} [kie HTTP ${res.status}; key length ${KEY.length}]` }, { status: 502 });
+        console.error('kie.ai generate failed:', res.status, msg);
+        return Response.json({ error: 'Generation failed to start. Please try again.' }, { status: 502 });
       }
       return Response.json({ taskId });
     }
@@ -117,6 +140,7 @@ export async function POST(req: Request) {
     if (action === 'save') {
       const url = body.url;
       if (!url) return Response.json({ error: 'url required' }, { status: 400 });
+      if (!isAllowedImageHost(url)) return Response.json({ error: 'Unsupported image source.' }, { status: 400 });
       const imgRes = await fetch(url);
       if (!imgRes.ok) return Response.json({ error: 'Could not download the generated image.' }, { status: 502 });
       const contentType = imgRes.headers.get('content-type') || 'image/png';

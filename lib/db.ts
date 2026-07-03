@@ -221,7 +221,11 @@ export async function syncFromSheet(): Promise<{ error?: string; count?: number;
   if (!sb) return { error: 'Supabase not configured' };
   let payload: any;
   try {
-    const res = await fetch('/api/sheet-inventory', { cache: 'no-store' });
+    const token = (await sb.auth.getSession()).data.session?.access_token;
+    const res = await fetch('/api/sheet-inventory', {
+      cache: 'no-store',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     payload = await res.json();
     if (!res.ok) return { error: payload?.error || `Sheet read failed (${res.status})` };
   } catch (e: any) {

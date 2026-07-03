@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import GuideClient from './GuideClient';
 import { fetchGuide, SITE_URL } from '@/lib/serverDb';
+import { jsonLdSafe } from '@/lib/escapeHtml';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const g = await fetchGuide(params.slug);
@@ -35,7 +36,7 @@ export default async function GuidePage({ params }: { params: { slug: string } }
   return (
     <>
       {jsonLd && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
       )}
       <GuideClient params={params} />
     </>

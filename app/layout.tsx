@@ -10,6 +10,7 @@ import { SITE_URL } from '@/lib/serverDb';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { AppShell } from './AppShell';
 import './globals.css';
+import { jsonLdSafe } from '@/lib/escapeHtml';
 
 const inter = Inter({ variable: '--font-inter', subsets: ['latin'] });
 const fraunces = Fraunces({ variable: '--font-fraunces', subsets: ['latin'] });
@@ -53,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${inter.variable} ${fraunces.variable} ${anton.variable}`}>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dealerJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(dealerJsonLd) }} />
         {/* Web analytics (shawnryder.site, site #56) — collects the data the
             admin Traffic dashboard reads. */}
         <Script
