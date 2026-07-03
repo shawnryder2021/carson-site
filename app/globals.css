@@ -159,6 +159,36 @@ footer { border-top: 1px solid var(--line); }
 }
 .vdp-sticky-bar--visible ~ .page { padding-bottom: 72px; }
 
+/* Compare tray (floating bottom bar while picking vehicles to compare) */
+.compare-tray {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 80;
+  background: white;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+}
+.compare-tray--visible {
+  transform: translateY(0);
+}
+.compare-tray__inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+@media (max-width: 860px) {
+  .compare-tray__label { display: none; }
+  .compare-tray__inner { padding: 10px 14px; gap: 8px; }
+}
+
 /* ───────── Responsive grid utility ─────────
    Add className="rg" to any inline-styled grid: desktop keeps the inline
    gridTemplateColumns; under 860px it stacks (or uses --gtc-m if set). */

@@ -7,6 +7,7 @@ import { VehicleCard } from '@/components/VehicleCard';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { useSaved } from '@/context/SavedContext';
+import { useCompare } from '@/context/CompareContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { getBrowserClient } from '@/lib/supabase/client';
 import { listVehicles, AdminVehicle, Lead, VehicleWatch } from '@/lib/db';
@@ -70,6 +71,7 @@ function GarageContent() {
   const params = useSearchParams();
   const { user } = useCustomerAuth();
   const { saved } = useSaved();
+  const { setCompare } = useCompare();
 
   const tabParam = params.get('tab') as Tab | null;
   const [tab, setTab] = useState<Tab>(tabParam && ['saved', 'watches', 'requests', 'profile'].includes(tabParam) ? tabParam : 'saved');
@@ -194,9 +196,21 @@ function GarageContent() {
                     <button onClick={() => router.push('/inventory')} className="btn btn-primary">Browse inventory <Icon name="arrowRight" size={14} /></button>
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-                    {savedVehicles.map(v => <VehicleCard key={v.id} vehicle={v as any} />)}
-                  </div>
+                  <>
+                    {savedVehicles.length >= 2 && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+                        <button
+                          onClick={() => { setCompare(savedVehicles.slice(0, 3).map(v => v.id)); router.push('/compare'); }}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Compare saved <Icon name="arrowRight" size={12} />
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+                      {savedVehicles.map(v => <VehicleCard key={v.id} vehicle={v as any} />)}
+                    </div>
+                  </>
                 )}
 
                 {recommendations.length > 0 && (

@@ -3,6 +3,7 @@ import Script from 'next/script';
 import { Inter, Fraunces, Anton } from 'next/font/google';
 import { CustomerAuthProvider } from '@/context/CustomerAuthContext';
 import { SavedProvider } from '@/context/SavedContext';
+import { CompareProvider } from '@/context/CompareContext';
 import { PriceModeProvider } from '@/context/PriceModeContext';
 import { HeroConfigProvider } from '@/context/HeroConfigContext';
 import { SITE_URL } from '@/lib/serverDb';
@@ -65,11 +66,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <GoogleAnalytics />
         <CustomerAuthProvider>
           <SavedProvider>
-            <PriceModeProvider>
-              <HeroConfigProvider>
-                <AppShell>{children}</AppShell>
-              </HeroConfigProvider>
-            </PriceModeProvider>
+            <CompareProvider>
+              <PriceModeProvider>
+                <HeroConfigProvider>
+                  <AppShell>{children}</AppShell>
+                </HeroConfigProvider>
+              </PriceModeProvider>
+            </CompareProvider>
           </SavedProvider>
         </CustomerAuthProvider>
       </body>

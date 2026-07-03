@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { Footer } from '@/components/Footer';
 import { ChatLauncher, ChatWidget } from '@/components/ChatWidget';
+import { CompareTray } from '@/components/CompareTray';
 import { SiteSettingsProvider } from '@/context/SiteSettingsContext';
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -43,6 +44,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
         <Footer />
+        <CompareTray />
         {!aiOpen && <ChatLauncher onClick={() => setAiOpen(true)} />}
         <ChatWidget open={aiOpen} onClose={() => setAiOpen(false)} />
       </div>

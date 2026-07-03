@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
 import { useSaved } from '@/context/SavedContext';
+import { useCompare } from '@/context/CompareContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { listVehicles, AdminVehicle } from '@/lib/db';
 
 export default function SavedPage() {
   const router = useRouter();
   const { saved } = useSaved();
+  const { setCompare } = useCompare();
   const { user } = useCustomerAuth();
   const [vehicles, setVehicles] = useState<AdminVehicle[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -22,9 +24,18 @@ export default function SavedPage() {
   return (
     <div className="page fade-in">
       <div className="container" style={{ maxWidth: 1200, padding: '40px 20px 80px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6, flexWrap: 'wrap' }}>
           <Icon name="heart" size={24} style={{ color: 'var(--teal)' }} />
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(28px,4vw,40px)', fontWeight: 600, letterSpacing: '-.02em', margin: 0 }}>Saved vehicles</h1>
+          {savedVehicles.length >= 2 && (
+            <button
+              onClick={() => { setCompare(saved.slice(0, 3)); router.push('/compare'); }}
+              className="btn btn-ghost btn-sm"
+              style={{ marginLeft: 'auto' }}
+            >
+              Compare saved <Icon name="arrowRight" size={12} />
+            </button>
+          )}
         </div>
         <p style={{ fontSize: 15, color: 'var(--muted)', margin: '0 0 16px' }}>
           {savedVehicles.length > 0

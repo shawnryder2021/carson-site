@@ -3,14 +3,18 @@ import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { Icon } from './Icon';
 import { useSaved } from '@/context/SavedContext';
+import { useCompare } from '@/context/CompareContext';
 import { usePriceMode } from '@/context/PriceModeContext';
 import { useRouter } from 'next/navigation';
 
 export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const { saved, toggleSave } = useSaved();
+  const { compare, toggleCompare, isFull } = useCompare();
   const { mode } = usePriceMode();
   const router = useRouter();
   const isSaved = saved.includes(vehicle.id);
+  const inCompare = compare.includes(vehicle.id);
+  const compareBlocked = isFull && !inCompare;
   const monthly = estMonthly(vehicle.price);
   const photo = (vehicle as any).images?.[0] as string | undefined;
 
@@ -80,6 +84,32 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           }}
         >
           <Icon name="heart" size={18} style={{ color: isSaved ? 'var(--teal)' : 'var(--muted)', fill: isSaved ? 'var(--teal)' : 'none' }} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!compareBlocked) toggleCompare(vehicle.id);
+          }}
+          title={compareBlocked ? 'Compare list full (3 max)' : inCompare ? 'Remove from compare' : 'Add to compare'}
+          aria-label={compareBlocked ? 'Compare list full (3 max)' : inCompare ? 'Remove from compare' : 'Add to compare'}
+          style={{
+            position: 'absolute',
+            top: 60,
+            right: 12,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            background: inCompare ? 'var(--teal)' : 'white',
+            border: 'none',
+            cursor: compareBlocked ? 'not-allowed' : 'pointer',
+            opacity: compareBlocked ? 0.5 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
+          <Icon name={inCompare ? 'check' : 'plus'} size={18} style={{ color: inCompare ? 'white' : 'var(--muted)' }} />
         </button>
       </div>
       <div style={{ padding: '16px 20px' }}>
