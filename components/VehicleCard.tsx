@@ -2,6 +2,8 @@ import { Vehicle } from '@/data/inventory';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { Icon } from './Icon';
+import { CardCarousel } from './CardCarousel';
+import { SmartImage } from './SmartImage';
 import { useSaved } from '@/context/SavedContext';
 import { useCompare } from '@/context/CompareContext';
 import { usePriceMode } from '@/context/PriceModeContext';
@@ -43,9 +45,17 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       onClick={() => router.push(`/vehicle/${vehicle.id}`)}
     >
       <div style={{ position: 'relative', background: 'var(--bg-soft)', aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        {photo
-          ? <img src={photo} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <img src={vehicleImageURL(vehicle, { size: 300 })} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} style={{ width: '80%', height: '80%', objectFit: 'contain' }} />}
+        <CardCarousel
+          photos={((vehicle as any).images as string[]) || []}
+          alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+          fallback={
+            <SmartImage
+              src={photo || vehicleImageURL(vehicle, { size: 300 })}
+              alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+              sizes="(max-width: 860px) 100vw, 33vw"
+              style={{ objectFit: photo ? 'cover' : 'contain' }}
+            />}
+        />
         {/* Social proof badge (real data: created_at / tracked views) */}
         {(() => {
           const createdAt = (vehicle as any).createdAt as string | undefined;

@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
+import { GallerySkeleton, SkeletonBox } from '@/components/Skeleton';
+import { Lightbox } from '@/components/Lightbox';
+import { SmartImage } from '@/components/SmartImage';
 import { DotsAnim } from '@/components/DotsAnim';
 import { Modal } from '@/components/Modal';
 import { INVENTORY } from '@/data/inventory';
@@ -58,6 +61,7 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
 
   const [tab, setTab] = useState<'overview' | 'specs'>('overview');
   const [activeImage, setActiveImage] = useState(0);
+  const [lightbox, setLightbox] = useState<number | null>(null);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
@@ -171,7 +175,20 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
 
   // NOTE: keep all early returns BELOW every hook call (rules of hooks).
   if (vehicle === undefined) {
-    return <div className="page fade-in" style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--muted)' }}>Loading…</div>;
+    return (
+      <div className="page fade-in">
+        <div className="container rg" style={{ maxWidth: 1200, padding: '32px 20px 60px', display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 32 }}>
+          <GallerySkeleton />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <SkeletonBox w="80%" h={28} />
+            <SkeletonBox w="50%" h={36} />
+            <SkeletonBox h={120} r={14} />
+            <SkeletonBox h={44} r={10} />
+            <SkeletonBox h={44} r={10} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!vehicle) {
@@ -282,12 +299,22 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               const mainSrc = hasPhotos ? photos[Math.min(activeImage, photos.length - 1)] : vehicleImageURL(vehicle, { size: 800 });
               return (
                 <>
-                  <div style={{ background: 'var(--bg-soft)', borderRadius: 18, overflow: 'hidden', marginBottom: 12, aspectRatio: '4/3', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                    <img
+                  <div
+                    onClick={hasPhotos ? () => setLightbox(Math.min(activeImage, photos.length - 1)) : undefined}
+                    style={{ background: 'var(--bg-soft)', borderRadius: 18, overflow: 'hidden', marginBottom: 12, aspectRatio: '4/3', position: 'relative', cursor: hasPhotos ? 'zoom-in' : 'default' }}
+                  >
+                    <SmartImage
                       src={mainSrc}
                       alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-                      style={hasPhotos ? { width: '100%', height: '100%', objectFit: 'cover' } : { width: '85%', height: '85%', objectFit: 'contain' }}
+                      sizes="(max-width: 860px) 100vw, 60vw"
+                      priority
+                      style={{ objectFit: hasPhotos ? 'cover' : 'contain' }}
                     />
+                    {hasPhotos && (
+                      <div style={{ position: 'absolute', bottom: 14, left: 14, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: 12, fontWeight: 700, padding: '5px 11px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5, pointerEvents: 'none' }}>
+                        <Icon name="search" size={12} /> {photos.length} photo{photos.length === 1 ? '' : 's'}
+                      </div>
+                    )}
                     <button
                       onClick={() => toggleSave(vehicle.id)}
                       style={{
@@ -302,22 +329,33 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                   </div>
                   {hasPhotos && photos.length > 1 && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
-                      {photos.slice(0, 8).map((url, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setActiveImage(i)}
-                          style={{
-                            background: 'var(--bg-soft)',
-                            border: '2px solid ' + (activeImage === i ? 'var(--teal)' : 'transparent'),
-                            borderRadius: 10, overflow: 'hidden', padding: 0, cursor: 'pointer', aspectRatio: '4/3',
-                          }}
-                        >
-                          <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </button>
-                      ))}
+                      {photos.slice(0, 8).map((url, i) => {
+                        const isLast = i === 7 && photos.length > 8;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => (isLast ? setLightbox(7) : setActiveImage(i))}
+                            style={{
+                              background: 'var(--bg-soft)',
+                              border: '2px solid ' + (activeImage === i ? 'var(--teal)' : 'transparent'),
+                              borderRadius: 10, overflow: 'hidden', padding: 0, cursor: 'pointer', aspectRatio: '4/3', position: 'relative',
+                            }}
+                          >
+                            <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            {isLast && (
+                              <span style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.58)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800 }}>
+                                +{photos.length - 8} more
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                   {!hasPhotos && <div style={{ marginBottom: 32 }} />}
+                  {lightbox !== null && (
+                    <Lightbox photos={photos} index={lightbox} onIndex={setLightbox} onClose={() => setLightbox(null)} />
+                  )}
                 </>
               );
             })()}

@@ -1,4 +1,5 @@
 import { HeroConfig, youTubeId } from '@/data/heroConfig';
+import { SmartImage } from './SmartImage';
 
 type Variant = 'framed' | 'cover';
 
@@ -13,12 +14,7 @@ export function HeroMedia({ hero, variant = 'framed' }: { hero: HeroConfig; vari
   if (variant === 'cover') {
     if (showImage) {
       return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={hero.imageUrl}
-          alt={hero.headline}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-        />
+        <SmartImage src={hero.imageUrl} alt={hero.headline} sizes="100vw" priority style={{ objectFit: 'cover' }} />
       );
     }
     if (showVideo) {

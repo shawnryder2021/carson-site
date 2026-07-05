@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
+import { CardGridSkeleton } from '@/components/Skeleton';
 import { DotsAnim } from '@/components/DotsAnim';
 import { INVENTORY, Vehicle } from '@/data/inventory';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
@@ -470,7 +471,9 @@ Rules:
               </div>
             )}
 
-            {filtered.length === 0 ? (
+            {!inventoryLoaded ? (
+              <CardGridSkeleton count={6} minCol={280} />
+            ) : filtered.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '80px 20px', background: 'var(--bg-soft)', borderRadius: 14 }}>
                 <Icon name="search" size={40} style={{ color: 'var(--muted)', marginBottom: 16 }} />
                 <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 8px' }}>No matches found</h3>

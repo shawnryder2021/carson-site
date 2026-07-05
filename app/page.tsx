@@ -12,6 +12,9 @@ import { InstagramGrid, BeholdWidget, useInstagram } from '@/components/Instagra
 import { ShopByStyle } from '@/components/ShopByStyle';
 import { WelcomeBack } from '@/components/WelcomeBack';
 import { BannerCarousel } from '@/components/BannerCarousel';
+import { Reveal } from '@/components/Reveal';
+import { StatCounter } from '@/components/StatCounter';
+import { SmartImage } from '@/components/SmartImage';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { listVehicles, getSettings, getDealVehicleId, getHomepageSections, listActiveBanners, DEFAULT_HOME_SECTIONS, HomeSections, MarketingBanner, AdminVehicle } from '@/lib/db';
@@ -152,14 +155,14 @@ export default function Home() {
       )}
 
       {/* Returning-visitor personalization */}
-      {sections.welcomeBack && <WelcomeBack vehicles={vehicles} />}
+      {sections.welcomeBack && <Reveal><WelcomeBack vehicles={vehicles} /></Reveal>}
 
       {/* Shop by style / budget / make / payment */}
-      {sections.shopBy && <ShopByStyle vehicles={vehicles} />}
+      {sections.shopBy && <Reveal><ShopByStyle vehicles={vehicles} /></Reveal>}
 
       {/* Deal of the Week */}
       {sections.deal && deal && (
-        <section style={{ padding: '72px 0 0' }}>
+        <Reveal><section style={{ padding: '72px 0 0' }}>
           <div className="container" style={{ maxWidth: 900 }}>
             <div
               className="rg"
@@ -172,8 +175,7 @@ export default function Home() {
             >
               <div style={{ position: 'absolute', inset: 0, opacity: .25, background: 'radial-gradient(circle at 85% 15%, #ff9d2e, transparent 55%)' }} />
               <div style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '4/3', background: '#111', position: 'relative' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={(deal as any).images?.[0] || vehicleImageURL(deal, { size: 600 })} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <SmartImage src={(deal as any).images?.[0] || vehicleImageURL(deal, { size: 600 })} alt={`${deal.year} ${deal.make} ${deal.model}`} sizes="(max-width: 860px) 100vw, 45vw" />
                 <div style={{ position: 'absolute', top: 14, left: 14, background: '#ff9d2e', color: '#1a1a1a', padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 800, letterSpacing: '.04em' }}>
                   🔥 DEAL OF THE WEEK
                 </div>
@@ -193,12 +195,12 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
+        </section></Reveal>
       )}
 
       {/* AI's top pick */}
       {sections.topPick && featured.length > 0 && (
-      <section style={{ padding: '72px 0 0' }}>
+      <Reveal><section style={{ padding: '72px 0 0' }}>
         <div className="container" style={{ maxWidth: 900 }}>
           <div
             className="rg"
@@ -246,12 +248,12 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section></Reveal>
       )}
 
       {/* Featured Inventory */}
       {sections.featured && (
-      <section style={{ padding: '80px 0' }}>
+      <Reveal><section style={{ padding: '80px 0' }}>
         <div className="container" style={{ maxWidth: 1200 }}>
           <h2 style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, textAlign: 'center', marginBottom: 48, letterSpacing: '-.02em' }}>
             Browse our inventory
@@ -262,12 +264,12 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </section></Reveal>
       )}
 
       {/* Recently sold — social proof */}
       {sections.recentlySold && recentlySold.length > 0 && (
-        <section style={{ padding: '0 0 80px' }}>
+        <Reveal><section style={{ padding: '0 0 80px' }}>
           <div className="container" style={{ maxWidth: 1200 }}>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
               <h2 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 6px' }}>
@@ -281,8 +283,7 @@ export default function Home() {
               {recentlySold.map(v => (
                 <div key={v.id} style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)', background: 'white', position: 'relative' }}>
                   <div style={{ aspectRatio: '4/3', background: 'var(--bg-soft)', position: 'relative' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={(v as any).images?.[0] || vehicleImageURL(v, { size: 400 })} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(.5)' }} />
+                    <SmartImage src={(v as any).images?.[0] || vehicleImageURL(v, { size: 400 })} alt={`${v.year} ${v.make} ${v.model}`} sizes="(max-width: 860px) 50vw, 280px" style={{ filter: 'grayscale(.5)' }} />
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ background: 'var(--ink)', color: 'white', padding: '6px 18px', borderRadius: 999, fontSize: 13, fontWeight: 800, letterSpacing: '.08em', transform: 'rotate(-8deg)', boxShadow: '0 4px 14px rgba(0,0,0,.3)' }}>SOLD</span>
                     </div>
@@ -295,12 +296,12 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </section>
+        </section></Reveal>
       )}
 
       {/* Instagram */}
       {sections.instagram && (igTiles.length > 0 || !!igWidgetId) && (
-        <section style={{ padding: '0 0 80px' }}>
+        <Reveal><section style={{ padding: '0 0 80px' }}>
           <div className="container" style={{ maxWidth: 1100 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
               <div>
@@ -322,36 +323,42 @@ export default function Home() {
               ? <BeholdWidget id={igWidgetId} />
               : <InstagramGrid tiles={igTiles} handle={igConfig?.handle || 'carsonexports'} />}
           </div>
-        </section>
+        </section></Reveal>
       )}
 
       {/* Why Carson */}
       {sections.whyCarson && (
-      <section style={{ padding: '80px 0', background: 'var(--bg-soft)' }}>
+      <Reveal><section style={{ padding: '80px 0', background: 'var(--bg-soft)' }}>
         <div className="container" style={{ maxWidth: 1200 }}>
           <h2 style={{ fontFamily: 'var(--display)', fontSize: 36, fontWeight: 600, textAlign: 'center', marginBottom: 48, letterSpacing: '-.02em' }}>
             Why choose Carson
           </h2>
           <div className="rg" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
             {[
-              { icon: 'sparkles', title: 'AI-Powered', desc: 'Carson AI answers your questions 24/7' },
-              { icon: 'check', title: 'Honest Pricing', desc: 'Live market data on every car' },
-              { icon: 'award', title: 'Quality Guaranteed', desc: '142-point inspection on every vehicle' },
-            ].map(f => (
-              <div key={f.title} style={{ background: 'white', borderRadius: 16, padding: 32, textAlign: 'center' }}>
-                <Icon name={f.icon as any} size={32} style={{ color: 'var(--teal)', marginBottom: 16 }} />
-                <h3 style={{ fontWeight: 600, marginBottom: 8 }}>{f.title}</h3>
-                <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>{f.desc}</p>
-              </div>
+              { icon: 'sparkles', title: 'AI-Powered', desc: <>Carson AI answers your questions 24/7</> },
+              { icon: 'check', title: 'Honest Pricing', desc: <>Live market data on every car</> },
+              { icon: 'award', title: 'Quality Guaranteed', desc: <><StatCounter value={142} suffix="-point" style={{ fontWeight: 800, color: 'var(--ink)' }} /> inspection on every vehicle</> },
+            ].map((f, i) => (
+              <Reveal key={f.title} delay={i * 90}>
+                <div
+                  style={{ background: 'white', borderRadius: 16, padding: 32, textAlign: 'center', transition: 'transform 200ms, box-shadow 200ms', cursor: 'default' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 14px 34px rgba(0,0,0,0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <Icon name={f.icon as any} size={32} style={{ color: 'var(--teal)', marginBottom: 16 }} />
+                  <h3 style={{ fontWeight: 600, marginBottom: 8 }}>{f.title}</h3>
+                  <p style={{ fontSize: 14, color: 'var(--muted)', margin: 0 }}>{f.desc}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
-      </section>
+      </section></Reveal>
       )}
 
       {/* CTA */}
       {sections.cta && (
-      <section style={{ padding: '60px 0', background: 'linear-gradient(135deg, var(--teal), #5a8aff)', color: 'white', textAlign: 'center' }}>
+      <Reveal><section style={{ padding: '60px 0', background: 'linear-gradient(135deg, var(--teal), #5a8aff)', color: 'white', textAlign: 'center' }}>
         <div className="container">
           <h2 style={{ fontFamily: 'var(--display)', fontSize: 40, fontWeight: 600, marginBottom: 16 }}>Ready?</h2>
           <p style={{ fontSize: 18, marginBottom: 24, opacity: 0.9 }}>Let's find your perfect car.</p>
@@ -359,7 +366,7 @@ export default function Home() {
             <Icon name="sparkles" size={16} /> Take the Carson AI Finder
           </button>
         </div>
-      </section>
+      </section></Reveal>
       )}
     </div>
   );

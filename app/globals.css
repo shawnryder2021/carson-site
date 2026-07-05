@@ -64,6 +64,44 @@ footer { border-top: 1px solid var(--line); }
 
 .ai-glow { position: relative; background: linear-gradient(135deg, rgba(0,124,146,0.1), rgba(90,138,255,0.05)); }
 
+/* ───────── Skeleton loaders (shimmer) ───────── */
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-soft) 25%, #ededed 37%, var(--bg-soft) 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ───────── Scroll reveal ───────── */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s cubic-bezier(.22,1,.36,1); }
+.reveal.is-in { opacity: 1; transform: none; }
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ───────── Card photo carousel ───────── */
+.card-carousel__arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,0.9); color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  opacity: 0; transition: opacity 160ms; z-index: 2;
+}
+.card-carousel__arrow--l { left: 8px; }
+.card-carousel__arrow--r { right: 8px; }
+/* Reveal arrows only on devices that truly hover (not touch). */
+@media (hover: hover) {
+  .card-carousel:hover .card-carousel__arrow { opacity: 1; }
+}
+@media (hover: none) {
+  .card-carousel__arrow { display: none; }
+}
+
 /* ───────── Custom page (page builder) HTML blocks ───────── */
 .page-html { font-size: 16px; line-height: 1.7; color: var(--ink); }
 .page-html h1 { font-family: var(--display); font-size: clamp(34px, 5.5vw, 52px); font-weight: 400; letter-spacing: .01em; line-height: 1.05; margin: 0 0 16px; }

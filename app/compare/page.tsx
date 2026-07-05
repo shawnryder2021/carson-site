@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Icon } from '@/components/Icon';
+import { RowsSkeleton } from '@/components/Skeleton';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { useCompare } from '@/context/CompareContext';
@@ -116,7 +117,7 @@ function CompareContent() {
         </p>
 
         {!loaded ? (
-          <div style={{ color: 'var(--muted)', padding: 30 }}>Loading…</div>
+          <RowsSkeleton rows={4} />
         ) : vehicles.length < 2 ? (
           <div style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 18, padding: '50px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 44, marginBottom: 10 }}>⚖️</div>

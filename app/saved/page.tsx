@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
+import { CardGridSkeleton } from '@/components/Skeleton';
 import { useSaved } from '@/context/SavedContext';
 import { useCompare } from '@/context/CompareContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
@@ -56,7 +57,7 @@ export default function SavedPage() {
         )}
 
         {!loaded ? (
-          <div style={{ color: 'var(--muted)' }}>Loading…</div>
+          <CardGridSkeleton count={4} />
         ) : savedVehicles.length === 0 ? (
           <div style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 18, padding: '50px 24px', textAlign: 'center' }}>
             <div style={{ fontSize: 44, marginBottom: 10 }}>🤍</div>

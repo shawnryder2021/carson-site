@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
+import { CardGridSkeleton } from '@/components/Skeleton';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { useSaved } from '@/context/SavedContext';
@@ -182,7 +183,7 @@ function GarageContent() {
         </div>
 
         {loading ? (
-          <div style={{ color: 'var(--muted)', padding: 30, textAlign: 'center' }}>Loading your garage…</div>
+          <CardGridSkeleton count={3} />
         ) : (
           <>
             {/* ── SAVED ── */}
