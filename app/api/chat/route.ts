@@ -4,6 +4,7 @@ import { SUPABASE_URL } from '@/lib/supabase/config';
 import { isChatOpen, DEFAULT_CHAT_HOURS } from '@/lib/chatHours';
 import { SITE_URL } from '@/lib/serverDb';
 import { rateLimit } from '@/lib/ratelimit';
+import { notifyTeamNewChat } from '@/lib/chatNotify';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -20,10 +21,11 @@ function admin(): SupabaseClient | null {
 
 async function getChatConfig(sb: SupabaseClient) {
   const { data } = await sb.from('site_settings')
-    .select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting, chat_agents, chat_takeover_seconds, alert_webhook_url')
+    .select('chat_enabled, chat_timezone, chat_hours, chat_greeting, chat_offline_greeting, chat_agents, chat_takeover_seconds, alert_webhook_url, contact_email')
     .eq('id', 1).maybeSingle();
   return {
     webhookUrl: data?.alert_webhook_url || process.env.ALERT_WEBHOOK_URL || '',
+    teamEmail: process.env.CHAT_NOTIFY_EMAIL || data?.contact_email || process.env.ALERT_FROM_EMAIL || '',
     enabled: data?.chat_enabled !== false,
     timezone: data?.chat_timezone || 'America/Halifax',
     hours: Array.isArray(data?.chat_hours) ? data!.chat_hours : DEFAULT_CHAT_HOURS,
@@ -171,16 +173,30 @@ export async function POST(req: Request) {
 
       if (open && !convo.ai_active) {
         // Live mode, team still handling: notify them; they reply from the console.
+        const visitorName = patch.name || convo.name || 'Website visitor';
+        const visitorContact = patch.contact || convo.contact || '';
         await fireWebhook(cfg.webhookUrl, {
           event: isFirst ? 'chat.new' : 'chat.message',
           at: new Date().toISOString(),
           conversationId,
-          name: patch.name || convo.name || 'Website visitor',
-          contact: patch.contact || convo.contact || '',
+          name: visitorName,
+          contact: visitorContact,
           text: text.trim(),
-          agents: cfg.agents,  // [{name, phone}] for your Twilio flow to text
+          agents: cfg.agents,  // [{name, phone}] for a Zapier/Make flow to text
           url: `${SITE_URL}/admin/chat`,
         });
+        // Direct delivery: text the agents + email the inbox on a NEW chat only
+        // (not every message), so reps aren't buzzed mid-conversation.
+        if (isFirst) {
+          notifyTeamNewChat({
+            agents: cfg.agents,
+            name: visitorName,
+            contact: visitorContact,
+            text: text.trim(),
+            url: `${SITE_URL}/admin/chat`,
+            teamEmail: cfg.teamEmail,
+          }).catch(() => { /* best effort */ });
+        }
         return Response.json({ ok: true, mode: 'live' });
       }
 

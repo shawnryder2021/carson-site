@@ -157,11 +157,14 @@ export default function AdminChat() {
               <textarea className="input" value={settings.offlineGreeting} onChange={e => setSettings({ ...settings, offlineGreeting: e.target.value })} style={{ minHeight: 70, fontFamily: 'inherit' }} />
             </div>
           </div>
-          {/* Notification webhook (shared with CarFinder & price-drop alerts) */}
+          {/* Direct-notification note + optional webhook */}
           <div style={{ borderTop: '1px solid var(--line)', margin: '6px 0 14px', paddingTop: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Notification webhook (Twilio / Zapier / Make)</div>
+            <div style={{ background: 'var(--teal-tint)', color: 'var(--teal-2)', borderRadius: 10, padding: '10px 12px', fontSize: 12.5, lineHeight: 1.5, marginBottom: 12 }}>
+              <Icon name="send" size={12} style={{ verticalAlign: '-1px' }} /> New live chats now <strong>text your sales team directly</strong> (the numbers below) and <strong>email your contact address</strong> automatically — no external tool needed. Requires Twilio &amp; Resend keys in Netlify (already used for CarFinder alerts).
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>Optional webhook (Zapier / Make / Slack)</div>
             <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 8, lineHeight: 1.5 }}>
-              New live chats POST here (event <code>chat.new</code>) with the visitor message + your on-duty team&apos;s phone numbers. Your automation sends the texts. Shared with CarFinder &amp; price-drop alerts.
+              New live chats also POST here (event <code>chat.new</code>) if you want to route them into your own automation. Optional — leave blank to rely on the built-in text + email above. Shared with CarFinder &amp; price-drop alerts.
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input className="input" value={webhook} onChange={e => setWebhook(e.target.value)} placeholder="https://hooks.zapier.com/…" style={{ flex: 1, minWidth: 260 }} />
