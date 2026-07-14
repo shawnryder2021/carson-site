@@ -81,7 +81,7 @@ function GarageContent() {
   const [watches, setWatches] = useState<VehicleWatch[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [requests, setRequests] = useState<CarRequest[]>([]);
-  const [profile, setProfile] = useState<GarageProfile>({ name: '', phone: '', contactPref: 'email' });
+  const [profile, setProfile] = useState<GarageProfile>({ name: '', phone: '', contactPref: 'email', digestOptOut: false });
   const [loading, setLoading] = useState(true);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileBusy, setProfileBusy] = useState(false);
@@ -371,6 +371,18 @@ function GarageContent() {
                     ))}
                   </div>
                 </div>
+                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 22, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={!profile.digestOptOut}
+                    onChange={e => setProfile(p => ({ ...p, digestOptOut: !e.target.checked }))}
+                    style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--teal)', cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: 13.5, lineHeight: 1.5 }}>
+                    <span style={{ fontWeight: 600 }}>Email me weekly new-arrival matches</span>
+                    <span style={{ display: 'block', color: 'var(--muted)', fontSize: 12.5 }}>A short weekly email with new inventory that matches the cars you&apos;ve saved. Unsubscribe anytime.</span>
+                  </span>
+                </label>
                 <button type="submit" disabled={profileBusy} className="btn btn-primary" style={{ width: '100%' }}>
                   {profileBusy ? 'Saving…' : profileSaved ? <><Icon name="check" size={14} /> Saved</> : 'Save profile'}
                 </button>

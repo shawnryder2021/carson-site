@@ -143,6 +143,7 @@ export type GarageProfile = {
   name: string;
   phone: string;
   contactPref: 'email' | 'sms';
+  digestOptOut: boolean;
 };
 
 export async function getMyProfile(): Promise<GarageProfile | null> {
@@ -150,9 +151,9 @@ export async function getMyProfile(): Promise<GarageProfile | null> {
   if (!sb) return null;
   const id = await uid(sb);
   if (!id) return null;
-  const { data } = await sb.from('profiles').select('name, phone, contact_pref').eq('id', id).maybeSingle();
-  if (!data) return { name: '', phone: '', contactPref: 'email' };
-  return { name: data.name ?? '', phone: data.phone ?? '', contactPref: data.contact_pref ?? 'email' };
+  const { data } = await sb.from('profiles').select('name, phone, contact_pref, digest_opt_out').eq('id', id).maybeSingle();
+  if (!data) return { name: '', phone: '', contactPref: 'email', digestOptOut: false };
+  return { name: data.name ?? '', phone: data.phone ?? '', contactPref: data.contact_pref ?? 'email', digestOptOut: !!data.digest_opt_out };
 }
 
 export async function saveMyProfile(p: GarageProfile): Promise<{ error?: string }> {
@@ -163,6 +164,7 @@ export async function saveMyProfile(p: GarageProfile): Promise<{ error?: string 
   // Upsert self-heals accounts that predate the profiles trigger.
   const { error } = await sb.from('profiles').upsert({
     id, name: p.name, phone: p.phone, contact_pref: p.contactPref,
+    digest_opt_out: p.digestOptOut,
     updated_at: new Date().toISOString(),
   });
   return { error: error?.message };
