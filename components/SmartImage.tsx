@@ -1,16 +1,15 @@
 'use client';
 
-import Image from 'next/image';
-
-// Thin wrapper over next/image for the dynamic, arbitrarily-hosted vehicle
-// photos this site deals with. Falls back to `unoptimized` for data: URIs (the
-// SVG placeholder from vehicleImageURL) and empty sources, so the Netlify image
-// pipeline never chokes on something it can't fetch. Container should keep a
-// background (var(--bg-soft)) so there's no flash before load.
+// Renders a vehicle/hero image. Deliberately a plain <img>, NOT next/image:
+// vehicle photo URLs come from an admin Google Sheet and can be http://,
+// protocol-relative, redirect-style, or otherwise malformed — all of which make
+// next/image THROW at render, and one thrown card collapses the whole grid.
+// A plain <img> never throws on any URL. We keep lazy-loading + the fill/cover
+// layout so the visual behavior (and every call site) is unchanged.
 export function SmartImage({
   src,
   alt,
-  sizes,
+  sizes: _sizes, // no-op for plain <img>; kept for call-site compatibility
   priority,
   fill = true,
   className,
@@ -24,17 +23,20 @@ export function SmartImage({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const unoptimized = !src || src.startsWith('data:');
+  const base: React.CSSProperties = fill
+    ? { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }
+    : { width: '100%', height: 'auto', objectFit: 'cover' };
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={src}
       alt={alt}
-      fill={fill}
-      sizes={sizes || '100vw'}
-      priority={priority}
-      unoptimized={unoptimized}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding="async"
+      // @ts-expect-error fetchPriority is valid HTML but not yet in this React's types
+      fetchpriority={priority ? 'high' : undefined}
       className={className}
-      style={{ objectFit: 'cover', ...style }}
+      style={{ ...base, ...style }}
     />
   );
 }

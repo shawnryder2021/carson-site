@@ -34,12 +34,6 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  images: {
-    // Vehicle photos are dealer-hosted on arbitrary hosts (sheet-provided URLs)
-    // plus Supabase Storage, so allow any https host. SmartImage marks data:
-    // URIs unoptimized so the image pipeline never fails on the SVG fallback.
-    remotePatterns: [{ protocol: 'https', hostname: '**' }],
-  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
