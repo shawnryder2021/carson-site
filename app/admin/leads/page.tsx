@@ -68,6 +68,11 @@ export default function AdminLeads() {
                   <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
                     {[l.email, l.phone].filter(Boolean).join(' · ') || '—'}
                   </div>
+                  {l.type === 'testdrive' && l.payload?.dateLabel && (
+                    <div style={{ marginTop: 8, display: 'inline-block', background: 'var(--teal-tint)', color: 'var(--teal-2)', borderRadius: 8, padding: '7px 12px', fontSize: 13.5, fontWeight: 700 }}>
+                      📅 Test drive: {l.payload.dateLabel} at {l.payload.timeLabel}
+                    </div>
+                  )}
                   {l.payload && Object.keys(l.payload).length > 0 && (
                     <div style={{ marginTop: 10, background: 'var(--bg-soft)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: 'var(--ink)' }}>
                       {Object.entries(l.payload).map(([k, val]) => (

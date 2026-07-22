@@ -292,6 +292,11 @@ function GarageContent() {
                             <span style={{ fontSize: 13.5, fontWeight: 700, minWidth: 100 }}>{LEAD_LABELS[l.type] || l.type}</span>
                             <span style={{ flex: 1, fontSize: 13, color: 'var(--muted)', minWidth: 140 }}>
                               {v ? `${v.year} ${v.make} ${v.model}` : (l.payload?.vehicle || '—')}
+                              {l.type === 'testdrive' && l.payload?.dateLabel && (
+                                <span style={{ display: 'block', color: 'var(--teal-2)', fontWeight: 700, fontSize: 12.5, marginTop: 2 }}>
+                                  📅 {l.payload.dateLabel} · {l.payload.timeLabel}
+                                </span>
+                              )}
                             </span>
                             <span style={{ fontSize: 12, color: 'var(--muted)' }}>
                               {new Date(l.createdAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}

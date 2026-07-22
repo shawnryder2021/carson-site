@@ -17,6 +17,7 @@ import { useSaved } from '@/context/SavedContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { getVehicleById, listVehicles, createLead, recordVehicleView, createVehicleWatch, AdminVehicle } from '@/lib/db';
+import { getBrowserClient } from '@/lib/supabase/client';
 import { recordRecentlyViewed } from '@/lib/recentlyViewed';
 import { gaEvent } from '@/lib/gtag';
 
@@ -133,11 +134,70 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
     }
   };
 
-  // Test drive state
-  const [tdDate, setTdDate] = useState('');
-  const [tdTime, setTdTime] = useState('');
+  // Test drive state — real slots fetched from the scheduler API
+  type TDDay = { dateKey: string; dateLabel: string; slots: { iso: string; timeLabel: string; available: boolean }[] };
   const [tdName, setTdName] = useState('');
+  const [tdEmail, setTdEmail] = useState('');
   const [tdPhone, setTdPhone] = useState('');
+  const [tdSlotIso, setTdSlotIso] = useState('');
+  const [tdDays, setTdDays] = useState<TDDay[]>([]);
+  const [tdActiveDate, setTdActiveDate] = useState('');
+  const [tdLoadingSlots, setTdLoadingSlots] = useState(false);
+  const [tdSubmitting, setTdSubmitting] = useState(false);
+  const [tdError, setTdError] = useState<string | null>(null);
+
+  // Load available slots whenever the test-drive modal opens.
+  useEffect(() => {
+    if (modal !== 'testdrive') return;
+    setTdLoadingSlots(true); setTdError(null);
+    fetch('/api/testdrive-slots')
+      .then(r => r.json())
+      .then(d => {
+        const days: TDDay[] = (d.days || []).filter((day: TDDay) => day.slots.some(s => s.available));
+        setTdDays(days);
+        setTdActiveDate(days.length ? days[0].dateKey : '');
+      })
+      .catch(() => setTdError('Could not load available times. Please call us to book.'))
+      .finally(() => setTdLoadingSlots(false));
+  }, [modal]);
+
+  const submitTestDrive = async () => {
+    if (!vehicle || !tdSlotIso) return;
+    setTdSubmitting(true); setTdError(null);
+    try {
+      const sb = getBrowserClient();
+      const token = sb ? (await sb.auth.getSession()).data.session?.access_token : undefined;
+      const res = await fetch('/api/book-testdrive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ vehicleId: vehicle.id, slotIso: tdSlotIso, name: tdName, email: tdEmail, phone: tdPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTdError(data.error || 'Could not book that time. Please try another.');
+        // A taken slot (409) — refresh availability so the UI reflects it.
+        if (res.status === 409) {
+          setTdSlotIso('');
+          fetch('/api/testdrive-slots').then(r => r.json()).then(d => {
+            const days: TDDay[] = (d.days || []).filter((day: TDDay) => day.slots.some(s => s.available));
+            setTdDays(days);
+          }).catch(() => {});
+        }
+        setTdSubmitting(false);
+        return;
+      }
+      gaEvent('generate_lead', { lead_type: 'testdrive', vehicle_id: vehicle.id });
+      gaEvent('book_test_drive', { vehicle_id: vehicle.id });
+      setSubmitted(true);
+      setTimeout(() => {
+        setModal(null); setSubmitted(false);
+        setTdSlotIso(''); setTdName(''); setTdEmail(''); setTdPhone(''); setTdActiveDate('');
+      }, 2400);
+    } catch {
+      setTdError('Could not book right now. Please try again.');
+    }
+    setTdSubmitting(false);
+  };
 
   // Video request state
   const [videoFocus, setVideoFocus] = useState<string[]>([]);
@@ -155,9 +215,7 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
     // Capture the lead based on which modal is open
     if (vehicle && modal) {
       const veh = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
-      if (modal === 'testdrive') {
-        createLead({ type: 'testdrive', name: tdName, phone: tdPhone, vehicleId: vehicle.id, payload: { vehicle: veh, date: tdDate, time: tdTime } });
-      } else if (modal === 'video') {
+      if (modal === 'video') {
         createLead({ type: 'video', email: videoEmail, vehicleId: vehicle.id, payload: { vehicle: veh, focus: videoFocus, notes: videoNotes } });
       } else if (modal === 'delivery') {
         createLead({ type: 'delivery', vehicleId: vehicle.id, payload: { vehicle: veh, zip: deliveryZip, distance: deliveryDistance } });
@@ -167,7 +225,6 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
     setTimeout(() => {
       setModal(null);
       setSubmitted(false);
-      setTdDate(''); setTdTime(''); setTdName(''); setTdPhone('');
       setVideoFocus([]); setVideoEmail(''); setVideoNotes('');
       setDeliveryZip(''); setDeliveryDistance(null);
     }, 1800);
@@ -642,7 +699,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               <Icon name="check" size={26} style={{ color: 'var(--teal-2)' }} />
             </div>
             <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>You're booked!</div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>We'll text you a confirmation shortly.</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>Check your email for the confirmation and calendar link.</div>
           </div>
         ) : (
           <div>
@@ -650,49 +707,58 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               Take the {vehicle.year} {vehicle.make} {vehicle.model} for a spin. We'll have it ready when you arrive — no waiting.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Pick a day</div>
-                <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                  {Array.from({ length: 4 }, (_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + i + 1);
-                    const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-                    return (
-                      <button key={i} onClick={() => setTdDate(label)} style={{
-                        padding: '10px 6px', borderRadius: 10,
-                        background: tdDate === label ? 'var(--ink)' : 'white',
-                        color: tdDate === label ? 'white' : 'var(--ink)',
-                        border: '1px solid ' + (tdDate === label ? 'var(--ink)' : 'var(--line)'),
-                        cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
-                      }}>{label}</button>
-                    );
-                  })}
+              {tdLoadingSlots ? (
+                <div style={{ color: 'var(--muted)', fontSize: 14, padding: '10px 0' }}>Loading available times…</div>
+              ) : tdDays.length === 0 ? (
+                <div style={{ background: 'var(--bg-soft)', borderRadius: 10, padding: '14px 16px', fontSize: 13.5, color: 'var(--muted)', lineHeight: 1.5 }}>
+                  No online times available right now. Please call us and we&apos;ll set one up.
                 </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Pick a time</div>
-                <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                  {['10 AM', '12 PM', '2 PM', '4 PM', '5 PM', '6 PM'].map(t => (
-                    <button key={t} onClick={() => setTdTime(t)} style={{
-                      padding: '10px 6px', borderRadius: 10,
-                      background: tdTime === t ? 'var(--ink)' : 'white',
-                      color: tdTime === t ? 'white' : 'var(--ink)',
-                      border: '1px solid ' + (tdTime === t ? 'var(--ink)' : 'var(--line)'),
-                      cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
-                    }}>{t}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <input className="input" placeholder="Your name" value={tdName} onChange={e => setTdName(e.target.value)} />
-                <input className="input" placeholder="Phone" value={tdPhone} onChange={e => setTdPhone(e.target.value)} />
-              </div>
-              <button onClick={finishModal} disabled={!tdDate || !tdTime || !tdName || !tdPhone} className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 4 }}>
-                Confirm booking
-              </button>
-              <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
-                <Icon name="shield" size={10} style={{ verticalAlign: '-1px' }} /> No pressure. Cancel anytime.
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Pick a day</div>
+                    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+                      {tdDays.map(day => (
+                        <button key={day.dateKey} onClick={() => { setTdActiveDate(day.dateKey); setTdSlotIso(''); }} style={{
+                          padding: '10px 12px', borderRadius: 10, whiteSpace: 'nowrap', flexShrink: 0,
+                          background: tdActiveDate === day.dateKey ? 'var(--ink)' : 'white',
+                          color: tdActiveDate === day.dateKey ? 'white' : 'var(--ink)',
+                          border: '1px solid ' + (tdActiveDate === day.dateKey ? 'var(--ink)' : 'var(--line)'),
+                          cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
+                        }}>{day.dateLabel}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6, letterSpacing: '.02em' }}>Pick a time</div>
+                    <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                      {(tdDays.find(d => d.dateKey === tdActiveDate)?.slots || []).map(s => (
+                        <button key={s.iso} disabled={!s.available} onClick={() => setTdSlotIso(s.iso)} style={{
+                          padding: '10px 6px', borderRadius: 10,
+                          background: tdSlotIso === s.iso ? 'var(--ink)' : 'white',
+                          color: !s.available ? 'var(--line)' : tdSlotIso === s.iso ? 'white' : 'var(--ink)',
+                          border: '1px solid ' + (tdSlotIso === s.iso ? 'var(--ink)' : 'var(--line)'),
+                          cursor: s.available ? 'pointer' : 'not-allowed', opacity: s.available ? 1 : 0.5,
+                          fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
+                          textDecoration: s.available ? 'none' : 'line-through',
+                        }}>{s.timeLabel}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <input className="input" placeholder="Your name" value={tdName} onChange={e => setTdName(e.target.value)} />
+                    <input className="input" type="tel" placeholder="Phone" value={tdPhone} onChange={e => setTdPhone(e.target.value)} />
+                  </div>
+                  <input className="input" type="email" placeholder="Email (for your confirmation)" value={tdEmail} onChange={e => setTdEmail(e.target.value)} />
+                  {tdError && <div style={{ background: '#FDECEE', color: '#A8232C', borderRadius: 10, padding: '10px 12px', fontSize: 13 }}>{tdError}</div>}
+                  <button onClick={submitTestDrive} disabled={!tdSlotIso || !tdName || !tdEmail || tdSubmitting} className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 4 }}>
+                    {tdSubmitting ? 'Booking…' : 'Confirm booking'}
+                  </button>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
+                    <Icon name="shield" size={10} style={{ verticalAlign: '-1px' }} /> We&apos;ll email a confirmation. Cancel anytime.
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
