@@ -61,10 +61,25 @@ async function sms(to: string, body: string): Promise<boolean> {
   }
 }
 
-export async function sendCustomerBooking(info: BookingInfo, kind: 'confirm' | 'reminder'): Promise<boolean> {
+export async function sendCustomerBooking(info: BookingInfo, kind: 'confirm' | 'reminder' | 'cancelled'): Promise<boolean> {
   const first = escapeHtml((info.name || 'there').split(' ')[0]);
   const title = escapeHtml(info.vehicleTitle);
   const cancelUrl = `${info.siteUrl}/api/book-testdrive/cancel?id=${encodeURIComponent(info.bookingId)}&t=${signBooking(info.bookingId)}`;
+
+  // Dealer-side cancellation gets a distinct, apologetic email with a rebook CTA.
+  if (kind === 'cancelled') {
+    const html = `
+      <div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#222;">
+        <h2 style="color:#111;margin:0 0 6px;">Your test drive was cancelled</h2>
+        <p style="color:#445;font-size:14px;line-height:1.6;margin:0 0 16px;">Hi ${first}, we've had to cancel your test drive of the <strong>${title}</strong> that was booked for <strong>${escapeHtml(info.dateLabel)} at ${escapeHtml(info.timeLabel)}</strong>. Sorry for any inconvenience — please pick a new time that works for you:</p>
+        <p style="margin:6px 0 16px;">
+          <a href="${info.siteUrl}${info.vehicleId ? `/vehicle/${info.vehicleId}` : '/inventory'}" style="display:inline-block;background:#1E8FC4;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:10px 18px;border-radius:8px;">Rebook a test drive</a>
+        </p>
+        <p style="color:#889;font-size:12px;line-height:1.6;margin:16px 0 0;">${DEALER} · ${ADDRESS} · Questions? Just reply to this email.</p>
+      </div>`;
+    return resend(info.email, `Your test drive was cancelled — ${info.vehicleTitle}`, html);
+  }
+
   const heading = kind === 'confirm' ? `You're booked in, ${first} 🚗` : `Reminder: your test drive is coming up, ${first} 🚗`;
   const intro = kind === 'confirm' ? 'Your test drive is confirmed — here are the details:' : 'A friendly reminder about your upcoming test drive:';
   const html = `

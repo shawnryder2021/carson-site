@@ -29,6 +29,7 @@ const icons: Record<string, string> = {
   brain: 'M12 2a4 4 0 0 0-4 4 4 4 0 0 0-2.5 7.13A4 4 0 0 0 8 20a4 4 0 0 0 4 2 4 4 0 0 0 4-2 4 4 0 0 0 2.5-6.87A4 4 0 0 0 16 6a4 4 0 0 0-4-4z M12 2v20',
   grip: 'M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01',
   users: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+  calendar: 'M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
 };
 
 export function Icon({ name, size = 24, ...props }: { name: keyof typeof icons; size?: number; [key: string]: any }) {
