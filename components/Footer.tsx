@@ -49,7 +49,7 @@ export function Footer() {
           </div>
         </div>
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#9ad' }}>
-          <div>© 2024 Carson Exports. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} Carson Exports. All rights reserved.</div>
           <div style={{ display: 'flex', gap: 16 }}>
             <a href="#" style={{ color: '#9ad', textDecoration: 'none' }}>Privacy</a>
             <a href="#" style={{ color: '#9ad', textDecoration: 'none' }}>Terms</a>
