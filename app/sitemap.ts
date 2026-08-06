@@ -18,10 +18,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...staticRoutes,
+    // Sold vehicles stay indexed (long-tail search value + "similar available
+    // now" internal links) but are demoted so live inventory ranks first.
     ...vehicles.map(v => ({
       url: `${SITE_URL}/vehicle/${v.id}`,
-      changeFrequency: 'daily' as const,
-      priority: 0.8,
+      changeFrequency: (v.status === 'sold' ? 'monthly' : 'daily') as 'monthly' | 'daily',
+      priority: v.status === 'sold' ? 0.4 : 0.8,
     })),
     ...guides.map(g => ({
       url: `${SITE_URL}/guides/${g.slug}`,

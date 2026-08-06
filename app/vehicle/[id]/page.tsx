@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import VehicleClient from './VehicleClient';
-import { fetchVehicle, SITE_URL } from '@/lib/serverDb';
+import { fetchVehicle, fetchVehicles, SITE_URL } from '@/lib/serverDb';
 import { jsonLdSafe } from '@/lib/escapeHtml';
+import { similarToVehicle } from '@/lib/recommend';
+import type { AdminVehicle } from '@/lib/db';
 
 // Server wrapper: per-vehicle metadata + structured data for SEO.
 // All interactivity lives in VehicleClient.
@@ -12,10 +14,14 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     return { title: 'Vehicle not found', robots: { index: false } };
   }
   const name = `${v.year} ${v.make} ${v.model}`;
-  const title = `${name} — $${v.price.toLocaleString()}`;
-  const description =
-    `${v.aiSummary ? v.aiSummary.slice(0, 120) + '. ' : ''}${v.mileage.toLocaleString()} km · ${v.fuel} · ${v.drive}. ` +
-    `142-point inspected with a 7-day return at Carson Exports, Dartmouth NS.`;
+  const sold = v.status === 'sold';
+  // Sold pages stay indexed (they hold long-tail search value) but the copy
+  // must be honest — no price pitch on a car nobody can buy.
+  const title = sold ? `SOLD — ${name}` : `${name} — $${v.price.toLocaleString()}`;
+  const description = sold
+    ? `This ${name} has sold. See similar ${v.body || 'vehicles'} available now at Carson Exports in Dartmouth, NS — or get alerted the moment a comparable one arrives.`
+    : `${v.aiSummary ? v.aiSummary.slice(0, 120) + '. ' : ''}${v.mileage.toLocaleString()} km · ${v.fuel} · ${v.drive}. ` +
+      `142-point inspected with a 7-day return at Carson Exports, Dartmouth NS.`;
   const image = v.images[0] || `${SITE_URL}/carson-logo.png`;
 
   return {
@@ -34,7 +40,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
 }
 
 export default async function VehiclePage({ params }: { params: { id: string } }) {
-  const v = await fetchVehicle(params.id);
+  const [v, all] = await Promise.all([fetchVehicle(params.id), fetchVehicles()]);
+
+  // Render the "similar vehicles" rail server-side so crawlers see the internal
+  // links — that's the whole SEO value of keeping sold pages alive.
+  const ssrSimilar = v
+    ? similarToVehicle(v as unknown as AdminVehicle, all as unknown as AdminVehicle[])
+    : [];
 
   const jsonLd = v ? {
     '@context': 'https://schema.org',
@@ -64,7 +76,11 @@ export default async function VehiclePage({ params }: { params: { id: string } }
       {jsonLd && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(jsonLd) }} />
       )}
-      <VehicleClient params={params} />
+      <VehicleClient
+        params={params}
+        ssrSimilar={ssrSimilar}
+        initialVehicle={v ? (v as unknown as AdminVehicle) : undefined}
+      />
     </>
   );
 }

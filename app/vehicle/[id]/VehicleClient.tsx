@@ -18,6 +18,9 @@ import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { getVehicleById, listVehicles, createLead, recordVehicleView, createVehicleWatch, AdminVehicle } from '@/lib/db';
 import { getBrowserClient } from '@/lib/supabase/client';
+import { similarToVehicle } from '@/lib/recommend';
+import { createCarRequest } from '@/lib/db';
+import { SoldOverlay } from '@/components/SoldBadge';
 import { recordRecentlyViewed } from '@/lib/recentlyViewed';
 import { gaEvent } from '@/lib/gtag';
 
@@ -28,11 +31,14 @@ const PRESET_QUESTIONS = [
   'What are the typical maintenance costs?',
 ];
 
-export default function VehicleClient({ params }: { params: { id: string } }) {
+export default function VehicleClient({ params, ssrSimilar = [], initialVehicle }: { params: { id: string }; ssrSimilar?: AdminVehicle[]; initialVehicle?: AdminVehicle | null }) {
   const router = useRouter();
   const { saved, toggleSave } = useSaved();
   const { contactPhone } = useSiteSettings();
-  const [vehicle, setVehicle] = useState<AdminVehicle | null | undefined>(undefined);
+  // Seeded from the server so the page (including the sold state and the
+  // similar-vehicles rail) is in the initial HTML for crawlers and paints
+  // instantly; the client fetch below refreshes it with the full record.
+  const [vehicle, setVehicle] = useState<AdminVehicle | null | undefined>(initialVehicle ?? undefined);
   const [allVehicles, setAllVehicles] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   const isSaved = saved.includes(params.id);
 
@@ -66,7 +72,7 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
-  const [modal, setModal] = useState<null | 'testdrive' | 'video' | 'delivery' | 'otd' | 'watch' | 'interested'>(null);
+  const [modal, setModal] = useState<null | 'testdrive' | 'video' | 'delivery' | 'otd' | 'watch' | 'interested' | 'alert'>(null);
   const [submitted, setSubmitted] = useState(false);
 
   // "I'm Interested" state
@@ -90,6 +96,36 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
     setIntBusy(false);
     setSubmitted(true);
     setTimeout(() => { setModal(null); setSubmitted(false); setIntName(''); setIntContact(''); setIntMessage(''); }, 2000);
+  };
+
+  // "Alert me when a similar one arrives" (sold vehicles) — creates a real
+  // CarFinder request prefilled from this car, so the existing match-alert
+  // pipeline notifies them when comparable inventory lands.
+  const [alertName, setAlertName] = useState('');
+  const [alertContact, setAlertContact] = useState('');
+  const [alertBusy, setAlertBusy] = useState(false);
+
+  const submitAlert = async () => {
+    if (!vehicle || !alertName.trim() || !alertContact.trim()) return;
+    setAlertBusy(true);
+    const isEmail = alertContact.includes('@');
+    const email = isEmail ? alertContact.trim() : '';
+    const phone = isEmail ? '' : alertContact.trim();
+    await createCarRequest({
+      name: alertName.trim(), email, phone,
+      contactPref: isEmail ? 'email' : 'sms',
+      body: vehicle.body || '', make: vehicle.make || '', model: '',
+      yearMin: null, priceMax: Math.round(vehicle.price * 1.2), mileageMax: null,
+      fuel: '', drive: '',
+      notes: `Interested in something like the ${vehicle.year} ${vehicle.make} ${vehicle.model} (sold).`,
+    });
+    await createLead({
+      type: 'carfinder', name: alertName.trim(), email, phone, vehicleId: vehicle.id,
+      payload: { vehicle: `${vehicle.year} ${vehicle.make} ${vehicle.model}`, source: 'sold_vehicle_alert' },
+    });
+    setAlertBusy(false);
+    setSubmitted(true);
+    setTimeout(() => { setModal(null); setSubmitted(false); setAlertName(''); setAlertContact(''); }, 2200);
   };
 
   // Sticky bar scroll visibility
@@ -260,7 +296,12 @@ export default function VehicleClient({ params }: { params: { id: string } }) {
     );
   }
 
-  const similar = allVehicles.filter(v => v.id !== vehicle.id && (v.body === vehicle.body || v.fuel === vehicle.fuel)).slice(0, 4);
+  const isSold = vehicle.status === 'sold';
+  // Recommendations run through the CarFinder matcher, which excludes
+  // sold/hidden vehicles — so this rail can never suggest an unbuyable car.
+  // The server passes an SSR-rendered list (crawlable); fall back to computing
+  // client-side if it wasn't provided.
+  const similar = ssrSimilar && ssrSimilar.length > 0 ? ssrSimilar : similarToVehicle(vehicle, allVehicles);
   const opts = vehicle.displayOptions ?? {};
 
   // Fair price estimate
@@ -334,15 +375,28 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             </span>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => setModal('interested')} className="btn btn-primary btn-sm">
-              <Icon name="heart" size={13} /> Interested
-            </button>
-            <button onClick={() => setModal('testdrive')} className="btn btn-dark btn-sm">
-              <Icon name="car" size={13} /> Test drive
-            </button>
-            <button onClick={() => setModal('video')} className="btn btn-ghost btn-sm">
-              <Icon name="sparkles" size={13} /> Video
-            </button>
+            {isSold ? (
+              <>
+                <button onClick={() => setModal('alert')} className="btn btn-primary btn-sm">
+                  <Icon name="mail" size={13} /> Alert me
+                </button>
+                <a href="#similar" className="btn btn-ghost btn-sm">
+                  <Icon name="search" size={13} /> See similar
+                </a>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setModal('interested')} className="btn btn-primary btn-sm">
+                  <Icon name="heart" size={13} /> Interested
+                </button>
+                <button onClick={() => setModal('testdrive')} className="btn btn-dark btn-sm">
+                  <Icon name="car" size={13} /> Test drive
+                </button>
+                <button onClick={() => setModal('video')} className="btn btn-ghost btn-sm">
+                  <Icon name="sparkles" size={13} /> Video
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -365,8 +419,9 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                       alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                       sizes="(max-width: 860px) 100vw, 60vw"
                       priority
-                      style={{ objectFit: hasPhotos ? 'cover' : 'contain' }}
+                      style={{ objectFit: hasPhotos ? 'cover' : 'contain', filter: isSold ? 'grayscale(.6)' : undefined }}
                     />
+                    {isSold && <SoldOverlay size="lg" />}
                     {hasPhotos && (
                       <div style={{ position: 'absolute', bottom: 14, left: 14, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: 12, fontWeight: 700, padding: '5px 11px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5, pointerEvents: 'none' }}>
                         <Icon name="search" size={12} /> {photos.length} photo{photos.length === 1 ? '' : 's'}
@@ -536,22 +591,49 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
 
             {/* Price card */}
             <div style={{ background: 'var(--ink)', color: 'white', borderRadius: 16, padding: '24px 28px', marginBottom: 14, position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', inset: 0, opacity: 0.4, background: 'radial-gradient(circle at 100% 0%, var(--teal), transparent 60%)' }} />
+              <div style={{ position: 'absolute', inset: 0, opacity: isSold ? 0.15 : 0.4, background: 'radial-gradient(circle at 100% 0%, var(--teal), transparent 60%)' }} />
               <div style={{ position: 'relative' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ad', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 8 }}>Carson price</div>
-                <div style={{ fontFamily: 'var(--display)', fontSize: 42, fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1, marginBottom: 12 }}>
-                  {fmtPrice(vehicle.price)}
-                </div>
-                {isBelowMarket && (
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(0,200,100,0.2)', color: '#7BFFB0', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
-                    <Icon name="trend" size={12} /> {fmtPrice(savings)} below market
-                  </div>
+                {isSold ? (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9ad', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 8 }}>This one sold</div>
+                    <div style={{ fontFamily: 'var(--display)', fontSize: 34, fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1.05, marginBottom: 10 }}>
+                      Sold for {fmtPrice(vehicle.price)}
+                    </div>
+                    <div style={{ fontSize: 12.5, color: '#9ad', lineHeight: 1.6 }}>
+                      Cars like this move quickly. We&apos;ll tell you the moment a similar one lands.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9ad', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 8 }}>Carson price</div>
+                    <div style={{ fontFamily: 'var(--display)', fontSize: 42, fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1, marginBottom: 12 }}>
+                      {fmtPrice(vehicle.price)}
+                    </div>
+                    {isBelowMarket && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(0,200,100,0.2)', color: '#7BFFB0', padding: '4px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
+                        <Icon name="trend" size={12} /> {fmtPrice(savings)} below market
+                      </div>
+                    )}
+                    <div style={{ fontSize: 12, color: '#9ad' }}>Market: {fmtPrice(marketLow)} – {fmtPrice(marketHigh)}</div>
+                  </>
                 )}
-                <div style={{ fontSize: 12, color: '#9ad' }}>Market: {fmtPrice(marketLow)} – {fmtPrice(marketHigh)}</div>
               </div>
             </div>
 
             {/* CTAs */}
+            {isSold ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                <button onClick={() => setModal('alert')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                  <Icon name="mail" size={14} /> Alert me when a similar one arrives
+                </button>
+                <a href="#similar" className="btn btn-dark" style={{ width: '100%' }}>
+                  <Icon name="search" size={14} /> See similar available now
+                </a>
+                <button onClick={() => router.push('/inventory')} className="btn btn-ghost" style={{ width: '100%' }}>
+                  Browse all inventory
+                </button>
+              </div>
+            ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               <button onClick={() => setModal('interested')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
                 <Icon name="heart" size={14} /> I'm interested in this car
@@ -586,6 +668,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                 <Icon name="trend" size={14} /> {watching ? 'Watching — we’ll alert you on a price drop ✓' : 'Watch this car · get price-drop alerts'}
               </button>
             </div>
+            )}
 
             {/* AI Q&A */}
             <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 22px' }}>
@@ -648,8 +731,10 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
 
         {/* Similar vehicles */}
         {similar.length > 0 && (
-          <div style={{ marginTop: 80 }}>
-            <h2 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, letterSpacing: '-.02em', marginBottom: 24 }}>Similar vehicles</h2>
+          <div id="similar" style={{ marginTop: 80, scrollMarginTop: 90 }}>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 28, fontWeight: 600, letterSpacing: '-.02em', marginBottom: 24 }}>
+              {isSold ? 'Similar vehicles available now' : 'Similar vehicles'}
+            </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
               {similar.map(v => <VehicleCard key={v.id} vehicle={v} />)}
             </div>
@@ -1009,6 +1094,35 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
         )}
       </Modal>
 
+      {/* ── ALERT ME (sold vehicles) ── */}
+      <Modal open={modal === 'alert'} onClose={() => setModal(null)} title="Alert me when a similar one arrives">
+        {submitted ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--teal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+              <Icon name="check" size={26} style={{ color: 'var(--teal-2)' }} />
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>You&apos;re on the list!</div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>We&apos;ll reach out the moment a similar vehicle arrives.</div>
+          </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 18px', lineHeight: 1.5 }}>
+              The {vehicle.year} {vehicle.make} {vehicle.model} has sold — but similar ones come through regularly. Leave your details and we&apos;ll let you know first.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input className="input" placeholder="Your name" value={alertName} onChange={e => setAlertName(e.target.value)} />
+              <input className="input" placeholder="Email or phone number" value={alertContact} onChange={e => setAlertContact(e.target.value)} />
+              <button onClick={submitAlert} disabled={alertBusy || !alertName.trim() || !alertContact.trim()} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                {alertBusy ? 'Setting up…' : 'Alert me'}
+              </button>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
+                <Icon name="shield" size={10} style={{ verticalAlign: '-1px' }} /> We&apos;ll only contact you about matching vehicles. Unsubscribe anytime.
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* ── STICKY CTA BAR (mobile + desktop) ── */}
       <div className={`vdp-sticky-bar${showStickyBar ? ' vdp-sticky-bar--visible' : ''}`}>
         <div className="vdp-sticky-bar__inner">
@@ -1017,7 +1131,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               <div style={{ fontFamily: 'var(--display)', fontSize: 20, fontWeight: 700, lineHeight: 1 }}>
                 {fmtPrice(vehicle.price)}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>est. ${estMonthly(vehicle.price)}/mo</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>{isSold ? 'Sold' : `est. $${estMonthly(vehicle.price)}/mo`}</div>
             </div>
             <div className="vdp-sticky-bar__title">
               {vehicle.year} {vehicle.make} {vehicle.model}
@@ -1034,9 +1148,15 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                 <Icon name="send" size={14} /> Text
               </a>
             )}
-            <button onClick={() => setModal('interested')} className="btn btn-primary">
-              <Icon name="heart" size={14} /> <span className="vdp-sticky-bar__label">I'm interested</span>
-            </button>
+            {isSold ? (
+              <button onClick={() => setModal('alert')} className="btn btn-primary">
+                <Icon name="mail" size={14} /> <span className="vdp-sticky-bar__label">Alert me on similar</span>
+              </button>
+            ) : (
+              <button onClick={() => setModal('interested')} className="btn btn-primary">
+                <Icon name="heart" size={14} /> <span className="vdp-sticky-bar__label">I'm interested</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

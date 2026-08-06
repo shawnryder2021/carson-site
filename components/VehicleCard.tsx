@@ -4,6 +4,7 @@ import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { Icon } from './Icon';
 import { CardCarousel } from './CardCarousel';
 import { SmartImage } from './SmartImage';
+import { SoldOverlay } from './SoldBadge';
 import { useSaved } from '@/context/SavedContext';
 import { useCompare } from '@/context/CompareContext';
 import { usePriceMode } from '@/context/PriceModeContext';
@@ -56,8 +57,10 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
               style={{ objectFit: photo ? 'cover' : 'contain' }}
             />}
         />
+        {/* Sold cars must never look buyable in a grid. */}
+        {(vehicle as any).status === 'sold' && <SoldOverlay size="sm" />}
         {/* Social proof badge (real data: created_at / tracked views) */}
-        {(() => {
+        {(vehicle as any).status !== 'sold' && (() => {
           const createdAt = (vehicle as any).createdAt as string | undefined;
           const views = ((vehicle as any).views as number) || 0;
           const days = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : null;
@@ -123,8 +126,17 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         </button>
       </div>
       <div style={{ padding: '16px 20px' }}>
+        {/* A real anchor: gives crawlers a followable internal link and makes
+            the card keyboard-accessible (the whole-card onClick above is a
+            convenience for mouse users, not the only way in). */}
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>
-          {vehicle.year} {vehicle.make} {vehicle.model}
+          <a
+            href={`/vehicle/${vehicle.id}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
+            {vehicle.year} {vehicle.make} {vehicle.model}
+          </a>
         </div>
         {mode === 'monthly' ? (
           <div style={{ marginBottom: 12 }}>

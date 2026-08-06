@@ -12,7 +12,8 @@ import { useCompare } from '@/context/CompareContext';
 import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { getBrowserClient } from '@/lib/supabase/client';
 import { listVehicles, AdminVehicle, Lead, VehicleWatch } from '@/lib/db';
-import { matchesRequest, describeRequest, CarRequest } from '@/lib/carMatch';
+import { describeRequest, CarRequest } from '@/lib/carMatch';
+import { buildRecommendations } from '@/lib/recommend';
 import { getRecentlyViewed } from '@/lib/recentlyViewed';
 import {
   listMyWatches, deleteMyWatch, listMyLeads, listMyCarRequests,
@@ -35,36 +36,6 @@ const STATUS_CHIP: Record<string, { label: string; bg: string; color: string }> 
 
 function photoOf(v: AdminVehicle): string {
   return (v as any).images?.[0] || vehicleImageURL(v, { size: 200 });
-}
-
-// "Because you saved…" — derive a pseudo CarFinder request from the shopper's
-// saved + recently viewed cars, then reuse the CarFinder matcher.
-function buildRecommendations(signals: AdminVehicle[], inventory: AdminVehicle[], exclude: Set<string>): AdminVehicle[] {
-  if (signals.length === 0) return [];
-
-  const freq = (vals: string[]) => {
-    const counts = new Map<string, number>();
-    vals.forEach(v => counts.set(v, (counts.get(v) || 0) + 1));
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  };
-  const topBody = freq(signals.map(s => s.body))[0];
-  const topMake = freq(signals.map(s => s.make))[0];
-  const prices = signals.map(s => s.price);
-  const priceMax = Math.round(Math.max(...prices) * 1.2);
-  const priceFloor = Math.round(Math.min(...prices) * 0.7);
-  const median = [...prices].sort((a, b) => a - b)[Math.floor(prices.length / 2)];
-
-  const pseudo: CarRequest = {
-    name: '', email: '', phone: '', contactPref: 'email',
-    body: topBody ? topBody[0] : '', make: topMake && topMake[1] >= 2 ? topMake[0] : '',
-    model: '', yearMin: null, priceMax, mileageMax: null,
-    fuel: '', drive: '', notes: '', active: true, notifiedVehicleIds: [],
-  };
-
-  return inventory
-    .filter(v => !exclude.has(v.id) && v.price >= priceFloor && matchesRequest(v as any, pseudo))
-    .sort((a, b) => Math.abs(a.price - median) - Math.abs(b.price - median))
-    .slice(0, 4);
 }
 
 function GarageContent() {
