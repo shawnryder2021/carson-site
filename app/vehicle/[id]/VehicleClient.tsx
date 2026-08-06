@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
@@ -19,6 +19,7 @@ import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { getVehicleById, listVehicles, createLead, recordVehicleView, createVehicleWatch, AdminVehicle } from '@/lib/db';
 import { getBrowserClient } from '@/lib/supabase/client';
 import { similarToVehicle } from '@/lib/recommend';
+import { monthlyPayment, financedAmount, CREDIT_TIERS, TERM_OPTIONS, DEFAULT_TERMS } from '@/lib/payment';
 import { createCarRequest } from '@/lib/db';
 import { SoldOverlay } from '@/components/SoldBadge';
 import { recordRecentlyViewed } from '@/lib/recentlyViewed';
@@ -72,7 +73,7 @@ export default function VehicleClient({ params, ssrSimilar = [], initialVehicle 
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [aiThinking, setAiThinking] = useState(false);
-  const [modal, setModal] = useState<null | 'testdrive' | 'video' | 'delivery' | 'otd' | 'watch' | 'interested' | 'alert'>(null);
+  const [modal, setModal] = useState<null | 'testdrive' | 'video' | 'delivery' | 'otd' | 'watch' | 'interested' | 'alert' | 'payment'>(null);
   const [submitted, setSubmitted] = useState(false);
 
   // "I'm Interested" state
@@ -96,6 +97,47 @@ export default function VehicleClient({ params, ssrSimilar = [], initialVehicle 
     setIntBusy(false);
     setSubmitted(true);
     setTimeout(() => { setModal(null); setSubmitted(false); setIntName(''); setIntContact(''); setIntMessage(''); }, 2000);
+  };
+
+  // Payment calculator state. Shares lib/payment.ts with /finance so the two
+  // surfaces can never disagree on a monthly figure.
+  const [calcDown, setCalcDown] = useState<number | null>(null); // null → 10% default once the price is known
+  const [calcTrade, setCalcTrade] = useState(0);
+  const [calcTerm, setCalcTerm] = useState(DEFAULT_TERMS.term);
+  const [calcTier, setCalcTier] = useState('good');
+  const [calcApr, setCalcApr] = useState(DEFAULT_TERMS.apr);
+  const [calcBusy, setCalcBusy] = useState(false);
+  const calcFired = useRef(false);
+
+  // Fire the calculator-opened event once per page view (effect, not render).
+  useEffect(() => {
+    if (modal !== 'payment' || calcFired.current || !vehicle) return;
+    calcFired.current = true;
+    const down = calcDown ?? Math.round(vehicle.price * DEFAULT_TERMS.downPct);
+    gaEvent('calculate_payment', {
+      vehicle_id: vehicle.id,
+      monthly: monthlyPayment({ price: vehicle.price, down, tradeIn: calcTrade, term: calcTerm, apr: calcApr }),
+      term: calcTerm, apr: calcApr, down, trade: calcTrade,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modal, vehicle]);
+
+  const submitPaymentLead = async () => {
+    if (!vehicle) return;
+    setCalcBusy(true);
+    const down = calcDown ?? Math.round(vehicle.price * DEFAULT_TERMS.downPct);
+    const monthly = monthlyPayment({ price: vehicle.price, down, tradeIn: calcTrade, term: calcTerm, apr: calcApr });
+    await createLead({
+      type: 'finance',
+      vehicleId: vehicle.id,
+      payload: {
+        vehicle: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+        price: vehicle.price, down, tradeIn: calcTrade, term: calcTerm, apr: calcApr, monthly,
+        source: 'payment_calculator',
+      },
+    });
+    setCalcBusy(false);
+    router.push(`/finance?vehicleId=${vehicle.id}`);
   };
 
   // "Alert me when a similar one arrives" (sold vehicles) — creates a real
@@ -614,6 +656,15 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                         <Icon name="trend" size={12} /> {fmtPrice(savings)} below market
                       </div>
                     )}
+                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>
+                      or est. ${estMonthly(vehicle.price)}/mo
+                    </div>
+                    <button
+                      onClick={() => setModal('payment')}
+                      style={{ background: 'none', border: 'none', padding: 0, color: '#7ecbff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 10 }}
+                    >
+                      Adjust payment →
+                    </button>
                     <div style={{ fontSize: 12, color: '#9ad' }}>Market: {fmtPrice(marketLow)} – {fmtPrice(marketHigh)}</div>
                   </>
                 )}
@@ -1092,6 +1143,116 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* ── PAYMENT CALCULATOR ── */}
+      <Modal open={modal === 'payment'} onClose={() => setModal(null)} title="Estimate your payment">
+        {(() => {
+          const down = calcDown ?? Math.round(vehicle.price * DEFAULT_TERMS.downPct);
+          const financed = financedAmount(vehicle.price, down, calcTrade);
+          const monthly = monthlyPayment({ price: vehicle.price, down, tradeIn: calcTrade, term: calcTerm, apr: calcApr });
+          return (
+            <div>
+              {/* Live result */}
+              <div style={{ background: 'var(--ink)', color: 'white', borderRadius: 16, padding: '22px 24px', marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', inset: 0, opacity: 0.4, background: 'radial-gradient(circle at 100% 0%, var(--teal), transparent 55%)' }} />
+                <div style={{ position: 'relative' }}>
+                  <div style={{ fontSize: 11, color: '#9ad', letterSpacing: '.06em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>Estimated monthly</div>
+                  <div style={{ fontFamily: 'var(--display)', fontSize: 46, fontWeight: 700, lineHeight: 1 }}>{fmtPrice(monthly)}</div>
+                  <div style={{ fontSize: 12.5, color: '#9ad', marginTop: 6 }}>
+                    {fmtPrice(financed)} financed · {calcApr.toFixed(1)}% APR · {calcTerm}mo
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', marginBottom: 8 }}>
+                    Down payment: {fmtPrice(down)}
+                  </div>
+                  <input
+                    type="range" min={0} max={Math.round(vehicle.price * 0.5)} step={500} value={down}
+                    onChange={e => setCalcDown(+e.target.value)}
+                    style={{ width: '100%', accentColor: 'var(--teal)' }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', marginBottom: 6 }}>Trade-in value</div>
+                  <input
+                    className="input" type="number" min={0} inputMode="numeric" placeholder="$0"
+                    value={calcTrade || ''}
+                    onChange={e => setCalcTrade(Math.max(0, +e.target.value || 0))}
+                  />
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 5 }}>
+                    Not sure?{' '}
+                    <button onClick={() => router.push('/tradein')} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--teal-2)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 11 }}>
+                      Get a free trade-in estimate
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', marginBottom: 8 }}>Loan term</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {TERM_OPTIONS.map(t => (
+                      <button key={t} onClick={() => setCalcTerm(t)} style={{
+                        flex: 1, padding: '9px 4px', borderRadius: 10,
+                        background: calcTerm === t ? 'var(--ink)' : 'white',
+                        color: calcTerm === t ? 'white' : 'var(--ink)',
+                        border: '1px solid ' + (calcTerm === t ? 'var(--ink)' : 'var(--line)'),
+                        cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
+                      }}>{t}mo</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', marginBottom: 8 }}>Credit tier</div>
+                  <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+                    {CREDIT_TIERS.map(t => (
+                      <button
+                        key={t.key}
+                        onClick={() => { setCalcTier(t.key); setCalcApr(t.apr); }}
+                        style={{
+                          padding: '9px 4px', borderRadius: 10,
+                          background: calcTier === t.key ? 'var(--ink)' : 'white',
+                          color: calcTier === t.key ? 'white' : 'var(--ink)',
+                          border: '1px solid ' + (calcTier === t.key ? 'var(--ink)' : 'var(--line)'),
+                          cursor: 'pointer', fontFamily: 'inherit',
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, fontSize: 12 }}>{t.label}</div>
+                        <div style={{ fontSize: 10.5, color: calcTier === t.key ? '#cbd5dc' : 'var(--muted)' }}>{t.range}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', marginBottom: 6 }}>
+                    Interest rate (APR)
+                  </div>
+                  <input
+                    className="input" type="number" step={0.1} min={0} max={35} inputMode="decimal"
+                    value={calcApr}
+                    onChange={e => setCalcApr(Math.min(35, Math.max(0, +e.target.value || 0)))}
+                  />
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 5 }}>
+                    Prefilled from your credit tier — edit it if you have a quoted rate.
+                  </div>
+                </div>
+
+                <button onClick={submitPaymentLead} disabled={calcBusy} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                  {calcBusy ? 'Sending…' : 'Get pre-approved with these numbers'}
+                </button>
+                <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', lineHeight: 1.5 }}>
+                  <Icon name="shield" size={10} style={{ verticalAlign: '-1px' }} /> Estimate only — taxes and fees not included. Soft check, no impact on your score.
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* ── ALERT ME (sold vehicles) ── */}

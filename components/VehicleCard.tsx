@@ -9,6 +9,7 @@ import { useSaved } from '@/context/SavedContext';
 import { useCompare } from '@/context/CompareContext';
 import { usePriceMode } from '@/context/PriceModeContext';
 import { useRouter } from 'next/navigation';
+import { TERMS_LABEL } from '@/lib/payment';
 
 export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const { saved, toggleSave } = useSaved();
@@ -143,7 +144,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
             <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)' }}>
               ${monthly}<span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}>/mo</span>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--muted)' }}>{fmtPrice(vehicle.price)} · est. 72mo @ 7.2% APR</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)' }}>{fmtPrice(vehicle.price)} · est. {TERMS_LABEL}</div>
           </div>
         ) : (
           <div style={{ marginBottom: 12 }}>

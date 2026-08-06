@@ -9,6 +9,7 @@ import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { useCompare } from '@/context/CompareContext';
 import { listVehicles, AdminVehicle } from '@/lib/db';
 import { gaEvent } from '@/lib/gtag';
+import { TERMS_LABEL } from '@/lib/payment';
 
 const DAY = 86400000;
 
@@ -27,7 +28,7 @@ type Row = {
 
 const ROWS: Row[] = [
   { label: 'Price', value: v => fmtPrice(v.price), numeric: { of: v => v.price, best: 'min' } },
-  { label: 'Est. payment', sub: '72mo @ 7.2% APR', value: v => `$${estMonthly(v.price)}/mo`, numeric: { of: v => estMonthly(v.price), best: 'min' } },
+  { label: 'Est. payment', sub: TERMS_LABEL, value: v => `$${estMonthly(v.price)}/mo`, numeric: { of: v => estMonthly(v.price), best: 'min' } },
   { label: 'Kilometres', value: v => fmtMiles(v.mileage), numeric: { of: v => v.mileage, best: 'min' } },
   { label: 'Year', value: v => String(v.year), numeric: { of: v => v.year, best: 'max' } },
   { label: 'Body', value: v => v.body },

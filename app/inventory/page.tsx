@@ -15,6 +15,7 @@ import { listVehicles, AdminVehicle } from '@/lib/db';
 import { getRecentlyViewed } from '@/lib/recentlyViewed';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { gaEvent } from '@/lib/gtag';
+import { TERMS_LABEL } from '@/lib/payment';
 
 type Filters = {
   body: string[];
@@ -419,7 +420,7 @@ Rules:
                   <input type="range" min={150} max={MONTHLY_CAP} step={25} value={filters.monthlyMax}
                     onChange={e => setFilters(f => ({ ...f, monthlyMax: +e.target.value }))}
                     style={{ width: '100%', accentColor: 'var(--teal)' }} />
-                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Est. at 10% down, 72 mo, 7.2% APR</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Est. at 10% down, {TERMS_LABEL}</div>
                 </div>
 
                 <div>

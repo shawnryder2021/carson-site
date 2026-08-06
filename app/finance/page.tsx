@@ -9,9 +9,9 @@ import { INVENTORY } from '@/data/inventory';
 import { fmtPrice } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { listVehicles, createLead, AdminVehicle } from '@/lib/db';
+import { monthlyPayment, financedAmount, CREDIT_TIERS, TERM_OPTIONS, aprForTier } from '@/lib/payment';
 
 type Result = { verdict: string; headline: string; paymentPercent: number; advice: string; tips: string[] };
-const APR: Record<string, number> = { excellent: 5.4, good: 7.2, fair: 11.5, rebuilding: 16.9 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>{children}</div>;
@@ -21,7 +21,7 @@ function FinanceContent() {
   const params = useSearchParams();
   const [inv, setInv] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   const [vehicle, setVehicle] = useState<AdminVehicle | null>(null);
-  const [info, setInfo] = useState({ income: 60000, down: 3000, term: 72, score: 'good' });
+  const [info, setInfo] = useState({ income: 60000, down: 3000, tradeIn: 0, term: 72, score: 'good' });
   const [result, setResult] = useState<Result | null>(null);
   const [thinking, setThinking] = useState(false);
 
@@ -33,14 +33,15 @@ function FinanceContent() {
     });
   }, [params]);
 
-  const apr = APR[info.score];
-  const principal = (vehicle ? vehicle.price : 25000) - info.down;
-  const monthly = Math.max(0, Math.round((principal * (apr / 1200)) / (1 - Math.pow(1 + apr / 1200, -info.term))));
+  const apr = aprForTier(info.score);
+  const price = vehicle ? vehicle.price : 25000;
+  const principal = financedAmount(price, info.down, info.tradeIn);
+  const monthly = monthlyPayment({ price, down: info.down, tradeIn: info.tradeIn, term: info.term, apr });
 
   const check = async () => {
     setThinking(true);
     const prompt = `You're Carson AI, a friendly, honest financing advisor. Assess loan fit.
-Income $${info.income}/yr, credit ${info.score}, down $${info.down}, term ${info.term}mo${vehicle ? `, vehicle ${vehicle.year} ${vehicle.make} ${vehicle.model} $${vehicle.price}` : ''}, est payment $${monthly}/mo.
+Income $${info.income}/yr, credit ${info.score}, down $${info.down}, trade-in $${info.tradeIn}, term ${info.term}mo${vehicle ? `, vehicle ${vehicle.year} ${vehicle.make} ${vehicle.model} $${vehicle.price}` : ''}, est payment $${monthly}/mo.
 Take-home ~75% of gross/12. Under 15% of take-home is ideal, 15-20% manageable, over 20% tight.
 Reply ONLY JSON: {"verdict":"Comfortable"|"Manageable"|"Stretch"|"Tight","headline":"1 friendly sentence","paymentPercent":<int>,"advice":"2-3 sentences","tips":["t1","t2","t3"]}`;
     try {
@@ -49,7 +50,7 @@ Reply ONLY JSON: {"verdict":"Comfortable"|"Manageable"|"Stretch"|"Tight","headli
       const pct = Math.round(monthly / (info.income * 0.75 / 12) * 100);
       setResult({ verdict: pct < 15 ? 'Comfortable' : pct < 20 ? 'Manageable' : 'Stretch', headline: 'Here’s how this payment fits your budget.', paymentPercent: pct, advice: 'A larger down payment or shorter term would lower your monthly cost.', tips: ['Add to your down payment to save monthly', 'Aim for 60 months to pay off faster', 'Get pre-approved to negotiate harder'] });
     }
-    createLead({ type: 'finance', vehicleId: vehicle?.id, payload: { income: info.income, down: info.down, term: info.term, credit: info.score, monthly } });
+    createLead({ type: 'finance', vehicleId: vehicle?.id, payload: { income: info.income, down: info.down, tradeIn: info.tradeIn, term: info.term, credit: info.score, monthly } });
     setThinking(false);
   };
 
@@ -72,15 +73,17 @@ Reply ONLY JSON: {"verdict":"Comfortable"|"Manageable"|"Stretch"|"Tight","headli
             <div style={{ height: 18 }} />
             <Field label={`Down payment: ${fmtPrice(info.down)}`}><input type="range" min={0} max={25000} step={500} value={info.down} onChange={e => setInfo(i => ({ ...i, down: +e.target.value }))} style={{ width: '100%', accentColor: 'var(--teal)' }} /></Field>
             <div style={{ height: 18 }} />
+            <Field label={`Trade-in value: ${fmtPrice(info.tradeIn)}`}><input type="range" min={0} max={40000} step={500} value={info.tradeIn} onChange={e => setInfo(i => ({ ...i, tradeIn: +e.target.value }))} style={{ width: '100%', accentColor: 'var(--teal)' }} /></Field>
+            <div style={{ height: 18 }} />
             <Field label="Loan term">
               <div style={{ display: 'flex', gap: 8 }}>
-                {[36, 48, 60, 72, 84].map(t => <button key={t} onClick={() => setInfo(i => ({ ...i, term: t }))} style={{ flex: 1, padding: '10px', borderRadius: 10, background: info.term === t ? 'var(--ink)' : 'white', color: info.term === t ? 'white' : 'var(--ink)', border: '1px solid ' + (info.term === t ? 'var(--ink)' : 'var(--line)'), cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>{t}mo</button>)}
+                {TERM_OPTIONS.map(t => <button key={t} onClick={() => setInfo(i => ({ ...i, term: t }))} style={{ flex: 1, padding: '10px', borderRadius: 10, background: info.term === t ? 'var(--ink)' : 'white', color: info.term === t ? 'white' : 'var(--ink)', border: '1px solid ' + (info.term === t ? 'var(--ink)' : 'var(--line)'), cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>{t}mo</button>)}
               </div>
             </Field>
             <div style={{ height: 18 }} />
             <Field label="Credit tier">
               <div className="rg" style={{ ['--gtc-m' as any]: '1fr 1fr', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-                {[['excellent', '740+'], ['good', '670-739'], ['fair', '580-669'], ['rebuilding', '<580']].map(([v, r]) => (
+                {CREDIT_TIERS.map(({ key: v, range: r }) => (
                   <button key={v} onClick={() => setInfo(i => ({ ...i, score: v }))} style={{ padding: '10px 6px', borderRadius: 10, background: info.score === v ? 'var(--ink)' : 'white', color: info.score === v ? 'white' : 'var(--ink)', border: '1px solid ' + (info.score === v ? 'var(--ink)' : 'var(--line)'), cursor: 'pointer', fontFamily: 'inherit' }}>
                     <div style={{ fontWeight: 700, fontSize: 13, textTransform: 'capitalize' }}>{v}</div>
                     <div style={{ fontSize: 11, color: info.score === v ? '#cbd5dc' : 'var(--muted)' }}>{r}</div>
