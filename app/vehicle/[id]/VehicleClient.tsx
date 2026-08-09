@@ -373,7 +373,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
       const reply = await complete(prompt);
       setAiReply(reply);
     } catch {
-      setAiReply("I'm having trouble thinking right now, but our team can help. Call (555) 234-9090.");
+      setAiReply(`I'm having trouble thinking right now, but our team can help.${contactPhone ? ` Call ${contactPhone}.` : ' Send us a message on the contact page and we\'ll get right back to you.'}`);
     }
     setAiThinking(false);
     setAiQuestion('');

@@ -75,7 +75,8 @@ export default function ContactPage() {
               <div style={{ display: 'grid', gap: 14 }}>
                 {[
                   { icon: 'location', label: 'Showroom', value: contactAddress || '550 Windmill Rd, Dartmouth, NS B3B 1B3' },
-                  { icon: 'phone', label: 'Call us', value: contactPhone || '(555) 234-9090' },
+                  // Omitted entirely until a real number is saved in Admin → Settings.
+                  ...(contactPhone ? [{ icon: 'phone', label: 'Call us', value: contactPhone }] : []),
                   { icon: 'mail', label: 'Email', value: contactEmail || 'hello@carsonexports.com' },
                 ].map(c => (
                   <div key={c.label} style={{ display: 'flex', gap: 12 }}>

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
 
@@ -109,13 +110,13 @@ export default function TestimonialsPage() {
           <p style={{ fontSize: 16, opacity: 0.95, margin: '0 0 24px' }}>
             Join thousands of happy customers who bought smarter.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button className="btn btn-dark">
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/finder" className="btn btn-dark">
               <Icon name="sparkles" size={14}/> Try the AI finder
-            </button>
-            <button className="btn btn-ghost" style={{ color: 'white', borderColor: 'rgba(255,255,255,.4)' }}>
+            </Link>
+            <Link href="/inventory" className="btn btn-ghost" style={{ color: 'white', borderColor: 'rgba(255,255,255,.4)' }}>
               Browse inventory
-            </button>
+            </Link>
           </div>
         </div>
       </div>

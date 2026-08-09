@@ -7,9 +7,11 @@ import { DotsAnim } from '@/components/DotsAnim';
 import { Guide, GUIDES } from '@/data/guides';
 import { listGuides, getGuideBySlug } from '@/lib/db';
 import { complete } from '@/lib/ai';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 export default function GuideClient({ params }: { params: { slug: string } }) {
   const router = useRouter();
+  const { contactPhone } = useSiteSettings();
   const [guide, setGuide] = useState<Guide | null | undefined>(undefined);
   const [allGuides, setAllGuides] = useState<Guide[]>(GUIDES);
 
@@ -63,7 +65,7 @@ Answer helpfully and specifically in 2-4 sentences, in a friendly, honest tone. 
       const reply = await complete(prompt);
       setAnswer(reply);
     } catch {
-      setAnswer("I'm having trouble right now — but our team can help at (555) 234-9090.");
+      setAnswer(`I'm having trouble right now — but our team can help${contactPhone ? ` at ${contactPhone}` : ', just reach out from the contact page'}.`);
     }
     setThinking(false);
     setQuestion('');

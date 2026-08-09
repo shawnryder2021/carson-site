@@ -67,7 +67,7 @@ export default function SavedPage() {
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={() => router.push('/inventory')}>Browse inventory</button>
-              <button className="btn btn-ghost" onClick={() => router.push('/inventory-search')}><Icon name="sparkles" size={14} /> Find my car with AI</button>
+              <button className="btn btn-ghost" onClick={() => router.push('/finder')}><Icon name="sparkles" size={14} /> Find my car with AI</button>
             </div>
           </div>
         ) : (

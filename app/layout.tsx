@@ -6,7 +6,7 @@ import { SavedProvider } from '@/context/SavedContext';
 import { CompareProvider } from '@/context/CompareContext';
 import { PriceModeProvider } from '@/context/PriceModeContext';
 import { HeroConfigProvider } from '@/context/HeroConfigContext';
-import { SITE_URL } from '@/lib/serverDb';
+import { SITE_URL, fetchSettings } from '@/lib/serverDb';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { AppShell } from './AppShell';
 import './globals.css';
@@ -33,28 +33,33 @@ export const metadata: Metadata = {
   },
 };
 
-const dealerJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoDealer',
-  name: 'Carson Exports',
-  url: SITE_URL,
-  telephone: '(555) 234-9090',
-  address: {
-    '@type': 'PostalAddress',
-    streetAddress: '550 Windmill Rd',
-    addressLocality: 'Dartmouth',
-    addressRegion: 'NS',
-    postalCode: 'B3B 1B3',
-    addressCountry: 'CA',
-  },
-  openingHours: ['Mo-Fr 09:00-19:00', 'Sa 10:00-18:00', 'Su 11:00-17:00'],
-};
+// Google surfaces this in the knowledge panel, so a placeholder number here is
+// actively harmful — the telephone key is omitted until a real one is saved.
+function dealerJsonLd(phone: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'AutoDealer',
+    name: 'Carson Exports',
+    url: SITE_URL,
+    ...(phone ? { telephone: phone } : {}),
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: '550 Windmill Rd',
+      addressLocality: 'Dartmouth',
+      addressRegion: 'NS',
+      postalCode: 'B3B 1B3',
+      addressCountry: 'CA',
+    },
+    openingHours: ['Mo-Fr 09:00-19:00', 'Sa 10:00-18:00', 'Su 11:00-17:00'],
+  };
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const { contactPhone } = await fetchSettings();
   return (
     <html lang="en">
       <body className={`${inter.variable} ${fraunces.variable} ${anton.variable}`}>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(dealerJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(dealerJsonLd(contactPhone)) }} />
         {/* Web analytics (shawnryder.site, site #56) — collects the data the
             admin Traffic dashboard reads. */}
         <Script

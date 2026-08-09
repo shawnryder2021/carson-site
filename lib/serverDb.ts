@@ -2,6 +2,7 @@
 // sitemap, and JSON-LD. Never throws — returns null/[] on any failure.
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, isSupabaseConfigured } from './supabase/config';
+import { realPhone } from './contact';
 import { INVENTORY } from '@/data/inventory';
 import { GUIDES } from '@/data/guides';
 
@@ -117,6 +118,42 @@ export async function fetchPages(): Promise<ServerPage[]> {
 export async function fetchPage(slug: string): Promise<ServerPage | null> {
   const all = await fetchPages();
   return all.find(p => p.slug === slug) ?? null;
+}
+
+export type ServerSettings = { contactPhone: string; contactEmail: string; contactAddress: string };
+
+// Contact details for server-rendered surfaces (JSON-LD, policy pages). Empty
+// strings when unset — callers must omit the field rather than invent one.
+export async function fetchSettings(): Promise<ServerSettings> {
+  const empty: ServerSettings = { contactPhone: '', contactEmail: '', contactAddress: '' };
+  if (!isSupabaseConfigured) return empty;
+  let sb;
+  try {
+    // The root layout awaits this, so without a revalidate hint the value would
+    // be frozen into every statically-rendered page at build time. Scoped to
+    // this client so the shared client() caching behaviour is untouched.
+    sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+      global: {
+        fetch: (input: any, init?: any) =>
+          fetch(input, { ...init, next: { revalidate: 600 } } as any),
+      },
+    });
+  } catch {
+    return empty;
+  }
+  try {
+    const { data, error } = await sb.from('site_settings')
+      .select('contact_phone, contact_email, contact_address').eq('id', 1).maybeSingle();
+    if (error || !data) return empty;
+    return {
+      contactPhone: realPhone(data.contact_phone),
+      contactEmail: data.contact_email ?? '',
+      contactAddress: data.contact_address ?? '',
+    };
+  } catch {
+    return empty;
+  }
 }
 
 export async function fetchPageFull(slug: string): Promise<ServerPageFull | null> {

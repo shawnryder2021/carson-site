@@ -4,11 +4,15 @@ import { useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
 import { jsonLdSafe } from '@/lib/escapeHtml';
+import { useChatPanel } from '@/context/ChatContext';
+import { useSiteSettings } from '@/context/SiteSettingsContext';
 
 type FAQ = { q: string; a: string };
 
 export default function FAQPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const { openChat } = useChatPanel();
+  const { contactPhone, contactEmail } = useSiteSettings();
 
   const faqs: FAQ[] = [
     {
@@ -41,7 +45,7 @@ export default function FAQPage() {
     },
     {
       q: 'How do I schedule a test drive?',
-      a: 'Find the car you want on our inventory, click "Schedule Test Drive", or call us at (555) 234-9090. We\'ll get you set up for a time that works. No pressure — come in when you\'re ready.'
+      a: `Find the car you want on our inventory and click "Schedule Test Drive"${contactPhone ? `, or call us at ${contactPhone}` : ''}. We'll get you set up for a time that works. No pressure — come in when you're ready.`
     },
     {
       q: 'Can I buy online?',
@@ -118,13 +122,15 @@ export default function FAQPage() {
         <div style={{ background: 'var(--bg-soft)', borderRadius: 18, padding: '32px 36px', marginTop: 40, textAlign: 'center' }}>
           <h3 style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600, margin: '0 0 8px', letterSpacing: '-.02em' }}>Didn't find what you need?</h3>
           <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 16px' }}>Ask Carson AI or reach out to our team directly.</p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button className="btn btn-dark">
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-dark" onClick={openChat}>
               <Icon name="sparkles" size={14}/> Talk to Carson AI
             </button>
-            <button className="btn btn-ghost">
-              <Icon name="mail" size={14}/> hello@carsonexports.com
-            </button>
+            {contactEmail && (
+              <a className="btn btn-ghost" href={`mailto:${contactEmail}`}>
+                <Icon name="mail" size={14}/> {contactEmail}
+              </a>
+            )}
           </div>
         </div>
       </div>

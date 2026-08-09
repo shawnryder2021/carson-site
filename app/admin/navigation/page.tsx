@@ -82,7 +82,7 @@ export default function AdminNavigation() {
 
       {/* datalist of useful link targets, incl. custom pages */}
       <datalist id="nav-paths">
-        {['/', '/inventory', '/inventory-search', '/finder', '/carfinder', '/finance', '/financing-explainer', '/tradein', '/guides', '/team', '/social', '/about', '/contact', '/faq', '/testimonials', ...pagePaths].map(p => <option key={p} value={p} />)}
+        {['/', '/inventory', '/finder', '/carfinder', '/finance', '/financing-explainer', '/tradein', '/compare', '/guides', '/team', '/social', '/about', '/contact', '/faq', '/testimonials', '/privacy', '/terms', ...pagePaths].map(p => <option key={p} value={p} />)}
       </datalist>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

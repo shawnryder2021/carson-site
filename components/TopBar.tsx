@@ -28,7 +28,7 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
   const { saved } = useSaved();
   const { user } = useCustomerAuth();
   const { contactPhone } = useSiteSettings();
-  const phone = contactPhone || '(555) 234-9090';
+  const phone = contactPhone; // blank until set in Admin → Settings; never a placeholder
   const [nav, setNav] = useState<NavItem[]>(DEFAULT_NAV);
   const [vehicles, setVehicles] = useState<AdminVehicle[]>([]);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -192,9 +192,11 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
               <span style={{ position: 'absolute', top: -2, right: -2, background: 'var(--teal)', borderRadius: '50%', width: 9, height: 9, border: '2px solid white' }} />
             )}
           </button>
-          <button className="btn btn-ghost btn-sm topbar-phone" onClick={() => window.open(`tel:${phone.replace(/\s/g, '')}`)}>
-            <Icon name="phone" size={14} /> {phone}
-          </button>
+          {phone && (
+            <a className="btn btn-ghost btn-sm topbar-phone" href={`tel:${phone.replace(/\s/g, '')}`}>
+              <Icon name="phone" size={14} /> {phone}
+            </a>
+          )}
           <button className="btn btn-dark btn-sm" onClick={onAIClick}>
             <Icon name="sparkles" size={14} /> Find my car
           </button>
@@ -247,9 +249,11 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
             <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} onClick={() => go(user ? '/garage' : '/garage/login')}>
               <Icon name="car" size={15} /> {user ? 'My Garage' : 'Sign in / My Garage'}
             </button>
-            <button className="btn btn-ghost btn-lg" style={{ width: '100%' }} onClick={() => window.open(`tel:${phone.replace(/\s/g, '')}`)}>
-              <Icon name="phone" size={15} /> Call {phone}
-            </button>
+            {phone && (
+              <a className="btn btn-ghost btn-lg" style={{ width: '100%' }} href={`tel:${phone.replace(/\s/g, '')}`}>
+                <Icon name="phone" size={15} /> Call {phone}
+              </a>
+            )}
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import { INVENTORY, Vehicle } from '@/data/inventory';
 import { GUIDES, Guide } from '@/data/guides';
 import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
 import { gaEvent } from './gtag';
+import { realPhone } from './contact';
 
 // ───────────────────────── Types ─────────────────────────
 
@@ -261,21 +262,35 @@ export async function syncFromSheet(): Promise<{ error?: string; count?: number;
 
 // ───────────────────────── Settings ─────────────────────────
 
+// Shown until (or unless) the real row loads. SiteSettingsContext seeds itself
+// from this, so a slow, blocked or paused Supabase leaves the site showing the
+// dealership's details rather than blanks. contactPhone stays empty on purpose:
+// there is no real number to fall back to, and a placeholder is worse than none.
+export const DEFAULT_SETTINGS: SiteSettings = {
+  ...DEFAULT_HERO,
+  contactAddress: '550 Windmill Rd, Dartmouth, NS B3B 1B3',
+  contactPhone: '',
+  contactEmail: 'hello@carsonexports.com',
+  hours: [
+    { day: 'Mon–Fri', time: '9 AM–7 PM' },
+    { day: 'Saturday', time: '10 AM–6 PM' },
+    { day: 'Sunday', time: '11 AM–5 PM' },
+  ],
+};
+
 export async function getSettings(): Promise<SiteSettings> {
-  const fallback: SiteSettings = {
-    ...DEFAULT_HERO,
-    contactAddress: '550 Windmill Rd, Dartmouth, NS B3B 1B3',
-    contactPhone: '(555) 234-9090',
-    contactEmail: 'hello@carsonexports.com',
-    hours: [
-      { day: 'Mon–Fri', time: '9 AM–7 PM' },
-      { day: 'Saturday', time: '10 AM–6 PM' },
-      { day: 'Sunday', time: '11 AM–5 PM' },
-    ],
-  };
+  const fallback = DEFAULT_SETTINGS;
   const sb = getBrowserClient();
   if (!sb) return fallback;
-  const { data, error } = await sb.from('site_settings').select('*').eq('id', 1).maybeSingle();
+  // A rejected request (offline, DNS, paused project) must fall back rather
+  // than reject — otherwise SiteSettingsProvider never resolves and every
+  // contact detail on the site renders blank.
+  let data: any = null, error: any = null;
+  try {
+    ({ data, error } = await sb.from('site_settings').select('*').eq('id', 1).maybeSingle());
+  } catch {
+    return fallback;
+  }
   if (error || !data) return fallback;
   return {
     mode: data.hero_mode,
@@ -285,9 +300,9 @@ export async function getSettings(): Promise<SiteSettings> {
     subtext: data.hero_subtext,
     showOverlay: data.hero_show_overlay ?? true,
     linkUrl: data.hero_link_url ?? '',
-    contactAddress: data.contact_address,
-    contactPhone: data.contact_phone,
-    contactEmail: data.contact_email,
+    contactAddress: data.contact_address || fallback.contactAddress,
+    contactPhone: realPhone(data.contact_phone),
+    contactEmail: data.contact_email || fallback.contactEmail,
     hours: Array.isArray(data.hours) ? data.hours : fallback.hours,
   };
 }
@@ -415,7 +430,6 @@ export const DEFAULT_NAV: NavItem[] = [
   { label: 'Home', href: '/' },
   { label: 'Inventory', href: '/inventory', autoCategories: true, children: [
     { label: 'Browse all inventory', href: '/inventory' },
-    { label: 'Find your car (AI search)', href: '/inventory-search' },
     { label: 'AI Finder', href: '/finder' },
     { label: 'CarFinder alerts', href: '/carfinder' },
   ] },

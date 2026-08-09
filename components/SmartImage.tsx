@@ -33,8 +33,9 @@ export function SmartImage({
       alt={alt}
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
-      // @ts-expect-error fetchPriority is valid HTML but not yet in this React's types
-      fetchpriority={priority ? 'high' : undefined}
+      // Must be camelCase: React emits the lowercase attribute itself, and
+      // passing `fetchpriority` logs an invalid-DOM-property warning.
+      fetchPriority={priority ? 'high' : undefined}
       className={className}
       style={{ ...base, ...style }}
     />

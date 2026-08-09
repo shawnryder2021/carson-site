@@ -37,6 +37,11 @@ const nextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
+  async redirects() {
+    // /inventory-search was a second, near-identical AI search page. Folded
+    // into /finder; the redirect keeps any inbound links working.
+    return [{ source: '/inventory-search', destination: '/finder', permanent: true }];
+  },
 };
 
 module.exports = nextConfig;

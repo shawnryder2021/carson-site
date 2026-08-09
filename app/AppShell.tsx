@@ -1,35 +1,26 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { Footer } from '@/components/Footer';
 import { ChatLauncher, ChatWidget } from '@/components/ChatWidget';
 import { CompareTray } from '@/components/CompareTray';
 import { SiteSettingsProvider } from '@/context/SiteSettingsContext';
+import { ChatProvider, useChatPanel } from '@/context/ChatContext';
 
+// --display / --serif live in globals.css. They used to be duplicated here in an
+// inline <style>, where the server escaped the font-name apostrophes to &#x27;
+// and the client didn't — a text mismatch that failed hydration on every page
+// and dropped the whole tree to client rendering.
 export function AppShell({ children }: { children: ReactNode }) {
-  const [aiOpen, setAiOpen] = useState(false);
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
-
-  // Map the design tokens to the loaded fonts. --display is the dealership's
-  // Impact look (Anton is the loaded fallback for devices without Impact).
-  const fontStyle = (
-    <style>{`
-      :root {
-        --display: 'Impact', var(--font-anton), 'Haettenschweiler', 'Franklin Gothic Bold', 'Arial Narrow', sans-serif;
-        --sans: var(--font-inter, system-ui, sans-serif);
-        --serif: var(--font-fraunces, Georgia, serif);
-      }
-    `}</style>
-  );
 
   // Admin renders without the public site chrome.
   if (isAdmin) {
     return (
       <div className="app" style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
-        {fontStyle}
         {children}
       </div>
     );
@@ -37,17 +28,27 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <SiteSettingsProvider>
-      <div className="app" style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
-        {fontStyle}
-        <TopBar onAIClick={() => setAiOpen(true)} />
-        <main style={{ flex: 1 }}>
-          {children}
-        </main>
-        <Footer />
-        <CompareTray />
-        {!aiOpen && <ChatLauncher onClick={() => setAiOpen(true)} />}
-        <ChatWidget open={aiOpen} onClose={() => setAiOpen(false)} />
-      </div>
+      <ChatProvider>
+        <PublicChrome>{children}</PublicChrome>
+      </ChatProvider>
     </SiteSettingsProvider>
+  );
+}
+
+// Split out so it sits *inside* ChatProvider and can read the shared open state
+// that pages elsewhere in the tree toggle via useChatPanel().
+function PublicChrome({ children }: { children: ReactNode }) {
+  const { open, openChat, closeChat } = useChatPanel();
+  return (
+    <div className="app" style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
+      <TopBar onAIClick={openChat} />
+      <main style={{ flex: 1 }}>
+        {children}
+      </main>
+      <Footer />
+      <CompareTray />
+      {!open && <ChatLauncher onClick={openChat} />}
+      <ChatWidget open={open} onClose={closeChat} />
+    </div>
   );
 }
