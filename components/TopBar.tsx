@@ -10,6 +10,7 @@ import { listNav, listVehicles, DEFAULT_NAV, NavItem, AdminVehicle } from '@/lib
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { sizedPhoto } from '@/lib/photo';
 import { fmtPrice } from '@/lib/format';
+import { BodyTypeIcon } from './BodyTypeIcon';
 
 const BODY_CATEGORIES = [
   { label: 'SUVs', body: 'SUV' },
@@ -46,12 +47,6 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
   const go = (href: string) => { setOpenMenu(null); setMobileOpen(false); router.push(href); };
 
   const hasDropdown = (item: NavItem) => item.autoCategories || (item.children && item.children.length > 0);
-
-  // One representative (photo-bearing if possible) vehicle per body type.
-  const categoryThumb = (body: string): AdminVehicle | undefined => {
-    const ofType = vehicles.filter(v => v.body === body && (v as any).status !== 'sold');
-    return ofType.find(v => (v as any).images?.length) || ofType[0];
-  };
 
   // Featured column: prefer admin-flagged featured, then newest with photos.
   const featuredVehicles = (() => {
@@ -102,19 +97,15 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
                     }}>
                       {item.autoCategories && (
                         <>
-                          {/* Left: categories with photo thumbnails */}
+                          {/* Left: categories with body-style icons */}
                           <div>
                             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', padding: '2px 10px 8px' }}>Browse by type</div>
                             {BODY_CATEGORIES.map(c => {
-                              const thumb = categoryThumb(c.body);
                               const count = vehicles.filter(v => v.body === c.body && (v as any).status !== 'sold' && (v as any).status !== 'hidden').length;
                               return (
                                 <button key={c.body} onClick={() => go(`/inventory?body=${c.body}`)} className="nav-drop-item" style={{ padding: '7px 10px' }}>
-                                  <span style={{ width: 56, height: 38, borderRadius: 8, overflow: 'hidden', background: 'var(--bg-soft)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    {thumb && (
-                                      // eslint-disable-next-line @next/next/no-img-element
-                                      <img src={vehiclePhoto(thumb)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
-                                    )}
+                                  <span style={{ width: 56, height: 38, borderRadius: 8, background: 'var(--teal-tint)', color: 'var(--teal-2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <BodyTypeIcon body={c.body} size={40} />
                                   </span>
                                   <span style={{ flex: 1 }}>
                                     <span style={{ display: 'block', fontWeight: 600 }}>{c.label}</span>
@@ -225,7 +216,8 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
                 {item.autoCategories && (
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '12px 4px 14px', borderBottom: '1px solid var(--line)' }}>
                     {BODY_CATEGORIES.map(c => (
-                      <button key={c.body} onClick={() => go(`/inventory?body=${c.body}`)} style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', color: 'var(--ink)' }}>
+                      <button key={c.body} onClick={() => go(`/inventory?body=${c.body}`)} style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 999, padding: '6px 14px 6px 10px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', color: 'var(--ink)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <BodyTypeIcon body={c.body} size={24} style={{ color: 'var(--teal-2)' }} />
                         {c.label}
                       </button>
                     ))}
