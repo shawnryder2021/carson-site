@@ -215,49 +215,27 @@ export async function importStarterVehicles(): Promise<{ error?: string; count?:
   return { error: error?.message, count: rows.length };
 }
 
-// Pull inventory from the Google Sheet (via our API) and upsert into Supabase
-// using the current admin session.
-export async function syncFromSheet(): Promise<{ error?: string; count?: number; warnings?: string[] }> {
+// Preview or apply the inventory sync from the SM360 feed (carsonexports.com)
+// via the admin-authenticated sync route. A preview writes nothing; applying
+// adds new cars, updates changed ones, and marks cars gone from the feed sold.
+export async function syncFromSm360(apply: boolean): Promise<{ error?: string; data?: any }> {
   const sb = getBrowserClient();
   if (!sb) return { error: 'Supabase not configured' };
-  let payload: any;
   try {
     const token = (await sb.auth.getSession()).data.session?.access_token;
-    const res = await fetch('/api/sheet-inventory', {
+    const res = await fetch('/api/sync-inventory', {
+      method: 'POST',
       cache: 'no-store',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ dryRun: !apply }),
     });
-    payload = await res.json();
-    if (!res.ok) return { error: payload?.error || `Sheet read failed (${res.status})` };
+    const data = await res.json();
+    // 207 = applied with some row errors; the caller shows them.
+    if (!res.ok && res.status !== 207) return { error: data?.error || `Sync failed (${res.status})`, data };
+    return { data };
   } catch (e: any) {
-    return { error: e?.message || 'Failed to reach the sheet' };
+    return { error: e?.message || 'Failed to reach the sync service' };
   }
-  const vehicles: AdminVehicle[] = payload.vehicles || [];
-  if (vehicles.length === 0) return { error: (payload.warnings || []).join(' ') || 'No vehicles found in the sheet.' };
-
-  // De-dupe by id (sheet can contain accidental duplicates).
-  const byId = new Map<string, AdminVehicle>();
-  vehicles.forEach(v => byId.set(v.id, v));
-  const unique = Array.from(byId.values());
-
-  const rows = unique.map((v, i) => ({ ...vehicleToRow(v), sort_order: i }));
-  const { error } = await sb.from('vehicles').upsert(rows);
-  if (error) return { error: error.message };
-
-  // Mirror the sheet: remove listings that are no longer in it.
-  let removed = 0;
-  const { data: existing } = await sb.from('vehicles').select('id');
-  if (existing) {
-    const keep = new Set(rows.map(r => r.id));
-    const stale = existing.map((e: any) => e.id).filter((id: string) => !keep.has(id));
-    if (stale.length) {
-      const { error: delErr } = await sb.from('vehicles').delete().in('id', stale);
-      if (!delErr) removed = stale.length;
-    }
-  }
-  const warnings = [...(payload.warnings || [])];
-  if (removed) warnings.push(`Removed ${removed} listing(s) no longer in the sheet.`);
-  return { count: rows.length, warnings };
 }
 
 // ───────────────────────── Settings ─────────────────────────
