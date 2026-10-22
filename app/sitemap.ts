@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { SITE_URL, fetchVehicles, fetchGuides, fetchTeam, fetchPages } from '@/lib/serverDb';
+import { allLocalSearches, MIN_INDEXABLE } from '@/lib/localSearch';
 
 // Regenerate per-request so the daily sheet sync is reflected without a redeploy.
 export const dynamic = 'force-dynamic';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     '', '/inventory', '/finder', '/tradein', '/finance', '/carfinder', '/financing-explainer',
-    '/guides', '/team', '/social', '/about', '/contact', '/faq', '/testimonials',
+    '/guides', '/team', '/social', '/about', '/contact', '/faq', '/testimonials', '/used',
     '/privacy', '/terms',
   ].map(p => ({
     url: `${SITE_URL}${p}`,
@@ -25,6 +26,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily' as const,
       priority: 0.8,
     })),
+    // Local search pages with enough cars to be useful (thin ones are noindex).
+    ...allLocalSearches(vehicles)
+      .filter(p => vehicles.filter(p.match).length >= MIN_INDEXABLE)
+      .map(p => ({ url: `${SITE_URL}/used/${p.slug}`, changeFrequency: 'daily' as const, priority: 0.7 })),
     ...guides.map(g => ({
       url: `${SITE_URL}/guides/${g.slug}`,
       changeFrequency: 'monthly' as const,

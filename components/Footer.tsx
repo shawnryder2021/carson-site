@@ -26,6 +26,19 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
 
 const linkStyle = { color: 'white', textDecoration: 'none' } as const;
 
+// Local search landing pages (/used/[slug]).
+const POPULAR_SEARCHES = [
+  { href: '/used/suvs-halifax', label: 'Used SUVs Halifax' },
+  { href: '/used/trucks-halifax', label: 'Used trucks Halifax' },
+  { href: '/used/sedans-halifax', label: 'Used sedans Halifax' },
+  { href: '/used/cars-under-25000-halifax', label: 'Cars under $25k' },
+  { href: '/used/awd-4x4-halifax', label: 'AWD & 4x4' },
+  { href: '/used/hybrid-electric-halifax', label: 'Hybrid & electric' },
+  { href: '/used/low-km-halifax', label: 'Low kilometres' },
+  { href: '/used/luxury-cars-halifax', label: 'Luxury cars' },
+  { href: '/used', label: 'All used car searches' },
+];
+
 export function Footer() {
   const { contactPhone, contactAddress } = useSiteSettings();
   const address = contactAddress || '550 Windmill Rd, Dartmouth, NS B3B 1B3';
@@ -52,6 +65,12 @@ export function Footer() {
               {contactPhone && <a href={`tel:${contactPhone.replace(/\s/g, '')}`} style={linkStyle}>{contactPhone}</a>}
               <div style={{ fontSize: 12, color: '#9ad' }}>{address}</div>
             </div>
+          </div>
+        </div>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', padding: '20px 0 24px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: '#9ad', marginBottom: 12 }}>Popular searches</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 18px', fontSize: 13 }}>
+            {POPULAR_SEARCHES.map(l => <Link key={l.href} href={l.href} style={linkStyle}>{l.label}</Link>)}
           </div>
         </div>
         <div className="rg" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 12, color: '#9ad' }}>
