@@ -8,7 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchesRequest, CarRequest } from './carMatch';
 import { escapeHtml } from './escapeHtml';
 import { signUnsub } from './unsubToken';
-import { vehicleImageURL } from '../data/vehicleImage';
+import { SITE_URL } from './serverDb';
 
 const DAY = 86400000;
 
@@ -21,7 +21,8 @@ type Veh = {
 function firstPhoto(v: Veh): string {
   const arr = Array.isArray(v.images) ? v.images : [];
   const url = arr.find((x: any) => typeof x === 'string' && /^https?:\/\//.test(x));
-  return url || vehicleImageURL(v as any, { size: 240 });
+  // Email clients need an absolute URL and don't render SVG, so no-photo cars get the PNG logo.
+  return url || `${SITE_URL}/carson-logo.png`;
 }
 
 function freq(vals: string[]): [string, number][] {
