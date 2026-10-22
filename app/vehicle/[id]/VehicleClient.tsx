@@ -461,7 +461,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                       alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                       sizes="(max-width: 860px) 100vw, 60vw"
                       priority
-                      style={{ objectFit: hasPhotos ? 'cover' : 'contain', filter: isSold ? 'grayscale(.6)' : undefined }}
+                      style={{ objectFit: 'cover', filter: isSold ? 'grayscale(.6)' : undefined }}
                     />
                     {isSold && <SoldOverlay size="lg" />}
                     {hasPhotos && (
@@ -481,6 +481,14 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                       <Icon name="heart" size={20} style={{ color: isSaved ? 'var(--teal)' : 'var(--muted)', fill: isSaved ? 'var(--teal)' : 'none' }} />
                     </button>
                   </div>
+                  {/* No photos yet: turn the placeholder into a lead. */}
+                  {!hasPhotos && !isSold && (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
+                      <button onClick={() => setModal('video')} className="btn btn-dark btn-sm">
+                        <Icon name="sparkles" size={13} /> Request a walkaround video
+                      </button>
+                    </div>
+                  )}
                   {hasPhotos && photos.length > 1 && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
                       {photos.slice(0, 8).map((url, i) => {

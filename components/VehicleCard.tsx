@@ -55,7 +55,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
               src={photo || vehicleImageURL(vehicle, { size: 300 })}
               alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
               sizes="(max-width: 860px) 100vw, 33vw"
-              style={{ objectFit: photo ? 'cover' : 'contain' }}
+              style={{ objectFit: 'cover' }}
             />}
         />
         {/* Sold cars must never look buyable in a grid. */}

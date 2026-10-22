@@ -172,6 +172,10 @@ Rules:
     else if (sortBy === 'miles-asc') results = [...results].sort((a, b) => a.mileage - b.mileage);
     else if (sortBy === 'year-desc') results = [...results].sort((a, b) => b.year - a.year);
 
+    // Cars still waiting on photos go after the ones with photos (order kept within each).
+    const hasPhoto = (v: AdminVehicle) => (((v as any).images as any[]) || []).some(i => typeof i === 'string');
+    results = [...results.filter(hasPhoto), ...results.filter(v => !hasPhoto(v))];
+
     // Move top pick to front if set
     if (topPickId) {
       const topPick = results.find(v => v.id === topPickId);
