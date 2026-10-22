@@ -179,8 +179,10 @@ Rules:
       }
     }
 
-    return results;
+    // Sold cars stay visible (with their SOLD overlay) but always after what's for sale.
+    return [...results.filter(v => v.status !== 'sold'), ...results.filter(v => v.status === 'sold')];
   }, [inventory, filters, sortBy, saved, topPickId]);
+  const availableCount = useMemo(() => inventory.filter(v => v.status !== 'sold').length, [inventory]);
 
   const toggleArrayFilter = (key: 'body' | 'make' | 'fuel' | 'drive', value: string) => {
     setFilters(f => ({
@@ -209,7 +211,7 @@ Rules:
             {aiQuery ? `${filtered.length} matches` : 'Browse our inventory'}
           </h1>
           <p style={{ fontSize: 15, color: 'var(--muted)', margin: 0 }}>
-            {inventory.length} vehicles · Live market pricing · 142-point inspected
+            {availableCount} vehicles · Live market pricing · 142-point inspected
           </p>
 
           {aiThinking && (
