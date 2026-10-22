@@ -96,6 +96,16 @@ function coerceDrive(v: string): AdminVehicle['drive'] {
 const toInt = (v: string) => parseInt((v || '').replace(/[^0-9.]/g, ''), 10) || 0;
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+// The sheet's Model column often repeats the make ("Ford" / "Ford Edge"),
+// which renders as "Ford Ford Edge". Strip a leading copy of the make.
+export function stripMakePrefix(make: string, model: string): string {
+  const m = make.trim();
+  if (!m || model.length <= m.length) return model;
+  if (model.slice(0, m.length).toLowerCase() !== m.toLowerCase()) return model;
+  const rest = model.slice(m.length);
+  return /^[\s-]/.test(rest) && rest.trim() ? rest.replace(/^[\s-]+/, '') : model;
+}
+
 // Turn common Google Drive share links into directly-renderable image URLs.
 export function normalizeImageUrl(raw: string): string | null {
   let u = (raw || '').trim().replace(/^["']|["']$/g, '');
@@ -164,14 +174,17 @@ export function parseSheetToVehicles(csv: string): SheetParseResult {
     const row = rows[r];
     const year = toInt(get(row, col.year));
     const make = get(row, col.make);
-    const model = get(row, col.model);
-    if (!make || !model) continue; // skip incomplete rows
+    const rawModel = get(row, col.model);
+    if (!make || !rawModel) continue; // skip incomplete rows
+    const model = stripMakePrefix(make, rawModel);
 
     const rawId = get(row, col.id) || get(row, col.vin);
     // SEO-friendly, deterministic slug: year-make-model[-trim][-stock].
     // Stable across syncs (depends on the data, not the row position).
+    // Built from the raw sheet model so existing IDs/URLs don't change —
+    // a changed ID would make the sync delete and re-create the vehicle.
     const trim = col.trim >= 0 ? get(row, col.trim) : '';
-    const id = slug([year || '', make, model, trim, rawId].filter(Boolean).join(' ')) || `vehicle-${r}`;
+    const id = slug([year || '', make, rawModel, trim, rawId].filter(Boolean).join(' ')) || `vehicle-${r}`;
 
     // Gather images from every image-ish column, split multi-URL cells, normalize.
     const images: string[] = [];
