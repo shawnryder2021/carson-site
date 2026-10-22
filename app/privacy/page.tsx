@@ -1,3 +1,4 @@
+import { SITE_URL } from '@/lib/serverDb';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHeader } from '@/components/PageHeader';
@@ -10,6 +11,7 @@ const LAST_UPDATED = 'August 2026';
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description: 'What Carson Exports collects when you use this website, why, who we share it with, and how to ask us to delete it.',
+  alternates: { canonical: `${SITE_URL}/privacy` },
 };
 
 export default async function PrivacyPage() {

@@ -1,3 +1,4 @@
+import { SITE_URL } from '@/lib/serverDb';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHeader } from '@/components/PageHeader';
@@ -10,6 +11,7 @@ const LAST_UPDATED = 'August 2026';
 export const metadata: Metadata = {
   title: 'Terms of Use',
   description: 'The terms that apply when you use the Carson Exports website, its estimates, its AI tools, and its booking features.',
+  alternates: { canonical: `${SITE_URL}/terms` },
 };
 
 export default async function TermsPage() {

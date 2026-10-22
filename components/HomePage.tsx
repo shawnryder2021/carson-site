@@ -16,10 +16,11 @@ import { Reveal } from '@/components/Reveal';
 import { StatCounter } from '@/components/StatCounter';
 import { SmartImage } from '@/components/SmartImage';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { listVehicles, getSettings, getDealVehicleId, getHomepageSections, listActiveBanners, DEFAULT_HOME_SECTIONS, HomeSections, MarketingBanner, AdminVehicle } from '@/lib/db';
 
-export default function Home() {
+export function HomePage() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [hero, setHero] = useState<HeroConfig>(DEFAULT_HERO);
@@ -175,7 +176,7 @@ export default function Home() {
             >
               <div style={{ position: 'absolute', inset: 0, opacity: .25, background: 'radial-gradient(circle at 85% 15%, #ff9d2e, transparent 55%)' }} />
               <div style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '4/3', background: '#111', position: 'relative' }}>
-                <SmartImage src={(deal as any).images?.[0] || vehicleImageURL(deal, { size: 600 })} alt={`${deal.year} ${deal.make} ${deal.model}`} sizes="(max-width: 860px) 100vw, 45vw" />
+                <SmartImage src={sizedPhoto((deal as any).images?.[0], 600) || vehicleImageURL(deal, { size: 600 })} alt={`${deal.year} ${deal.make} ${deal.model}`} sizes="(max-width: 860px) 100vw, 45vw" />
                 <div style={{ position: 'absolute', top: 14, left: 14, background: '#ff9d2e', color: '#1a1a1a', padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 800, letterSpacing: '.04em' }}>
                   🔥 DEAL OF THE WEEK
                 </div>
@@ -283,7 +284,7 @@ export default function Home() {
               {recentlySold.map(v => (
                 <div key={v.id} style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)', background: 'white', position: 'relative' }}>
                   <div style={{ aspectRatio: '4/3', background: 'var(--bg-soft)', position: 'relative' }}>
-                    <SmartImage src={(v as any).images?.[0] || vehicleImageURL(v, { size: 400 })} alt={`${v.year} ${v.make} ${v.model}`} sizes="(max-width: 860px) 50vw, 280px" style={{ filter: 'grayscale(.5)' }} />
+                    <SmartImage src={sizedPhoto((v as any).images?.[0], 400) || vehicleImageURL(v, { size: 400 })} alt={`${v.year} ${v.make} ${v.model}`} sizes="(max-width: 860px) 50vw, 280px" style={{ filter: 'grayscale(.5)' }} />
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ background: 'var(--ink)', color: 'white', padding: '6px 18px', borderRadius: 999, fontSize: 13, fontWeight: 800, letterSpacing: '.08em', transform: 'rotate(-8deg)', boxShadow: '0 4px 14px rgba(0,0,0,.3)' }}>SOLD</span>
                     </div>
