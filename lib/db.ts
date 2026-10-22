@@ -55,6 +55,7 @@ function rowToVehicle(r: any): AdminVehicle {
     createdAt: r.created_at,
     aiImage: r.ai_image ?? null,
     stockNo: r.stock_no ?? null,
+    trim: r.trim ?? '',
   };
 }
 
@@ -137,6 +138,7 @@ export type AdminVehicle = Vehicle & {
   // only while the car has no real photos; the sync never touches it.
   aiImage?: string | null;
   stockNo?: string | null;
+  trim?: string;
 };
 
 // Public lists show only cars for sale. Sold cars keep their own page (and

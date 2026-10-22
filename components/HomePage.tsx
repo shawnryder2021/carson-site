@@ -113,9 +113,13 @@ export function HomePage() {
         {/* Overlaid content */}
         {hero.showOverlay && (
           <div className="container" style={{ position: 'relative', maxWidth: 900, width: '100%', textAlign: 'center', color: 'white', padding: '72px 20px' }}>
-            <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(40px, 6.5vw, 76px)', fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', lineHeight: 1.05, textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
-              {hero.headline}
+            {/* The page's H1 carries the local search phrase; the admin-editable headline stays the visual lead. */}
+            <h1 style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', margin: '0 0 12px', color: 'rgba(255,255,255,0.88)', textShadow: '0 1px 10px rgba(0,0,0,0.4)' }}>
+              Used Car Dealership in Dartmouth, NS
             </h1>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(40px, 6.5vw, 76px)', fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', lineHeight: 1.05, textShadow: '0 2px 24px rgba(0,0,0,0.35)' }}>
+              {hero.headline}
+            </h2>
             <p style={{ fontSize: 'clamp(16px, 2vw, 21px)', color: 'rgba(255,255,255,0.92)', margin: '0 auto 36px', maxWidth: 620, textShadow: '0 1px 12px rgba(0,0,0,0.4)' }}>
               {hero.subtext}
             </p>

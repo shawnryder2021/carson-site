@@ -12,6 +12,7 @@ import { Modal } from '@/components/Modal';
 import { INVENTORY } from '@/data/inventory';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { sizedPhoto } from '@/lib/photo';
+import { displayTrim } from '@/lib/sm360';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
@@ -411,7 +412,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
         }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(20px,3vw,26px)', fontWeight: 700, letterSpacing: '-.02em', margin: 0, lineHeight: 1.2 }}>
-              {vehicle.year} {vehicle.make} {vehicle.model}
+              {vehicle.year} {vehicle.make} {vehicle.model}{displayTrim((vehicle as any).trim) ? ` ${displayTrim((vehicle as any).trim)}` : ''}
             </h1>
             <span style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>
               {fmtPrice(vehicle.price)} · {fmtMiles(vehicle.mileage)}

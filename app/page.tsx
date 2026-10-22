@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
-import { SITE_URL } from '@/lib/serverDb';
+import { SITE_URL, fetchVehicles } from '@/lib/serverDb';
 import { HomePage } from '@/components/HomePage';
+import { HomeLocalSection } from '@/components/HomeLocalSection';
+
+export const revalidate = 3600;
 
 // The homepage UI is a client component; this server wrapper gives it metadata.
 export const metadata: Metadata = {
@@ -14,6 +17,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
-  return <HomePage />;
+export default async function Home() {
+  const vehicles = await fetchVehicles();
+  return (
+    <>
+      <HomePage />
+      <HomeLocalSection vehicles={vehicles} />
+    </>
+  );
 }

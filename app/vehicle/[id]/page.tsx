@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import VehicleClient from './VehicleClient';
 import { fetchVehicle, fetchVehicles, SITE_URL } from '@/lib/serverDb';
+import { displayTrim } from '@/lib/sm360';
 import { jsonLdSafe } from '@/lib/escapeHtml';
 import { similarToVehicle } from '@/lib/recommend';
 import type { AdminVehicle } from '@/lib/db';
@@ -13,7 +14,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   if (!v) {
     return { title: 'Vehicle not found', robots: { index: false } };
   }
-  const name = `${v.year} ${v.make} ${v.model}`;
+  const name = [v.year, v.make, v.model, displayTrim(v.trim)].filter(Boolean).join(' ');
   const sold = v.status === 'sold';
   // Sold pages stay indexed (they hold long-tail search value) but the copy
   // must be honest — no price pitch on a car nobody can buy.

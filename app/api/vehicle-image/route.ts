@@ -1,4 +1,5 @@
 import { requireAdminClient, kieKey, createKieTask, getKieTask, saveKieImage } from '@/lib/kie';
+import { displayTrim } from '@/lib/sm360';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -10,13 +11,9 @@ export const maxDuration = 60;
 //   remove   { vehicleId }      → clears vehicles.ai_image
 // The site labels these "AI illustration"; real photos from the sync always take precedence.
 
-// SM360 trims are often sales copy ("GREAT COLOR! FINANCING AVAILABLE") — only
-// keep short, model-like ones in the prompt.
-const usableTrim = (t?: string | null) => !!t && t.length <= 20 && /^[A-Za-z0-9 .\-/+]+$/.test(t) && !/financ|great|color|available|value/i.test(t);
-
 function promptFor(v: any): string {
   const colour = (v.exterior || '').toLowerCase();
-  const name = [v.year, v.make, v.model, usableTrim(v.trim) ? v.trim : ''].filter(Boolean).join(' ');
+  const name = [v.year, v.make, v.model, displayTrim(v.trim)].filter(Boolean).join(' ');
   const kind = v.body === 'Truck' ? 'pickup truck' : v.body === 'Coupe' ? 'coupe' : v.body === 'Wagon' ? 'wagon' : v.body === 'SUV' ? 'SUV' : 'sedan';
   return [
     `Professional car dealership studio photograph of a ${colour ? colour + ' ' : ''}${name} ${kind}.`,

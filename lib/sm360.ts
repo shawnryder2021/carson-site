@@ -34,6 +34,16 @@ export type Sm360Car = {
   onHold: boolean;
 };
 
+// SM360 trims are often sales copy ("GREAT COLOR! FINANCING AVAILABLE") or
+// uninformative ("Base"). Returns the trim only when it reads like a real model
+// trim ("Mach 1", "XSE", "Rubicon 4xe"), else ''.
+export function displayTrim(t?: string | null): string {
+  const s = (t || '').trim();
+  if (!s || s.length > 20 || !/^[A-Za-z0-9 .\-/+]+$/.test(s)) return '';
+  if (/financ|great|color|available|value|^base$/i.test(s)) return '';
+  return s;
+}
+
 // ───────────────────────── Fetch ─────────────────────────
 
 async function getPage(page: number): Promise<any> {
