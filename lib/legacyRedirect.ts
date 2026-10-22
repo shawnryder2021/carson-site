@@ -26,8 +26,12 @@ export async function legacyRedirect(req: Request, segments: string[] | undefine
     makePages: new Set(allLocalSearches(vehicles).filter(p => p.kind === 'make').map(p => p.slug)),
   });
 
+  // On Netlify req.url is the internal deploy URL (…--carsonsite.netlify.app), so
+  // build the target on the host the visitor actually asked for.
   const from = new URL(req.url);
-  const to = new URL(dest, from);
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+  const proto = (req.headers.get('x-forwarded-proto') || from.protocol.replace(':', '')).split(',')[0];
+  const to = new URL(dest, host ? `${proto}://${host}` : from);
   from.searchParams.forEach((v, k) => { if (/^(utm_|gclid|gbraid|wbraid|fbclid|msclkid)/i.test(k)) to.searchParams.set(k, v); });
   return Response.redirect(to, 301);
 }
