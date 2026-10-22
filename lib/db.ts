@@ -5,6 +5,7 @@ import { GUIDES, Guide } from '@/data/guides';
 import { DEFAULT_HERO, HeroConfig } from '@/data/heroConfig';
 import { gaEvent } from './gtag';
 import { realPhone } from './contact';
+import { categorySlug } from './news';
 
 // ───────────────────────── Types ─────────────────────────
 
@@ -335,6 +336,15 @@ export async function saveArticle(a: AdminArticle): Promise<{ id?: string; error
   const q = a.id ? sb.from('articles').update(row).eq('id', a.id).select('id').single() : sb.from('articles').insert(row).select('id').single();
   const { data, error } = await q;
   if (error) return { error: error.code === '23505' ? 'Another article already uses that URL slug.' : error.message };
+  // Show the edit on the public pages now rather than after the hourly refresh.
+  try {
+    const token = (await sb.auth.getSession()).data.session?.access_token;
+    await fetch('/api/revalidate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ paths: ['/news', `/news/${a.slug}`, `/news/category/${categorySlug(a.category)}`, '/sitemap.xml'] }),
+    });
+  } catch { /* best-effort */ }
   return { id: data.id };
 }
 

@@ -5,6 +5,7 @@ import { SITE_URL } from '@/lib/serverDb';
 import { checkSyncSecret } from '@/lib/secretAuth';
 import { requireAdmin } from '@/lib/adminAuth';
 import { SUPABASE_URL } from '@/lib/supabase/config';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -109,6 +110,8 @@ async function run(req: Request) {
 
     const errors = await applyPlan(sb, plan);
     await logRun(sb, { trigger, startedAt, plan, errors });
+    // Cached pages (vehicles, /used, home, sitemap) should show the new stock now.
+    if (plan.add.length || plan.update.length || plan.markSold.length) revalidatePath('/', 'layout');
 
     let alerts = null;
     if (body.alerts) {
