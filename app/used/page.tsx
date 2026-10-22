@@ -6,11 +6,17 @@ import { PageHeader } from '@/components/PageHeader';
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: `Used Cars for Sale in ${AREA}, NS`,
-  description: `Browse used SUVs, trucks, sedans, AWD and luxury cars for sale in ${AREA}, NS — by type, price, feature or make. Updated daily at Carson Exports.`,
-  alternates: { canonical: `${SITE_URL}/used` },
-};
+// Targets "used cars nova scotia" (1,300/mo); the category pages under it target Halifax & Dartmouth.
+export async function generateMetadata(): Promise<Metadata> {
+  const vehicles = await fetchVehicles();
+  const description = `${vehicles.length} used cars, trucks and SUVs for sale in Nova Scotia at Carson Exports in Dartmouth. Browse by type, price, feature or make. Updated daily.`;
+  return {
+    title: 'Used Cars for Sale in Nova Scotia',
+    description,
+    alternates: { canonical: `${SITE_URL}/used` },
+    openGraph: { title: 'Used Cars for Sale in Nova Scotia | Carson Exports', description, url: `${SITE_URL}/used` },
+  };
+}
 
 const GROUPS: { kind: LocalSearch['kind']; title: string }[] = [
   { kind: 'body', title: 'By type' },
@@ -25,8 +31,15 @@ export default async function UsedIndex() {
 
   return (
     <div className="page fade-in">
-      <PageHeader eyebrow="Shop used" title={`Used cars in ${AREA}`} subtitle={`${vehicles.length} vehicles for sale at our Dartmouth lot, updated daily. Pick a category to get started.`} />
+      <PageHeader eyebrow="Shop used" title="Used cars for sale in Nova Scotia" subtitle={`${vehicles.length} used cars, trucks and SUVs at our Dartmouth lot, serving ${AREA} and the rest of the province. Updated daily.`} />
       <div className="container" style={{ maxWidth: 1100, padding: '10px 20px 80px' }}>
+        <p style={{ fontSize: 16, lineHeight: 1.7, maxWidth: 820, margin: '0 auto 30px', textAlign: 'center' }}>
+          Carson Exports sells used vehicles from 550 Windmill Road in Dartmouth, with buyers coming from across Nova Scotia.
+          Every listing is a car in stock now, with real photos, the price and the kilometres. Start with a body style, a price
+          range or a make, or <Link href="/inventory">browse all {vehicles.length} vehicles</Link>. Not sure what fits?
+          The <Link href="/finder">AI Car Finder</Link> matches you in six questions, and our <Link href="/news">buying guides</Link> cover
+          financing, winter driving and more.
+        </p>
         {GROUPS.map(g => {
           const items = pages.filter(x => x.p.kind === g.kind);
           if (!items.length) return null;

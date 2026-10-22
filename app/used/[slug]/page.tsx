@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!p) return { title: 'Page not found', robots: { index: false } };
   const s = statsFor(resultsFor(p, vehicles));
   const description = s.count
-    ? `${s.count} used ${s.count === 1 ? p.one : p.many} for sale in ${AREA}, NS from $${s.minPrice.toLocaleString('en-CA')}. Real photos, transparent pricing, financing and trade-ins at Carson Exports.`
+    ? `${s.count} used ${s.count === 1 ? p.one : p.many} for sale in ${p.place || `${AREA}, NS`} from $${s.minPrice.toLocaleString('en-CA')}. Real photos, transparent pricing, financing and trade-ins at Carson Exports.`
     : `Looking for used ${p.many} in ${AREA}? Get alerted the moment one arrives at Carson Exports in Dartmouth, NS.`;
   const url = `${SITE_URL}/used/${p.slug}`;
   return {

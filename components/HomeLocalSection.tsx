@@ -17,6 +17,7 @@ const CATEGORIES: { slug: string; title: string; text: string }[] = [
   { slug: 'hybrid-electric-halifax', title: 'Hybrids & EVs', text: 'Lower running costs and emissions, with the technology to match.' },
   { slug: 'luxury-cars-halifax', title: 'Luxury & performance', text: 'Premium sedans, sporty coupes and upscale SUVs at a more attainable price.' },
   { slug: 'awd-4x4-halifax', title: 'AWD & 4x4', text: 'All-wheel and four-wheel drive for snow, rain and back roads.' },
+  { slug: 'classic-cars-nova-scotia', title: 'Classic & collector', text: 'Vintage classics, antique and collector cars, and modern exotics.' },
 ];
 
 const AREAS: { name: string; href: string }[] = [

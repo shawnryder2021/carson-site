@@ -18,6 +18,7 @@ export type LocalSearch = {
   many: string;        // in a sentence: "SUVs", "cars under $25,000", "Toyota vehicles"
   one: string;         // singular: "SUV", "car under $25,000", "Toyota"
   make?: string;
+  place?: string;       // place named in the meta description (default AREA)
   h1: string;
   title: string;
   blurb: string;       // one line on why shoppers search this
@@ -27,6 +28,10 @@ export type LocalSearch = {
 
 const LUXURY = new Set(['acura', 'audi', 'bentley', 'bmw', 'cadillac', 'ferrari', 'genesis', 'infiniti', 'jaguar', 'land rover', 'lexus', 'lincoln', 'maserati', 'mclaren', 'mercedes-benz', 'porsche', 'tesla', 'volvo']);
 const byPrice = (a: ServerVehicle, b: ServerVehicle) => a.price - b.price;
+
+// Classic & collector: 20+ years old, or an exotic/collector make.
+const EXOTIC = new Set(['aston martin', 'bentley', 'ferrari', 'lamborghini', 'lotus', 'maserati', 'mclaren', 'rolls-royce']);
+const isClassicOrCollector = (v: ServerVehicle) => v.year <= new Date().getFullYear() - 20 || EXOTIC.has(v.make.toLowerCase());
 
 const page = (slug: string, kind: Kind, noun: string, one: string, blurb: string, match: LocalSearch['match'], sort?: LocalSearch['sort'], many = noun.toLowerCase()): LocalSearch => ({
   slug, kind, noun, one, many, blurb, match, sort,
@@ -46,6 +51,15 @@ const STATIC_PAGES: LocalSearch[] = [
   page('awd-4x4-halifax', 'feature', 'AWD & 4x4 Vehicles', 'AWD or 4x4 vehicle', 'All-wheel and four-wheel drive for snow, rain and back roads.', v => v.drive === 'AWD', undefined, 'AWD & 4x4 vehicles'),
   page('hybrid-electric-halifax', 'feature', 'Hybrid & Electric Cars', 'hybrid or electric car', 'Spend less at the pump, or skip it entirely.', v => v.fuel === 'Hybrid' || v.fuel === 'Electric'),
   page('low-km-halifax', 'feature', 'Low-Kilometre Cars', 'low-kilometre car', 'Vehicles with under 30,000 km, close to new for less.', v => v.mileage > 0 && v.mileage < 30000, (a, b) => a.mileage - b.mileage),
+  // Targets "classic cars for sale nova scotia" (880/mo), "antique cars for sale in nova scotia" (590).
+  {
+    ...page('classic-cars-nova-scotia', 'feature', 'Classic & Collector Cars', 'classic or collector car',
+      'Vintage classics, antique and collector cars, and modern exotics.',
+      isClassicOrCollector, (a, b) => a.year - b.year, 'classic & collector cars'),
+    h1: 'Classic & Collector Cars for Sale in Nova Scotia',
+    title: 'Classic Cars for Sale in Nova Scotia',
+    place: 'Nova Scotia',
+  },
   page('luxury-cars-halifax', 'feature', 'Luxury Cars', 'luxury car', 'Premium and performance brands, priced to market.', v => LUXURY.has(v.make.toLowerCase())),
 ];
 

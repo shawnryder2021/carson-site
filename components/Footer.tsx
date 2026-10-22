@@ -36,6 +36,7 @@ const POPULAR_SEARCHES = [
   { href: '/used/hybrid-electric-halifax', label: 'Hybrid & electric' },
   { href: '/used/low-km-halifax', label: 'Low kilometres' },
   { href: '/used/luxury-cars-halifax', label: 'Luxury cars' },
+  { href: '/used/classic-cars-nova-scotia', label: 'Classic cars' },
   { href: '/used', label: 'All used car searches' },
 ];
 
