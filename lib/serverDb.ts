@@ -65,6 +65,45 @@ export async function fetchVehicle(id: string): Promise<ServerVehicle | null> {
   }
 }
 
+// ───────────── News & Guides articles (/news) ─────────────
+
+export type ServerArticle = {
+  slug: string; title: string; seoTitle: string; metaDescription: string; category: string;
+  excerpt: string; image: string | null; relatedSearch: string | null; publishedAt: string | null; updatedAt: string;
+};
+export type ServerArticleFull = ServerArticle & { bodyHtml: string };
+
+const ARTICLE_LIST_COLS = 'slug,title,seo_title,meta_description,category,excerpt,image,related_search,published_at,updated_at';
+const toArticle = (r: any): ServerArticle => ({
+  slug: r.slug, title: r.title, seoTitle: r.seo_title || r.title, metaDescription: r.meta_description || r.excerpt || '',
+  category: r.category, excerpt: r.excerpt || '', image: r.image ?? null, relatedSearch: r.related_search ?? null,
+  publishedAt: r.published_at ?? null, updatedAt: r.updated_at,
+});
+
+// Published articles, newest first (undated items, e.g. customer reviews, last).
+export async function fetchArticles(): Promise<ServerArticle[]> {
+  const sb = client();
+  if (!sb) return [];
+  try {
+    const { data, error } = await sb.from('articles').select(ARTICLE_LIST_COLS).eq('published', true)
+      .order('published_at', { ascending: false, nullsFirst: false });
+    return error || !data ? [] : data.map(toArticle);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchArticle(slug: string): Promise<ServerArticleFull | null> {
+  const sb = client();
+  if (!sb) return null;
+  try {
+    const { data, error } = await sb.from('articles').select(`${ARTICLE_LIST_COLS},body_html`).eq('slug', slug).eq('published', true).maybeSingle();
+    return error || !data ? null : { ...toArticle(data), bodyHtml: data.body_html || '' };
+  } catch {
+    return null;
+  }
+}
+
 export type ServerGuide = { slug: string; title: string; category: string; excerpt: string };
 
 export async function fetchGuides(): Promise<ServerGuide[]> {

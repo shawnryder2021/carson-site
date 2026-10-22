@@ -10,7 +10,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     { href: '/about', label: 'About Carson' },
     { href: '/team', label: 'Meet the Team' },
     { href: '/testimonials', label: 'Testimonials' },
-    { href: '/guides', label: 'Guides' },
+    { href: '/news', label: 'News & Guides' },
   ] },
   { title: 'Shop', links: [
     { href: '/inventory', label: 'Browse Inventory' },

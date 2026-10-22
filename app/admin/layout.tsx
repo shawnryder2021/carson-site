@@ -31,7 +31,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: s
   ] },
   { title: 'Content', items: [
     { href: '/admin/pages', label: 'Pages', icon: 'edit' },
-    { href: '/admin/guides', label: 'Guides', icon: 'brain' },
+    { href: '/admin/news', label: 'News & Guides', icon: 'edit' },
     { href: '/admin/team', label: 'Team', icon: 'handshake' },
     { href: '/admin/kb', label: 'AI Knowledge Base', icon: 'brain' },
   ] },

@@ -33,14 +33,29 @@ const securityHeaders = [
   { key: 'Content-Security-Policy-Report-Only', value: csp },
 ];
 
+// Pre-launch: this site will become www.carsonexports.com. Until then it runs
+// on a temporary domain that must stay out of Google (it duplicates the live
+// site). Every response gets `noindex` unless ALLOW_INDEXING=true. robots.txt
+// stays open on purpose — Google has to crawl a page to see its noindex.
+// Launch day: set ALLOW_INDEXING=true and NEXT_PUBLIC_SITE_URL, then redeploy.
+const allowIndexing = process.env.ALLOW_INDEXING === 'true';
+
 const nextConfig = {
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [{
+      source: '/:path*',
+      headers: allowIndexing ? securityHeaders : [...securityHeaders, { key: 'X-Robots-Tag', value: 'noindex' }],
+    }];
   },
   async redirects() {
     // /inventory-search was a second, near-identical AI search page. Folded
     // into /finder; the redirect keeps any inbound links working.
-    return [{ source: '/inventory-search', destination: '/finder', permanent: true }];
+    return [
+      { source: '/inventory-search', destination: '/finder', permanent: true },
+      // The sample buying guides were replaced by the imported News & Guides articles.
+      { source: '/guides', destination: '/news', permanent: true },
+      { source: '/guides/:slug', destination: '/news', permanent: true },
+    ];
   },
 };
 

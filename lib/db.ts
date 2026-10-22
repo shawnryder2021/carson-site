@@ -279,6 +279,70 @@ export async function listSyncRuns(limit = 60): Promise<{ runs: SyncRun[]; error
   };
 }
 
+// ───────────────────────── News & Guides articles ─────────────────────────
+
+export type AdminArticle = {
+  id?: string;
+  slug: string;
+  title: string;
+  seoTitle: string;
+  metaDescription: string;
+  category: string;
+  excerpt: string;
+  bodyHtml: string;
+  image: string | null;
+  relatedSearch: string | null;
+  published: boolean;
+  publishedAt: string | null;
+  updatedAt?: string;
+  legacyUrl?: string | null;
+};
+
+const rowToArticle = (r: any): AdminArticle => ({
+  id: r.id, slug: r.slug, title: r.title, seoTitle: r.seo_title || '', metaDescription: r.meta_description || '',
+  category: r.category, excerpt: r.excerpt || '', bodyHtml: r.body_html || '', image: r.image ?? null,
+  relatedSearch: r.related_search ?? null, published: !!r.published, publishedAt: r.published_at ?? null,
+  updatedAt: r.updated_at, legacyUrl: r.legacy_url ?? null,
+});
+
+// Admin list (includes drafts via the admin RLS policy), newest first.
+export async function listArticles(): Promise<AdminArticle[]> {
+  const sb = getBrowserClient();
+  if (!sb) return [];
+  const { data, error } = await sb.from('articles')
+    .select('id,slug,title,seo_title,meta_description,category,excerpt,image,related_search,published,published_at,updated_at,legacy_url')
+    .order('published_at', { ascending: false, nullsFirst: false });
+  return error || !data ? [] : data.map(rowToArticle);
+}
+
+export async function getArticle(id: string): Promise<AdminArticle | null> {
+  const sb = getBrowserClient();
+  if (!sb) return null;
+  const { data } = await sb.from('articles').select('*').eq('id', id).maybeSingle();
+  return data ? rowToArticle(data) : null;
+}
+
+export async function saveArticle(a: AdminArticle): Promise<{ id?: string; error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const row = {
+    slug: a.slug, title: a.title, seo_title: a.seoTitle, meta_description: a.metaDescription, category: a.category,
+    excerpt: a.excerpt, body_html: a.bodyHtml, image: a.image || null, related_search: a.relatedSearch || null,
+    published: a.published, published_at: a.publishedAt, updated_at: new Date().toISOString(),
+  };
+  const q = a.id ? sb.from('articles').update(row).eq('id', a.id).select('id').single() : sb.from('articles').insert(row).select('id').single();
+  const { data, error } = await q;
+  if (error) return { error: error.code === '23505' ? 'Another article already uses that URL slug.' : error.message };
+  return { id: data.id };
+}
+
+export async function deleteArticle(id: string): Promise<{ error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { error: 'Supabase not configured' };
+  const { error } = await sb.from('articles').delete().eq('id', id);
+  return error ? { error: error.message } : {};
+}
+
 // ───────────────────────── Settings ─────────────────────────
 
 // Shown until (or unless) the real row loads. SiteSettingsContext seeds itself

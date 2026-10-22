@@ -115,6 +115,11 @@ footer { border-top: 1px solid var(--line); }
 .page-html img { max-width: 100%; height: auto; border-radius: 12px; margin: 12px 0; }
 .page-html blockquote { border-left: 3px solid var(--teal); padding-left: 16px; margin: 16px 0; color: var(--muted); font-style: italic; }
 .page-html hr { border: none; border-top: 1px solid var(--line); margin: 28px 0; }
+.page-html h4 { font-size: 17px; font-weight: 700; margin: 18px 0 6px; }
+/* Comparison tables in imported articles: scroll sideways on phones rather than overflow. */
+.page-html table { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 15px; }
+.page-html th, .page-html td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+.page-html th { background: var(--bg-soft); font-weight: 700; }
 
 /* ───────── Shop-by-style tiles (Carvana-style) ───────── */
 .shop-style-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }

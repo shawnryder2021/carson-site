@@ -27,7 +27,7 @@ const BLOCK_TYPES: { type: PageBlock['type']; label: string; icon: string; desc:
   { type: 'spacer', label: 'Spacer', icon: '↕️', desc: 'Vertical spacing between sections' },
 ];
 
-function HtmlEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function HtmlEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [preview, setPreview] = useState(false);
