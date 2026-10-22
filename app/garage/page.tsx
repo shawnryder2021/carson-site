@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { VehicleCard } from '@/components/VehicleCard';
 import { CardGridSkeleton } from '@/components/Skeleton';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { useSaved } from '@/context/SavedContext';
 import { useCompare } from '@/context/CompareContext';
@@ -35,7 +36,7 @@ const STATUS_CHIP: Record<string, { label: string; bg: string; color: string }> 
 };
 
 function photoOf(v: AdminVehicle): string {
-  return (v as any).images?.[0] || vehicleImageURL(v, { size: 200 });
+  return sizedPhoto((v as any).images?.[0], 200) || vehicleImageURL(v, { size: 200 });
 }
 
 function GarageContent() {

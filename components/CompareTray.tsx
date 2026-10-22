@@ -9,6 +9,7 @@ import { Icon } from './Icon';
 import { useCompare } from '@/context/CompareContext';
 import { listVehicles, AdminVehicle } from '@/lib/db';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 
 export function CompareTray() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export function CompareTray() {
                   {v && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={(v as any).images?.[0] || vehicleImageURL(v, { size: 100 })}
+                      src={sizedPhoto((v as any).images?.[0], 100) || vehicleImageURL(v, { size: 100 })}
                       alt={`${v.year} ${v.make} ${v.model}`}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

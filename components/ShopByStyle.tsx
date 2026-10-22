@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Icon } from './Icon';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { estMonthly } from '@/lib/format';
 import { AdminVehicle } from '@/lib/db';
 
@@ -50,7 +51,7 @@ export function ShopByStyle({ vehicles }: { vehicles: AdminVehicle[] }) {
   // If the lot is sparse, still show the standard set so the page looks full.
   const styles = stylesWithStock.length >= 3 ? stylesWithStock : BODY_STYLES;
 
-  const photo = (v?: AdminVehicle) => v ? ((v as any).images?.[0] || vehicleImageURL(v, { size: 400 })) : '';
+  const photo = (v?: AdminVehicle) => v ? (sizedPhoto((v as any).images?.[0], 400) || vehicleImageURL(v, { size: 400 })) : '';
 
   return (
     <section style={{ padding: '72px 0 0' }}>

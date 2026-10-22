@@ -1,5 +1,6 @@
 import { Vehicle } from '@/data/inventory';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { Icon } from './Icon';
 import { CardCarousel } from './CardCarousel';
@@ -52,7 +53,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
           fallback={
             <SmartImage
-              src={photo || vehicleImageURL(vehicle, { size: 300 })}
+              src={sizedPhoto(photo, 400) || vehicleImageURL(vehicle, { size: 300 })}
               alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
               sizes="(max-width: 860px) 100vw, 33vw"
               style={{ objectFit: 'cover' }}

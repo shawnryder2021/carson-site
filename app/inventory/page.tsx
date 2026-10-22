@@ -14,6 +14,7 @@ import { PriceModeToggle } from '@/context/PriceModeContext';
 import { listVehicles, AdminVehicle } from '@/lib/db';
 import { getRecentlyViewed } from '@/lib/recentlyViewed';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { gaEvent } from '@/lib/gtag';
 import { TERMS_LABEL } from '@/lib/payment';
 
@@ -226,7 +227,7 @@ Rules:
 
           {aiInsight && !aiThinking && (() => {
             const pick = topPickId ? inventory.find(v => v.id === topPickId) : null;
-            const pickPhoto = pick ? ((pick as any).images?.[0] || vehicleImageURL(pick, { size: 200 })) : '';
+            const pickPhoto = pick ? (sizedPhoto((pick as any).images?.[0], 200) || vehicleImageURL(pick, { size: 200 })) : '';
             return (
               <div style={{ marginTop: 20, background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '18px 22px', maxWidth: 800 }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -322,7 +323,7 @@ Rules:
           .filter((v): v is AdminVehicle => !!v && v.status !== 'sold')
           .slice(0, 6);
         if (recentVehicles.length < 2) return null;
-        const photo = (v: AdminVehicle) => (v as any).images?.[0] || vehicleImageURL(v, { size: 200 });
+        const photo = (v: AdminVehicle) => sizedPhoto((v as any).images?.[0], 200) || vehicleImageURL(v, { size: 200 });
         return (
           <div style={{ background: 'white', borderBottom: '1px solid var(--line)' }}>
             <div className="container" style={{ maxWidth: 1400, padding: '14px 20px' }}>

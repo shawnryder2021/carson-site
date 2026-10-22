@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { RowsSkeleton } from '@/components/Skeleton';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { useCompare } from '@/context/CompareContext';
 import { listVehicles, AdminVehicle } from '@/lib/db';
@@ -51,7 +52,7 @@ function bestIndex(row: Row, vehicles: AdminVehicle[]): number | null {
 }
 
 function photoOf(v: AdminVehicle): string {
-  return (v as any).images?.[0] || vehicleImageURL(v, { size: 400 });
+  return sizedPhoto((v as any).images?.[0], 400) || vehicleImageURL(v, { size: 400 });
 }
 
 function CompareContent() {

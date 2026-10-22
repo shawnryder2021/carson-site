@@ -11,6 +11,7 @@ import { DotsAnim } from '@/components/DotsAnim';
 import { Modal } from '@/components/Modal';
 import { INVENTORY } from '@/data/inventory';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { fmtPrice, fmtMiles, estMonthly } from '@/lib/format';
 import { complete } from '@/lib/ai';
 import { useSaved } from '@/context/SavedContext';
@@ -449,7 +450,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             {(() => {
               const photos: string[] = (vehicle as any).images || [];
               const hasPhotos = photos.length > 0;
-              const mainSrc = hasPhotos ? photos[Math.min(activeImage, photos.length - 1)] : vehicleImageURL(vehicle, { size: 800 });
+              const mainSrc = hasPhotos ? sizedPhoto(photos[Math.min(activeImage, photos.length - 1)], 800)! : vehicleImageURL(vehicle, { size: 800 });
               return (
                 <>
                   <div
@@ -508,7 +509,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                               borderRadius: 10, overflow: 'hidden', padding: 0, cursor: 'pointer', aspectRatio: '4/3', position: 'relative',
                             }}
                           >
-                            <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={sizedPhoto(url, 200)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             {isLast && (
                               <span style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.58)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800 }}>
                                 +{photos.length - 8} more
@@ -1127,7 +1128,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             <div style={{ background: 'var(--bg-soft)', borderRadius: 12, padding: '14px 16px', marginBottom: 18, display: 'flex', gap: 14, alignItems: 'center' }}>
               <div style={{ width: 56, height: 42, borderRadius: 8, overflow: 'hidden', background: 'var(--line)', flexShrink: 0 }}>
                 <img
-                  src={(vehicle as any).images?.[0] || vehicleImageURL(vehicle, { size: 200 })}
+                  src={sizedPhoto((vehicle as any).images?.[0], 200) || vehicleImageURL(vehicle, { size: 200 })}
                   alt=""
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />

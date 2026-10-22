@@ -6,6 +6,7 @@ import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
 import { DotsAnim } from '@/components/DotsAnim';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { INVENTORY } from '@/data/inventory';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { complete } from '@/lib/ai';
@@ -103,7 +104,7 @@ Pick exactly 3 matches, best first. Prefer vehicles near or under budget.`;
             {matches.map((m, i) => {
               const v = inventory.find(x => x.id === m.id);
               if (!v) return null;
-              const photo = (v as any).images?.[0];
+              const photo = sizedPhoto((v as any).images?.[0], 300);
               return (
                 <div key={m.id} className="rg" style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 18, padding: 20, display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24, alignItems: 'center' }}>
                   <div onClick={() => router.push(`/vehicle/${v.id}`)} style={{ cursor: 'pointer', background: 'var(--bg-soft)', borderRadius: 14, aspectRatio: '4/3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>

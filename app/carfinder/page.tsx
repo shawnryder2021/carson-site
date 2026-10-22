@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { fmtPrice, fmtMiles } from '@/lib/format';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { createCarRequest, createLead, listVehicles, isSupabaseConfigured, AdminVehicle } from '@/lib/db';
 import { matchesRequest, describeRequest, CarRequest } from '@/lib/carMatch';
 
@@ -263,7 +264,7 @@ export default function CarFinderPage() {
                 >
                   <span style={{ width: 64, height: 44, borderRadius: 8, overflow: 'hidden', background: 'var(--bg-soft)', flexShrink: 0 }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={(v as any).images?.[0] || vehicleImageURL(v, { size: 128 })} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={sizedPhoto((v as any).images?.[0], 128) || vehicleImageURL(v, { size: 128 })} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.year} {v.make} {v.model}</div>

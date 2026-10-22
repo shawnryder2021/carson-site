@@ -8,6 +8,7 @@ import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { listNav, listVehicles, DEFAULT_NAV, NavItem, AdminVehicle } from '@/lib/db';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { fmtPrice } from '@/lib/format';
 
 const BODY_CATEGORIES = [
@@ -19,7 +20,7 @@ const BODY_CATEGORIES = [
 ];
 
 function vehiclePhoto(v: AdminVehicle): string {
-  return (v as any).images?.[0] || vehicleImageURL(v, { size: 200 });
+  return sizedPhoto((v as any).images?.[0], 200) || vehicleImageURL(v, { size: 200 });
 }
 
 export function TopBar({ onAIClick }: { onAIClick: () => void }) {

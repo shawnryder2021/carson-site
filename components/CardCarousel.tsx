@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { makeSwipe } from '@/lib/swipe';
+import { sizedPhoto } from '@/lib/photo';
 
 // Photo carousel inside a VehicleCard. Every control stops event propagation so
 // the parent card's whole-card click (→ VDP) still fires on a plain tap. Arrows
@@ -18,6 +19,16 @@ export function CardCarousel({
   fallback: React.ReactNode;
 }) {
   const [i, setI] = useState(0);
+  // Only load the current photo, its neighbours and ones already shown: these
+  // cards sit in grids and rails, and each car has 30+ photos.
+  const [seen, setSeen] = useState<Set<number>>(() => new Set([0, 1]));
+  useEffect(() => {
+    if (!photos?.length) return;
+    const n = photos.length;
+    setSeen(prev => (prev.has(i) && prev.has((i + 1) % n) && prev.has((i - 1 + n) % n)
+      ? prev
+      : new Set([...Array.from(prev), i, (i + 1) % n, (i - 1 + n) % n])));
+  }, [i, photos]);
 
   if (!photos || photos.length <= 1) {
     return <>{fallback}</>;
@@ -39,7 +50,9 @@ export function CardCarousel({
       <div style={{ display: 'flex', height: '100%', transform: `translateX(-${i * 100}%)`, transition: 'transform .35s ease' }}>
         {photos.map((src, idx) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={idx} src={src} alt={idx === 0 ? alt : ''} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', flexShrink: 0 }} />
+          seen.has(idx)
+            ? <img key={idx} src={sizedPhoto(src, 400)} alt={idx === 0 ? alt : ''} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', flexShrink: 0 }} />
+            : <div key={idx} style={{ width: '100%', height: '100%', flexShrink: 0 }} />
         ))}
       </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Icon } from './Icon';
 import { fmtPrice, estMonthly } from '@/lib/format';
 import { vehicleImageURL } from '@/data/vehicleImage';
+import { sizedPhoto } from '@/lib/photo';
 import { useSaved } from '@/context/SavedContext';
 import { getRecentlyViewed, readAndStampLastVisit } from '@/lib/recentlyViewed';
 import { AdminVehicle } from '@/lib/db';
@@ -44,7 +45,7 @@ export function WelcomeBack({ vehicles }: { vehicles: AdminVehicle[] }) {
   // First-time visitor with nothing to show → render nothing.
   if (picks.length === 0 && newCount === 0) return null;
 
-  const photo = (v: AdminVehicle) => (v as any).images?.[0] || vehicleImageURL(v, { size: 300 });
+  const photo = (v: AdminVehicle) => sizedPhoto((v as any).images?.[0], 300) || vehicleImageURL(v, { size: 300 });
 
   return (
     <section style={{ padding: '40px 0 0' }}>
