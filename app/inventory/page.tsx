@@ -159,9 +159,10 @@ Rules:
       if (filters.make.length && !filters.make.includes(v.make)) return false;
       if (filters.fuel.length && !filters.fuel.includes(v.fuel)) return false;
       if (filters.drive.length && !filters.drive.includes(v.drive)) return false;
-      if (v.price > filters.priceMax) return false;
+      // 100,000 is the sliders' top stop and means "no limit" (see activeFilterCount).
+      if (filters.priceMax < 100000 && v.price > filters.priceMax) return false;
       if (filters.monthlyMax < MONTHLY_CAP && estMonthly(v.price) > filters.monthlyMax) return false;
-      if (v.mileage > filters.milesMax) return false;
+      if (filters.milesMax < 100000 && v.mileage > filters.milesMax) return false;
       if (filters.savedOnly && !saved.includes(v.id)) return false;
       return true;
     });
@@ -179,10 +180,8 @@ Rules:
       }
     }
 
-    // Sold cars stay visible (with their SOLD overlay) but always after what's for sale.
-    return [...results.filter(v => v.status !== 'sold'), ...results.filter(v => v.status === 'sold')];
+    return results;
   }, [inventory, filters, sortBy, saved, topPickId]);
-  const availableCount = useMemo(() => inventory.filter(v => v.status !== 'sold').length, [inventory]);
 
   const toggleArrayFilter = (key: 'body' | 'make' | 'fuel' | 'drive', value: string) => {
     setFilters(f => ({
@@ -211,7 +210,7 @@ Rules:
             {aiQuery ? `${filtered.length} matches` : 'Browse our inventory'}
           </h1>
           <p style={{ fontSize: 15, color: 'var(--muted)', margin: 0 }}>
-            {availableCount} vehicles · Live market pricing · 142-point inspected
+            {inventory.length} vehicles · Live market pricing · 142-point inspected
           </p>
 
           {aiThinking && (
@@ -409,7 +408,7 @@ Rules:
                 </div>
 
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>Max price: {fmtPrice(filters.priceMax)}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>Max price: {filters.priceMax >= 100000 ? 'Any' : fmtPrice(filters.priceMax)}</div>
                   <input type="range" min={15000} max={100000} step={1000} value={filters.priceMax}
                     onChange={e => setFilters(f => ({ ...f, priceMax: +e.target.value }))}
                     style={{ width: '100%', accentColor: 'var(--teal)' }} />
@@ -426,7 +425,7 @@ Rules:
                 </div>
 
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>Max kilometres: {filters.milesMax.toLocaleString()}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 10 }}>Max kilometres: {filters.milesMax >= 100000 ? 'Any' : filters.milesMax.toLocaleString()}</div>
                   <input type="range" min={5000} max={100000} step={5000} value={filters.milesMax}
                     onChange={e => setFilters(f => ({ ...f, milesMax: +e.target.value }))}
                     style={{ width: '100%', accentColor: 'var(--teal)' }} />

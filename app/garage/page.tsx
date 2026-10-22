@@ -60,7 +60,7 @@ function GarageContent() {
   useEffect(() => {
     (async () => {
       const [v, w, l, r, p] = await Promise.all([
-        listVehicles(), listMyWatches(), listMyLeads(), listMyCarRequests(), getMyProfile(),
+        listVehicles({ includeSold: true }), listMyWatches(), listMyLeads(), listMyCarRequests(), getMyProfile(),
       ]);
       setVehicles(v);
       setWatches(w);

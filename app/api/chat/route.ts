@@ -51,7 +51,7 @@ async function loadInventory(sb: SupabaseClient): Promise<SuggestVehicle[]> {
   try {
     const { data } = await sb.from('vehicles')
       .select('id, year, make, model, price, mileage, body, fuel, drive, images, status, hidden_override')
-      .neq('status', 'sold').neq('status', 'hidden').limit(120);
+      .neq('status', 'sold').neq('status', 'hidden').limit(500);
     return (data || []).filter((v: any) => !v.hidden_override) as SuggestVehicle[];
   } catch { return []; }
 }

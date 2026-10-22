@@ -133,11 +133,15 @@ export type AdminVehicle = Vehicle & {
   createdAt?: string;
 };
 
-export async function listVehicles(opts?: { includeHidden?: boolean }): Promise<AdminVehicle[]> {
+// Public lists show only cars for sale. Sold cars keep their own page (and
+// stay in a shopper's saved cars / watches via includeSold), but never appear
+// in inventory, search, counts or the homepage. Admin (includeHidden) sees all.
+export async function listVehicles(opts?: { includeHidden?: boolean; includeSold?: boolean }): Promise<AdminVehicle[]> {
   const sb = getBrowserClient();
   if (!sb) return INVENTORY as AdminVehicle[];
   let q = sb.from('vehicles').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false });
   if (!opts?.includeHidden) q = q.neq('status', 'hidden');
+  if (!opts?.includeHidden && !opts?.includeSold) q = q.neq('status', 'sold');
   const { data, error } = await q;
   if (error || !data) return INVENTORY as AdminVehicle[];
   if (data.length === 0) return INVENTORY as AdminVehicle[];

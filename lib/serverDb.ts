@@ -28,7 +28,7 @@ export async function fetchVehicles(): Promise<ServerVehicle[]> {
   const sb = client();
   if (!sb) return INVENTORY.map(v => ({ ...v, images: [], status: 'available' }));
   try {
-    const { data, error } = await sb.from('vehicles').select('*').neq('status', 'hidden');
+    const { data, error } = await sb.from('vehicles').select('*').neq('status', 'hidden').neq('status', 'sold');
     if (error || !data || data.length === 0) return INVENTORY.map(v => ({ ...v, images: [], status: 'available' }));
     return data
       .filter((r: any) => !r.hidden_override)

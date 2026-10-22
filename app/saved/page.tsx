@@ -18,7 +18,7 @@ export default function SavedPage() {
   const [vehicles, setVehicles] = useState<AdminVehicle[]>([]);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => { listVehicles().then(v => { setVehicles(v); setLoaded(true); }); }, []);
+  useEffect(() => { listVehicles({ includeSold: true }).then(v => { setVehicles(v); setLoaded(true); }); }, []);
 
   const savedVehicles = vehicles.filter(v => saved.includes(v.id));
 
