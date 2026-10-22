@@ -464,6 +464,11 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                       style={{ objectFit: 'cover', filter: isSold ? 'grayscale(.6)' : undefined }}
                     />
                     {isSold && <SoldOverlay size="lg" />}
+                    {!hasPhotos && (vehicle as any).aiImage && (
+                      <span style={{ position: 'absolute', bottom: 14, left: 14, background: 'rgba(17,17,17,.72)', color: 'white', fontSize: 12, fontWeight: 700, padding: '5px 11px', borderRadius: 999, pointerEvents: 'none' }}>
+                        AI illustration — actual vehicle may differ
+                      </span>
+                    )}
                     {hasPhotos && (
                       <div style={{ position: 'absolute', bottom: 14, left: 14, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: 12, fontWeight: 700, padding: '5px 11px', borderRadius: 999, display: 'flex', alignItems: 'center', gap: 5, pointerEvents: 'none' }}>
                         <Icon name="search" size={12} /> {photos.length} photo{photos.length === 1 ? '' : 's'}

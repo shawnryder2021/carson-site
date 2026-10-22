@@ -60,6 +60,10 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         />
         {/* Sold cars must never look buyable in a grid. */}
         {(vehicle as any).status === 'sold' && <SoldOverlay size="sm" />}
+        {/* No real photos yet, showing an admin-approved AI image: say so. */}
+        {!photo && (vehicle as any).aiImage && (
+          <span style={{ position: 'absolute', bottom: 10, left: 10, background: 'rgba(17,17,17,.72)', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 999, pointerEvents: 'none' }}>AI illustration</span>
+        )}
         {/* Social proof badge (real data: created_at / tracked views) */}
         {(vehicle as any).status !== 'sold' && (() => {
           const createdAt = (vehicle as any).createdAt as string | undefined;

@@ -22,6 +22,7 @@ export type ServerVehicle = {
   id: string; year: number; make: string; model: string; price: number; mileage: number;
   body: string; fuel: string; drive: string; exterior: string; interior: string;
   aiSummary: string; images: string[]; status: string;
+  aiImage?: string | null; // admin-approved AI illustration, used only while there are no real photos
 };
 
 export async function fetchVehicles(): Promise<ServerVehicle[]> {
@@ -36,6 +37,7 @@ export async function fetchVehicles(): Promise<ServerVehicle[]> {
         id: r.id, year: r.year, make: r.make, model: r.model, price: r.price, mileage: r.mileage,
         body: r.body, fuel: r.fuel, drive: r.drive, exterior: r.exterior ?? '', interior: r.interior ?? '',
         aiSummary: r.ai_summary ?? '', images: Array.isArray(r.images) ? r.images : [], status: r.status ?? 'available',
+        aiImage: r.ai_image ?? null,
       }));
   } catch {
     return INVENTORY.map(v => ({ ...v, images: [], status: 'available' }));
@@ -56,6 +58,7 @@ export async function fetchVehicle(id: string): Promise<ServerVehicle | null> {
       id: data.id, year: data.year, make: data.make, model: data.model, price: data.price, mileage: data.mileage,
       body: data.body, fuel: data.fuel, drive: data.drive, exterior: data.exterior ?? '', interior: data.interior ?? '',
       aiSummary: data.ai_summary ?? '', images: Array.isArray(data.images) ? data.images : [], status: data.status ?? 'available',
+      aiImage: data.ai_image ?? null,
     };
   } catch {
     return fallback();

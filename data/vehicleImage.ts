@@ -1,6 +1,9 @@
 import { Vehicle } from './inventory';
 
-// Placeholder shown wherever a vehicle has no photos yet. It mimics the
+// Image shown wherever a vehicle has no photos yet: an admin-approved AI
+// illustration if there is one (callers label it), otherwise this placeholder.
+//
+// Placeholder: It mimics the
 // dealership's real photo set (light studio wall, CARSONEXPORTS.com banner,
 // floor shadow) with a line drawing of the body style, so a missing photo reads
 // as "being photographed" rather than broken. Returned as an SVG data URI so it
@@ -47,7 +50,8 @@ const PROFILES: Record<Vehicle['body'], Profile> = {
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-export function vehicleImageURL(vehicle: Vehicle, opts?: { size?: number }): string {
+export function vehicleImageURL(vehicle: Vehicle & { aiImage?: string | null }, opts?: { size?: number }): string {
+  if (vehicle.aiImage) return vehicle.aiImage;
   const size = opts?.size || 200;
   const compact = size < 250; // thumbnails: drawing only, no text
   const p = PROFILES[vehicle.body] || PROFILES.Sedan;

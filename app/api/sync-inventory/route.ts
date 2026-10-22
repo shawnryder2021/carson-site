@@ -48,6 +48,35 @@ async function applyPlan(sb: SupabaseClient, plan: SyncPlan) {
   return errors;
 }
 
+// Record an applied (or failed) sync in sync_runs for Admin → Inventory sync.
+// Logging must never break the sync itself.
+async function logRun(sb: SupabaseClient, run: {
+  trigger: 'scheduled' | 'admin'; startedAt: string; plan?: SyncPlan; errors?: string[]; error?: string;
+}) {
+  const p = run.plan;
+  const vis = (u: SyncPlan['update'][number]) => u.changes.filter(c => c.field !== 'description');
+  try {
+    await sb.from('sync_runs').insert({
+      trigger: run.trigger,
+      started_at: run.startedAt,
+      finished_at: new Date().toISOString(),
+      ok: !run.error && !(run.errors && run.errors.length),
+      fetched: p?.fetched ?? 0,
+      added: run.error ? 0 : p?.add.length ?? 0,
+      updated: run.error ? 0 : p?.update.length ?? 0,
+      marked_sold: run.error ? 0 : p?.markSold.length ?? 0,
+      unchanged: p?.unchanged ?? 0,
+      error: run.error || (run.errors?.length ? run.errors.join('; ').slice(0, 1000) : null),
+      details: run.error || !p ? {} : {
+        added: p.add.slice(0, 300).map(a => ({ id: a.row.id, label: a.label, price: a.row.price })),
+        updated: p.update.slice(0, 300).map(u => ({ id: u.id, label: u.label, changes: vis(u) })),
+        sold: p.markSold.slice(0, 300),
+        errors: run.errors || [],
+      },
+    });
+  } catch { /* history is best-effort */ }
+}
+
 async function run(req: Request) {
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!SERVICE_KEY) return Response.json({ error: 'Sync not configured (set SUPABASE_SERVICE_ROLE_KEY).' }, { status: 503 });
@@ -59,9 +88,11 @@ async function run(req: Request) {
   const url = new URL(req.url);
   const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
   const dryRun = req.method === 'GET' || url.searchParams.get('dryRun') === '1' || body.dryRun === true;
+  const trigger = viaSecret ? 'scheduled' as const : 'admin' as const;
+  const startedAt = new Date().toISOString();
+  const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
   try {
-    const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
     const [{ cars, expected }, { rows, migrationNeeded }] = await Promise.all([fetchSm360Inventory(), loadExisting(sb)]);
     const plan = planSm360Sync(rows, cars, expected);
     const summary = {
@@ -70,10 +101,14 @@ async function run(req: Request) {
     };
 
     if (dryRun) return Response.json({ dryRun: true, migrationNeeded, summary, plan });
-    if (plan.blocked) return Response.json({ error: plan.blocked, summary }, { status: 422 });
+    if (plan.blocked) {
+      await logRun(sb, { trigger, startedAt, plan, error: plan.blocked });
+      return Response.json({ error: plan.blocked, summary }, { status: 422 });
+    }
     if (migrationNeeded) return Response.json({ error: 'Run supabase/migration-sm360.sql before syncing.', summary }, { status: 409 });
 
     const errors = await applyPlan(sb, plan);
+    await logRun(sb, { trigger, startedAt, plan, errors });
 
     let alerts = null;
     if (body.alerts) {
@@ -81,6 +116,7 @@ async function run(req: Request) {
     }
     return Response.json({ ok: errors.length === 0, summary, errors, alerts, at: new Date().toISOString() }, { status: errors.length ? 207 : 200 });
   } catch (e: any) {
+    if (!dryRun) await logRun(sb, { trigger, startedAt, error: e?.message || 'Sync failed' });
     return Response.json({ error: e?.message || 'Sync failed' }, { status: 500 });
   }
 }

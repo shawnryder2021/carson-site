@@ -53,6 +53,8 @@ function rowToVehicle(r: any): AdminVehicle {
     displayOptions: metaEntry ? { showPros: metaEntry.showPros, showThingsToKnow: metaEntry.showThingsToKnow, showIncluded: metaEntry.showIncluded } : {},
     hiddenOverride: r.hidden_override ?? false,
     createdAt: r.created_at,
+    aiImage: r.ai_image ?? null,
+    stockNo: r.stock_no ?? null,
   };
 }
 
@@ -131,6 +133,10 @@ export type AdminVehicle = Vehicle & {
   // never writes it, so it survives daily imports.
   hiddenOverride?: boolean;
   createdAt?: string;
+  // Admin-approved AI illustration (Admin → Missing photos). Shown, labelled,
+  // only while the car has no real photos; the sync never touches it.
+  aiImage?: string | null;
+  stockNo?: string | null;
 };
 
 // Public lists show only cars for sale. Sold cars keep their own page (and
@@ -240,6 +246,37 @@ export async function syncFromSm360(apply: boolean): Promise<{ error?: string; d
   } catch (e: any) {
     return { error: e?.message || 'Failed to reach the sync service' };
   }
+}
+
+export type SyncRun = {
+  id: string;
+  trigger: 'scheduled' | 'admin';
+  startedAt: string;
+  finishedAt: string | null;
+  ok: boolean;
+  fetched: number; added: number; updated: number; markedSold: number; unchanged: number;
+  error: string | null;
+  details: {
+    added?: { id: string; label: string; price: number }[];
+    updated?: { id: string; label: string; changes: { field: string; from: any; to: any }[] }[];
+    sold?: { id: string; label: string }[];
+    errors?: string[];
+  };
+};
+
+// Applied inventory syncs, newest first (admin-only via RLS).
+export async function listSyncRuns(limit = 60): Promise<{ runs: SyncRun[]; error?: string }> {
+  const sb = getBrowserClient();
+  if (!sb) return { runs: [], error: 'Supabase not configured' };
+  const { data, error } = await sb.from('sync_runs').select('*').order('started_at', { ascending: false }).limit(limit);
+  if (error) return { runs: [], error: error.message };
+  return {
+    runs: (data || []).map((r: any) => ({
+      id: r.id, trigger: r.trigger, startedAt: r.started_at, finishedAt: r.finished_at, ok: r.ok,
+      fetched: r.fetched, added: r.added, updated: r.updated, markedSold: r.marked_sold, unchanged: r.unchanged,
+      error: r.error, details: r.details ?? {},
+    })),
+  };
 }
 
 // ───────────────────────── Settings ─────────────────────────
