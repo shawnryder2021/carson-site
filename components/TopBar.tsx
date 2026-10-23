@@ -46,6 +46,10 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
 
   const go = (href: string) => { setOpenMenu(null); setMobileOpen(false); router.push(href); };
 
+  // Body types with nothing for sale are hidden; until inventory loads, show them all.
+  const countFor = (body: string) => vehicles.filter(v => v.body === body && (v as any).status !== 'sold' && (v as any).status !== 'hidden').length;
+  const bodyCategories = vehicles.length ? BODY_CATEGORIES.filter(c => countFor(c.body) > 0) : BODY_CATEGORIES;
+
   const hasDropdown = (item: NavItem) => item.autoCategories || (item.children && item.children.length > 0);
 
   // Featured column: prefer admin-flagged featured, then newest with photos.
@@ -100,8 +104,8 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
                           {/* Left: categories with body-style icons */}
                           <div>
                             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', padding: '2px 10px 8px' }}>Browse by type</div>
-                            {BODY_CATEGORIES.map(c => {
-                              const count = vehicles.filter(v => v.body === c.body && (v as any).status !== 'sold' && (v as any).status !== 'hidden').length;
+                            {bodyCategories.map(c => {
+                              const count = countFor(c.body);
                               return (
                                 <button key={c.body} onClick={() => go(`/inventory?body=${c.body}`)} className="nav-drop-item" style={{ padding: '7px 10px' }}>
                                   <span style={{ width: 56, height: 38, borderRadius: 8, background: 'var(--teal-tint)', color: 'var(--teal-2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -215,7 +219,7 @@ export function TopBar({ onAIClick }: { onAIClick: () => void }) {
                 </button>
                 {item.autoCategories && (
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '12px 4px 14px', borderBottom: '1px solid var(--line)' }}>
-                    {BODY_CATEGORIES.map(c => (
+                    {bodyCategories.map(c => (
                       <button key={c.body} onClick={() => go(`/inventory?body=${c.body}`)} style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)', borderRadius: 999, padding: '6px 14px 6px 10px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', color: 'var(--ink)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                         <BodyTypeIcon body={c.body} size={24} style={{ color: 'var(--teal-2)' }} />
                         {c.label}
