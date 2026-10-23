@@ -16,11 +16,14 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
     { href: '/inventory', label: 'Browse Inventory' },
     { href: '/finder', label: 'AI Finder' },
     { href: '/finance', label: 'Financing' },
-  ] },
-  { title: 'Tools', links: [
     { href: '/tradein', label: 'Trade-In Value' },
-    { href: '/compare', label: 'Compare Cars' },
     { href: '/faq', label: 'FAQ' },
+  ] },
+  { title: 'Service', links: [
+    { href: '/p/service', label: 'Service & Repair' },
+    { href: '/p/tire-centre', label: 'Tire Centre' },
+    { href: '/p/detailing', label: 'Detailing' },
+    { href: '/p/parts-accessories', label: 'Parts & Accessories' },
   ] },
 ];
 

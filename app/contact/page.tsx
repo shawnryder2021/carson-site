@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
 import { createLead } from '@/lib/db';
@@ -100,6 +101,11 @@ export default function ContactPage() {
                     <span style={{ color: 'var(--muted)' }}>{h.time}</span>
                   </div>
                 ))}
+              </div>
+              <div style={{ marginTop: 14, fontSize: 14, color: 'var(--muted)', lineHeight: 1.6 }}>
+                <strong style={{ color: 'var(--ink)' }}>Service, tires & detailing:</strong> Mon–Fri 8 am–5 pm,{' '}
+                <a href="tel:+18337066020">1-833-706-6020</a>.{' '}
+                <Link href="/p/service">Service</Link> · <Link href="/p/tire-centre">Tires</Link> · <Link href="/p/detailing">Detailing</Link>
               </div>
             </div>
 

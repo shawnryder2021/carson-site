@@ -13,7 +13,6 @@ import { ShopByStyle } from '@/components/ShopByStyle';
 import { WelcomeBack } from '@/components/WelcomeBack';
 import { BannerCarousel } from '@/components/BannerCarousel';
 import { Reveal } from '@/components/Reveal';
-import { StatCounter } from '@/components/StatCounter';
 import { SmartImage } from '@/components/SmartImage';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { sizedPhoto } from '@/lib/photo';
@@ -342,7 +341,7 @@ export function HomePage() {
             {[
               { icon: 'sparkles', title: 'AI-Powered', desc: <>Carson AI answers your questions 24/7</> },
               { icon: 'check', title: 'Honest Pricing', desc: <>Live market data on every car</> },
-              { icon: 'award', title: 'Quality Guaranteed', desc: <><StatCounter value={142} suffix="-point" style={{ fontWeight: 800, color: 'var(--ink)' }} /> inspection on every vehicle</> },
+              { icon: 'award', title: 'Quality Guaranteed', desc: <>Every vehicle inspected before it's sold</> },
             ].map((f, i) => (
               <Reveal key={f.title} delay={i * 90}>
                 <div

@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: 'Carson Exports — The best place to buy a used car. Period.',
     template: '%s | Carson Exports',
   },
-  description: 'Family-run auto sales in Dartmouth, NS. AI-powered car finder, honest pricing, 142-point inspections, and zero pressure.',
+  description: 'Family-run auto sales in Dartmouth, NS. AI-powered car finder, inspected vehicles, honest pricing, plus detailing, service and tires.',
   openGraph: {
     siteName: 'Carson Exports',
     type: 'website',
@@ -35,6 +35,8 @@ export const metadata: Metadata = {
 
 // Google surfaces this in the knowledge panel, so a placeholder number here is
 // actively harmful — the telephone key is omitted until a real one is saved.
+const SERVICE_PHONE = '+1-833-706-6020';
+
 function dealerJsonLd(phone: string) {
   return {
     '@context': 'https://schema.org',
@@ -75,6 +77,20 @@ function dealerJsonLd(phone: string) {
       { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Tuesday', 'Wednesday', 'Thursday'], opens: '09:00', closes: '19:00' },
       { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Saturday'], opens: '09:00', closes: '17:00' },
     ],
+    // Service, tire and detailing departments: hours and line from carsonexports.com/en/services.
+    department: [
+      { type: 'AutoRepair', name: 'Carson Exports Service & Tire Centre', path: '/p/service' },
+      { type: 'AutoWash', name: 'Carson Exports Detailing', path: '/p/detailing' },
+    ].map(d => ({
+      '@type': d.type,
+      name: d.name,
+      url: `${SITE_URL}${d.path}`,
+      telephone: SERVICE_PHONE,
+      address: { '@type': 'PostalAddress', streetAddress: '550 Windmill Rd', addressLocality: 'Dartmouth', addressRegion: 'NS', postalCode: 'B3B 1B3', addressCountry: 'CA' },
+      openingHoursSpecification: [
+        { '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '08:00', closes: '17:00' },
+      ],
+    })),
   };
 }
 

@@ -11,7 +11,7 @@ export default function TestimonialsPage() {
     {
       name: 'Sarah Chen',
       role: 'Purchased 2021 Tesla Model 3',
-      text: 'I was nervous buying a used EV. Carson AI answered every question I had about battery health, range, and charging costs. The 7-day return gave me peace of mind. Couldn\'t have asked for a better experience.',
+      text: 'I was nervous buying a used EV. Carson AI answered every question I had about battery health, range, and charging costs. Couldn\'t have asked for a better experience.',
       rating: 5,
     },
     {

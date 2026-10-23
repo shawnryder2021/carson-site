@@ -579,7 +579,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                           <Icon name="check" size={14} style={{ verticalAlign: '-2px', marginRight: 4 }} /> Pros
                         </div>
                         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, color: 'var(--ink)', lineHeight: 1.7 }}>
-                          <li>Passed 142-point inspection</li>
+                          <li>Inspected before sale</li>
                           <li>Low mileage for the year</li>
                           <li>{vehicle.fuel === 'Hybrid' ? 'Excellent fuel economy' : vehicle.fuel === 'Electric' ? 'Zero emissions' : 'Trusted powertrain'}</li>
                           <li>{isBelowMarket ? 'Priced below market' : 'Fair market pricing'}</li>
@@ -790,7 +790,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               <div style={{ marginTop: 20, padding: '16px 0', borderTop: '1px solid var(--line)' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 12 }}>Included with every Carson</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-                  {['7-day return policy', '142-point inspection', '30-day powertrain warranty', 'Free CarFax history'].map(item => (
+                  {['Inspected before sale', '30-day powertrain warranty', 'Free CarFax history'].map(item => (
                     <div key={item} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <Icon name="check" size={14} style={{ color: 'var(--teal)' }} /> {item}
                     </div>
@@ -1037,9 +1037,6 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               <button onClick={finishModal} disabled={deliveryDistance === null} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
                 Continue with delivery
               </button>
-              <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
-                <Icon name="check" size={10} style={{ verticalAlign: '-1px' }} /> 7-day return still applies — even if it's delivered.
-              </div>
             </div>
           </div>
         )}

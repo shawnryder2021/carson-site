@@ -16,8 +16,9 @@ KD = keyword difficulty (0–100), where known.
 | Model pages `/used/[make]-[model]-halifax` (was proposal #6) — 14 indexable (Wrangler, X1, RAV4, Seltos…) | used toyota rav4 halifax, toyota tacoma for sale nova scotia, … | 260+ each |
 | Vehicle pages: full Car+Product data (VIN, trim, transmission, photos), image alt text, image sitemap, richer AutoDealer data | Google vehicle listings / Images | — |
 | Original "Carson's take" description on all 121 vehicles (vs. syndicated SM360 copy) | all vehicle pages | — |
+| `/p/detailing` (new), `/p/service` and `/p/tire-centre` rewritten from the old site's facts; CMS pages now server-rendered; linked from menu, footer, homepage, FAQ, contact (was proposals #3 and #7) | car detailing halifax, dartmouth auto detailing, car repair / mechanic, tire shops dartmouth | ~3,000+ |
 
-## Proposed — new pages and articles (priority order; #1–2 done, see above)
+## Proposed — new pages and articles (priority order; #1–3 and #7 done, see above)
 | # | Piece | Type | Target keywords | Volume | Notes |
 |---|---|---|---|---|---|
 | 3 | **Car Detailing in Halifax & Dartmouth** | Service page | car detailing halifax, dartmouth auto detailing | 1,300 + 590 | Only if detailing is still offered (old site had a Detailing department). |

@@ -20,6 +20,12 @@ const CATEGORIES: { slug: string; title: string; text: string }[] = [
   { slug: 'classic-cars-nova-scotia', title: 'Classic & collector', text: 'Vintage classics, antique and collector cars, and modern exotics.' },
 ];
 
+const AFTER_SALE: { href: string; title: string; text: string }[] = [
+  { href: '/p/detailing', title: 'Car detailing', text: 'Interior shampoo and leather conditioning, wash, wax and polish, engine cleaning and headlight restoration.' },
+  { href: '/p/service', title: 'Service & repair', text: 'Oil changes, fluid checks and brake inspections through to engine and transmission repairs, on most makes and models.' },
+  { href: '/p/tire-centre', title: 'Tire Centre', text: 'Winter, summer and all-season tires, installed, balanced, rotated and aligned, plus seasonal tire storage.' },
+];
+
 const AREAS: { name: string; href: string }[] = [
   { name: 'Halifax & Dartmouth', href: '/news/used-car-dealership-serving-halifax-dartmouth-hrm' },
   { name: 'Bedford', href: '/news/used-cars-bedford-ns-smart-buyer-s-guide-for-2026' },
@@ -79,6 +85,19 @@ export function HomeLocalSection({ vehicles }: { vehicles: ServerVehicle[] }) {
           ))}
         </div>
 
+        <h3 style={{ ...h3, fontSize: 22 }}>Detailing, service & tires in Dartmouth</h3>
+        <p style={{ ...p, fontSize: 15 }}>
+          We look after your vehicle after the sale too. Our service, tire and detailing departments are open Monday to Friday, 8 am to 5 pm.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, margin: '0 0 34px' }}>
+          {AFTER_SALE.map(s => (
+            <Link key={s.href} href={s.href} style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 14, padding: '16px 18px', color: 'var(--ink)', textDecoration: 'none' }}>
+              <h3 style={{ ...h3, fontSize: 18 }}>{s.title}</h3>
+              <div style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.55 }}>{s.text}</div>
+            </Link>
+          ))}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, marginBottom: 34 }}>
           <div>
             <h3 style={h3}>Financing for every situation</h3>
@@ -88,10 +107,10 @@ export function HomeLocalSection({ vehicles }: { vehicles: ServerVehicle[] }) {
             </p>
           </div>
           <div>
-            <h3 style={h3}>Service, parts & tires</h3>
+            <h3 style={h3}>Parts & accessories</h3>
             <p style={{ ...p, fontSize: 15 }}>
-              We’re here after the sale too: our <Link href="/p/service">service department</Link> handles maintenance and repairs, and we carry
-              genuine <Link href="/p/parts-accessories">parts & accessories</Link> plus tire packages at our <Link href="/p/tire-centre">Tire & Wheel Centre</Link>.
+              Filters, batteries, brake pads, roof racks, cargo organizers and liners: our parts team helps you find the right fit.{' '}
+              <Link href="/p/parts-accessories">Request a part</Link>.
             </p>
           </div>
           <div>

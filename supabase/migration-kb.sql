@@ -21,9 +21,8 @@ create policy "kb admin write"  on public.ai_knowledge_base for all using (publi
 
 -- Seed with templates (optional — delete and add your own via admin UI)
 insert into public.ai_knowledge_base (category, title, content) values
-  ('about_carson', 'Why Choose Carson Exports', 'Family-run dealership since 2008. We focus on transparency, quality, and zero-pressure buying. Every car passes a 142-point inspection. 7-day return policy. No hidden fees.'),
+  ('about_carson', 'Why Choose Carson Exports', 'Family-run dealership since 2008. We focus on transparency, quality, and zero-pressure buying. Every car is inspected before it goes on sale. No hidden fees.'),
   ('policies', 'Financing Terms', 'Current rates: 5.9% - 8.5% depending on credit. Terms: 36-84 months. No money down options available. We handle all paperwork. Pre-approval takes 2 minutes.'),
-  ('policies', '7-Day Return Policy', 'If you change your mind within 7 days or 250 km, bring it back. Full refund, no questions asked. This applies to all vehicles.'),
   ('market_data', 'Current Market Trends', 'Hybrid SUVs are hot right now in Atlantic Canada. Trucks holding strong. Sedans seeing slight price drops. Best deals on vehicles 30+ days on lot.'),
   ('inventory_insights', 'What''s Selling Well', 'Top sellers: Toyota RAV4, Honda CR-V, Ford F-150, Mazda CX-5. Least moving: Large sedans over $35k.'),
   ('team', 'Our Sales Team', 'We have specialists in trucks, families, first-time buyers, and eco-conscious shoppers. Ask for someone who matches your needs.')

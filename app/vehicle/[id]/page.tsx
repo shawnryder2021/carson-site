@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const description = sold
     ? `This ${name} has sold. See similar ${v.body || 'vehicles'} available now at Carson Exports in Dartmouth, NS — or get alerted the moment a comparable one arrives.`
     : `${firstSentence(v.carsonTake || '') || (v.aiSummary ? v.aiSummary.slice(0, 120) + '.' : '')} ${v.mileage.toLocaleString()} km · ${v.fuel} · ${v.drive}. ` +
-      `142-point inspected with a 7-day return at Carson Exports, Dartmouth NS.`;
+      `Inspected before sale at Carson Exports, Dartmouth NS.`;
   const image = v.images[0] || `${SITE_URL}/carson-logo.png`;
 
   return {

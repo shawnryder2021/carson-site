@@ -16,12 +16,8 @@ export default function FAQPage() {
 
   const faqs: FAQ[] = [
     {
-      q: 'How does the 7-day return policy work?',
-      a: 'Drive it home, live with it for up to 7 days or 250 miles. If it\'s not the one, bring it back for a full refund or exchange. No questions asked. We want you to be sure.'
-    },
-    {
-      q: 'What\'s included in the 142-point inspection?',
-      a: 'Every vehicle gets checked for mechanical soundness, safety systems, fluid levels, wear on key components, and title/service history. If it doesn\'t pass, we don\'t sell it. Full inspection reports are available for every car.'
+      q: 'Are your vehicles inspected?',
+      a: 'Yes. Every vehicle is inspected before it goes on sale: mechanical condition, safety systems, fluid levels, wear on key components, and its history. If it doesn\'t pass, we don\'t sell it. Ask us about any car you\'re interested in.'
     },
     {
       q: 'How do I get pre-qualified for financing?',
@@ -37,7 +33,7 @@ export default function FAQPage() {
     },
     {
       q: 'Do you have a physical showroom?',
-      a: 'Yes — we\'re at 550 Windmill Rd in Dartmouth, NS. You can browse online and test drive by appointment, or just stop by. We\'re open Mon–Fri 9–7, Sat 10–6, Sun 11–5.'
+      a: 'Yes — we\'re at 550 Windmill Rd in Dartmouth, NS. You can browse online and test drive by appointment, or just stop by. We\'re open Monday and Friday 9–6, Tuesday to Thursday 9–7, Saturday 9–5, and closed Sunday.'
     },
     {
       q: 'What if I find the same car cheaper elsewhere?',
@@ -52,8 +48,20 @@ export default function FAQPage() {
       a: 'You can browse, filter, ask Carson AI questions, and get pre-approved online. Final paperwork and keys happen in person at our showroom so you can see the car and sign everything.'
     },
     {
+      q: 'Do you offer car detailing?',
+      a: 'Yes. Our detailing team does interior cleaning (vacuuming, shampooing, leather conditioning), exterior washing, waxing and polishing, engine cleaning, headlight restoration and custom packages. Book on our Detailing page.'
+    },
+    {
+      q: 'Do you service and repair vehicles?',
+      a: 'Yes. Our service department handles routine maintenance like oil changes, fluid checks and brake inspections, through to engine and transmission repairs, on a wide variety of makes and models. Service is open Monday to Friday, 8 am to 5 pm, at 1-833-706-6020.'
+    },
+    {
+      q: 'Do you sell and install tires?',
+      a: 'Yes. Our Tire Centre sells winter, summer and all-season tires and handles installation, balancing, rotation and alignment. We also offer seasonal tire storage and tire packages.'
+    },
+    {
       q: 'What warranty do you offer?',
-      a: 'Every Carson car comes with a 30-day powertrain warranty and a 7-day return policy. Extended warranty options are available at checkout.'
+      a: 'Every Carson car comes with a 30-day powertrain warranty. Extended warranty options are available at checkout.'
     },
   ];
 

@@ -62,7 +62,7 @@ export const GUIDES: Guide[] = [
       { heading: 'Before you turn the key', text: 'Walk around in good light. Check that panel gaps are even, look for paint that doesn\'t quite match (a sign of past bodywork), and press each tire — uneven wear hints at alignment or suspension issues. Pop the hood and look for fluid leaks or corrosion.' },
       { heading: 'On the road', text: 'Test on varied surfaces and at highway speed if you can. Listen for clunks over bumps (suspension), feel for a shudder when braking (warped rotors), and watch for hesitation or harsh shifts (transmission). Try the AC, every window, the infotainment, and the backup camera.' },
       { heading: 'After you stop', text: 'Leave it idling and check underneath for new drips. Look at the exhaust — blue or white smoke is a red flag. Restart it warm to confirm it cranks cleanly.' },
-      { heading: 'Carson AI tip', text: 'Every Carson car has already passed a 142-point inspection, so most of this is done for you. But a test drive is still about fit — ask the AI "what should I check on this specific model?" for model-known quirks.' },
+      { heading: 'Carson AI tip', text: 'Every Carson car is inspected before it goes on sale, so most of this is done for you. But a test drive is still about fit — ask the AI "what should I check on this specific model?" for model-known quirks.' },
     ],
   },
   {

@@ -62,6 +62,7 @@ export function mapLegacyPath(rawPath: string, l: LegacyLookups = {}): string {
 
     case 'services':
       if (a === 'tire-centre') return '/p/tire-centre';
+      if (a === 'detailing') return '/p/detailing';
       if (a === 'parts') return '/p/parts-accessories';
       return '/p/service';
     case 'special-offers':

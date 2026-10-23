@@ -178,9 +178,11 @@ function SpacerBlock({ block }: { block: Extract<PageBlock, { type: 'spacer' }> 
   return <div style={{ height: h }} />;
 }
 
-export default function PageClient({ params }: { params: { slug: string } }) {
+// `initial` is the published page fetched on the server, so the content is in the
+// first HTML for search engines; the client fetch then picks up any newer edit.
+export default function PageClient({ params, initial }: { params: { slug: string }; initial?: CustomPage | null }) {
   const router = useRouter();
-  const [page, setPage] = useState<CustomPage | null | undefined>(undefined);
+  const [page, setPage] = useState<CustomPage | null | undefined>(initial ?? undefined);
 
   useEffect(() => {
     getPageBySlug(params.slug).then(p => setPage(p && p.published === false ? null : p));

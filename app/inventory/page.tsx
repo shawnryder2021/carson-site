@@ -215,7 +215,7 @@ Rules:
             {aiQuery ? `${filtered.length} matches` : 'Browse our inventory'}
           </h1>
           <p style={{ fontSize: 15, color: 'var(--muted)', margin: 0 }}>
-            {inventory.length} vehicles · Live market pricing · 142-point inspected
+            {inventory.length} vehicles · Live market pricing · Inspected before sale
           </p>
 
           {aiThinking && (
