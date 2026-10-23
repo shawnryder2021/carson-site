@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/Icon';
 import { PageHeader } from '@/components/PageHeader';
@@ -9,8 +9,8 @@ import { vehicleImageURL } from '@/data/vehicleImage';
 import { sizedPhoto } from '@/lib/photo';
 import { INVENTORY } from '@/data/inventory';
 import { fmtPrice, fmtMiles } from '@/lib/format';
-import { complete } from '@/lib/ai';
 import { listVehicles, AdminVehicle } from '@/lib/db';
+import { useSaved } from '@/context/SavedContext';
 
 type Answers = {
   useCase: string;
@@ -43,6 +43,11 @@ export default function FinderPage() {
   const [matches, setMatches] = useState<Match[] | null>(null);
   const [inventory, setInventory] = useState<AdminVehicle[]>(INVENTORY as AdminVehicle[]);
   const [intro, setIntro] = useState('');
+  const [mode, setMode] = useState<'start' | 'describe' | 'quiz'>('start');
+  const [describe, setDescribe] = useState('');
+  const [error, setError] = useState('');
+  const lastRequest = useRef<{ answers?: Answers; text?: string } | null>(null);
+  const { saved, toggleSave } = useSaved();
 
   useEffect(() => { listVehicles().then(v => { if (v.length) setInventory(v); }); }, []);
 
@@ -51,43 +56,28 @@ export default function FinderPage() {
 
   const STEPS = ['What will you use it for?', "What's your budget?", 'Any body style preference?', 'Fuel preference?', 'Must-haves?', 'Anything else?'];
 
-  const runMatch = async (refine?: string) => {
+  // Matching runs on the server (/api/finder): it loads stock itself and falls
+  // back to simple matching if the AI is unavailable.
+  const runMatch = async (refine?: string, req?: { answers?: Answers; text?: string }) => {
+    if (req) lastRequest.current = req;
+    const payload = lastRequest.current;
+    if (!payload) return;
     setThinking(true);
     setMatches(null);
-    const list = inventory.map(v => `${v.id}: ${v.year} ${v.make} ${v.model}, ${fmtPrice(v.price)}, ${fmtMiles(v.mileage)}, ${v.body}, ${v.fuel}, ${v.drive}`).join('\n');
-    const prompt = `You are Carson AI, a sharp, honest car-matching expert. From the inventory below, pick the 3 BEST matches for this shopper and explain why each fits THEM specifically.
-
-Shopper:
-- Primary use: ${answers.useCase || 'unspecified'}
-- Budget: about ${fmtPrice(answers.budget)}
-- Body preference: ${answers.body}
-- Fuel preference: ${answers.fuel}
-- Must-haves: ${answers.mustHaves.join(', ') || 'none stated'}
-- Notes: ${answers.notes || 'none'}
-${refine ? `\nRefinement request: ${refine}` : ''}
-
-Inventory:
-${list}
-
-Reply ONLY with JSON (no markdown):
-{"intro":"1 warm sentence summarizing what you looked for.","matches":[{"id":"<vehicle id>","fit":<0-100 integer>,"why":"2 sentences on why this fits THIS shopper.","consider":"1 honest thing to consider."}]}
-Pick exactly 3 matches, best first. Prefer vehicles near or under budget.`;
-
+    setError('');
     try {
-      const reply = await complete(prompt);
-      const json = JSON.parse(reply.replace(/```json|```/g, '').trim());
+      const res = await fetch('/api/finder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, refine }),
+      });
+      if (!res.ok) throw new Error(`finder ${res.status}`);
+      const json = await res.json();
       setIntro(json.intro || '');
-      setMatches((json.matches || []).filter((m: Match) => inventory.some(v => v.id === m.id)).slice(0, 3));
+      setMatches((json.matches || []).filter((m: Match) => inventory.some(v => v.id === m.id)));
     } catch {
-      // Fallback: simple local scoring
-      const scored = inventory
-        .filter(v => v.price <= answers.budget * 1.1)
-        .filter(v => answers.body === 'No preference' || v.body === answers.body)
-        .filter(v => answers.fuel === 'No preference' || v.fuel === answers.fuel)
-        .slice(0, 3)
-        .map((v, i) => ({ id: v.id, fit: 90 - i * 7, why: `A solid match for your ${answers.useCase || 'needs'} within budget.`, consider: 'Book a test drive to confirm the fit.' }));
-      setIntro("Here are a few that line up with what you told me.");
-      setMatches(scored);
+      setError('Carson AI is busy right now. Please try again in a moment, or call us and we will help you.');
+      setMode(payload.text ? 'describe' : 'quiz');
     }
     setThinking(false);
   };
@@ -128,14 +118,34 @@ Pick exactly 3 matches, best first. Prefer vehicles near or under budget.`;
                     <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5, margin: '0 0 14px' }}>
                       <strong>Consider:</strong> {m.consider}
                     </p>
-                    <button onClick={() => router.push(`/vehicle/${v.id}`)} className="btn btn-primary btn-sm">
-                      View this vehicle <Icon name="arrowRight" size={13} />
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button onClick={() => router.push(`/vehicle/${v.id}`)} className="btn btn-primary btn-sm">
+                        View this vehicle <Icon name="arrowRight" size={13} />
+                      </button>
+                      <button onClick={() => toggleSave(v.id)} className="btn btn-ghost btn-sm">
+                        <Icon name="heart" size={13} /> {saved.includes(v.id) ? 'Saved to shortlist' : 'Save to shortlist'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
+
+          {matches.length === 0 && (
+            <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 16, padding: '22px', textAlign: 'center', fontSize: 15, color: 'var(--muted)' }}>
+              Nothing in stock fits all of that right now. Try a higher budget or fewer must-haves, or call us and we will look for you.
+            </div>
+          )}
+
+          {matches.length > 1 && (
+            <div style={{ marginTop: 20, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', fontSize: 14 }}>
+              <button onClick={() => matches.forEach(m => { if (!saved.includes(m.id)) toggleSave(m.id); })} className="btn btn-dark btn-sm">
+                <Icon name="heart" size={13} /> Save all three to my shortlist
+              </button>
+              <a href="/saved" style={{ color: 'var(--teal-2)', fontWeight: 600 }}>View my shortlist</a>
+            </div>
+          )}
 
           {/* Refine */}
           <div style={{ marginTop: 28, background: 'var(--bg-soft)', borderRadius: 16, padding: '20px 22px', textAlign: 'center' }}>
@@ -144,7 +154,7 @@ Pick exactly 3 matches, best first. Prefer vehicles near or under budget.`;
               <button onClick={() => runMatch('Show cheaper options.')} className="btn btn-ghost btn-sm">Show me cheaper</button>
               <button onClick={() => runMatch('Show roomier / bigger options.')} className="btn btn-ghost btn-sm">Something bigger</button>
               <button onClick={() => runMatch('Prioritize fuel efficiency.')} className="btn btn-ghost btn-sm">Better on gas</button>
-              <button onClick={() => { setMatches(null); setStep(0); }} className="btn btn-dark btn-sm">Start over</button>
+              <button onClick={() => { setMatches(null); setStep(0); setMode('start'); }} className="btn btn-dark btn-sm">Start over</button>
             </div>
           </div>
         </div>
@@ -162,6 +172,62 @@ Pick exactly 3 matches, best first. Prefer vehicles near or under budget.`;
           </div>
           <h2 style={{ fontFamily: 'var(--display)', fontSize: 26, fontWeight: 600, margin: '0 0 8px' }}>Finding your matches<DotsAnim /></h2>
           <p style={{ fontSize: 15, color: 'var(--muted)' }}>Carson AI is weighing {inventory.length} vehicles against what matters to you.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── START ──
+  const choice: React.CSSProperties = {
+    background: 'white', border: '1px solid var(--line)', borderRadius: 18, padding: '28px 26px',
+    textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--ink)', display: 'flex', flexDirection: 'column', gap: 10,
+  };
+  if (mode === 'start') {
+    return (
+      <div className="page fade-in">
+        <PageHeader eyebrow="AI Finder" title="Let's find your car." subtitle="Tell Carson AI about your life, or answer a few quick questions. Either way you get three honest matches from what's on our lot." />
+        <div className="container" style={{ maxWidth: 680, paddingBottom: 80 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+            <button onClick={() => setMode('describe')} style={choice}>
+              <Icon name="sparkles" size={22} style={{ color: 'var(--teal)' }} />
+              <span style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600 }}>Describe your life</span>
+              <span style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.5 }}>A few sentences about your commute, your family and your budget is all it takes.</span>
+            </button>
+            <button onClick={() => { setMode('quiz'); setStep(0); }} style={choice}>
+              <Icon name="check" size={22} style={{ color: 'var(--teal)' }} />
+              <span style={{ fontFamily: 'var(--display)', fontSize: 22, fontWeight: 600 }}>Answer a few questions</span>
+              <span style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.5 }}>Six quick steps: use, budget, body style, fuel, must-haves and anything else.</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'describe') {
+    return (
+      <div className="page fade-in">
+        <PageHeader eyebrow="AI Finder" title="Tell us about your life." subtitle="Who you drive with, where you drive, what matters most, and roughly what you can spend." />
+        <div className="container" style={{ maxWidth: 680, paddingBottom: 80 }}>
+          <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 18, padding: '28px 30px' }}>
+            <textarea
+              className="input"
+              value={describe}
+              onChange={e => setDescribe(e.target.value.slice(0, 1000))}
+              placeholder="e.g., I drive 80 km a day to Halifax, have two kids and a dog, and our winters are rough. I'd like to stay around $35,000."
+              style={{ minHeight: 150, width: '100%', fontFamily: 'inherit', resize: 'vertical' }}
+            />
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>{describe.length}/1000</div>
+            {error && <div style={{ color: '#A8232C', fontSize: 14, marginTop: 12 }}>{error}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 22, gap: 10, flexWrap: 'wrap' }}>
+              <button onClick={() => setMode('start')} className="btn btn-ghost">
+                <Icon name="arrowLeft" size={14} /> Back
+              </button>
+              <button onClick={() => runMatch(undefined, { text: describe.trim() })} disabled={describe.trim().length < 10} className="btn btn-primary btn-lg">
+                <Icon name="sparkles" size={16} /> Find my matches
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -243,13 +309,15 @@ Pick exactly 3 matches, best first. Prefer vehicles near or under budget.`;
             />
           )}
 
+          {error && <div style={{ color: '#A8232C', fontSize: 14, marginTop: 14 }}>{error}</div>}
+
           {/* Nav buttons */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
             <button onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0} className="btn btn-ghost" style={{ opacity: step === 0 ? 0.4 : 1 }}>
               <Icon name="arrowLeft" size={14} /> Back
             </button>
             {isLast ? (
-              <button onClick={() => runMatch()} className="btn btn-primary btn-lg"><Icon name="sparkles" size={16} /> Find my matches</button>
+              <button onClick={() => runMatch(undefined, { answers })} className="btn btn-primary btn-lg"><Icon name="sparkles" size={16} /> Find my matches</button>
             ) : (
               <button onClick={() => setStep(s => s + 1)} disabled={!canAdvance} className="btn btn-primary">Next <Icon name="arrowRight" size={14} /></button>
             )}

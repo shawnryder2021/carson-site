@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Icon } from '@/components/Icon';
+import { DotsAnim } from '@/components/DotsAnim';
 import { RowsSkeleton } from '@/components/Skeleton';
 import { vehicleImageURL } from '@/data/vehicleImage';
 import { sizedPhoto } from '@/lib/photo';
@@ -13,6 +14,77 @@ import { gaEvent } from '@/lib/gtag';
 import { TERMS_LABEL } from '@/lib/payment';
 
 const DAY = 86400000;
+
+const SITUATIONS = ['Daily commute', 'Family hauler', 'First car', 'Towing or work', 'Weekend fun'];
+
+// "Which one is right for you?": Carson AI explains the cars on this page in
+// plain English for the shopper's situation (/api/compare).
+function ExplainPanel({ ids }: { ids: string[] }) {
+  const [custom, setCustom] = useState('');
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const idKey = ids.join(',');
+
+  // A different set of cars makes the old explanation out of date.
+  useEffect(() => { setText(''); setErr(''); }, [idKey]);
+
+  const explain = async (situation: string) => {
+    setBusy(true);
+    setErr('');
+    setText('');
+    try {
+      const res = await fetch('/api/compare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, situation }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'failed');
+      setText(json.text || '');
+    } catch {
+      setErr('Carson AI is busy right now. Try again in a moment, or call us and we will walk you through these cars.');
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div style={{ marginTop: 28, background: 'white', border: '1px solid var(--line)', borderRadius: 18, padding: '24px 26px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--display)', fontSize: 20, fontWeight: 600 }}>
+        <Icon name="sparkles" size={16} style={{ color: 'var(--teal)' }} /> Which one is right for you?
+      </div>
+      <div style={{ fontSize: 14, color: 'var(--muted)', margin: '4px 0 14px' }}>
+        Pick what fits your life, or describe it, and Carson AI explains the difference in plain English.
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        {SITUATIONS.map(s => (
+          <button key={s} onClick={() => explain(s)} disabled={busy} className="btn btn-ghost btn-sm">{s}</button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input
+          className="input"
+          value={custom}
+          onChange={e => setCustom(e.target.value.slice(0, 500))}
+          placeholder="Or describe your situation…"
+          style={{ flex: 1, minWidth: 220 }}
+        />
+        <button onClick={() => explain(custom.trim())} disabled={busy || custom.trim().length < 5} className="btn btn-primary btn-sm">
+          Explain the difference
+        </button>
+      </div>
+
+      {busy && <div style={{ marginTop: 16, fontSize: 14, color: 'var(--muted)' }}>Comparing<DotsAnim /></div>}
+      {err && <div style={{ marginTop: 16, fontSize: 14, color: '#A8232C' }}>{err}</div>}
+      {text && (
+        <>
+          <div style={{ marginTop: 18, background: 'var(--bg-soft)', borderRadius: 14, padding: '18px 20px', fontSize: 15, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{text}</div>
+          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--muted)' }}>Written by Carson AI from these listings. Confirm the details with our team before you buy.</div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function daysOnLot(v: AdminVehicle): number | null {
   return v.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(v.createdAt).getTime()) / DAY)) : null;
@@ -212,6 +284,8 @@ function CompareContent() {
             </div>
           </div>
         )}
+
+        {vehicles.length >= 2 && <ExplainPanel ids={vehicles.map(v => v.id)} />}
       </div>
     </div>
   );
