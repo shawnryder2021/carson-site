@@ -44,7 +44,9 @@ export default async function LocalSearchPage({ params }: { params: { slug: stri
     .filter(o => o.slug !== p.slug)
     .map(o => ({ o, n: vehicles.filter(o.match).length }))
     .filter(x => x.n >= MIN_INDEXABLE)
-    .sort((a, b) => Number(b.o.kind === p.kind) - Number(a.o.kind === p.kind) || b.n - a.n)
+    // Same make first (its make page and sibling models), then same kind, then most stock.
+    .sort((a, b) => Number(!!p.make && b.o.make === p.make) - Number(!!p.make && a.o.make === p.make)
+      || Number(b.o.kind === p.kind) - Number(a.o.kind === p.kind) || b.n - a.n)
     .slice(0, 12);
 
   const jsonLd = [

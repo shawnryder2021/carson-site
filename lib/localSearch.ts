@@ -5,11 +5,12 @@
 // and left out of the sitemap — no thin pages for Google.
 
 import type { ServerVehicle } from './serverDb';
+import { displayTrim } from './sm360';
 
 export const AREA = 'Halifax & Dartmouth';
 export const MIN_INDEXABLE = 3;
 
-type Kind = 'body' | 'price' | 'feature' | 'make';
+type Kind = 'body' | 'price' | 'feature' | 'make' | 'model';
 
 export type LocalSearch = {
   slug: string;
@@ -18,6 +19,7 @@ export type LocalSearch = {
   many: string;        // in a sentence: "SUVs", "cars under $25,000", "Toyota vehicles"
   one: string;         // singular: "SUV", "car under $25,000", "Toyota"
   make?: string;
+  model?: string;
   place?: string;       // place named in the meta description (default AREA)
   h1: string;
   title: string;
@@ -78,8 +80,34 @@ function makePages(vehicles: ServerVehicle[]): LocalSearch[] {
     }));
 }
 
+// Model pages (e.g. /used/toyota-rav4-halifax) for every model with at least 2
+// for sale; like other pages they're noindex until there are MIN_INDEXABLE.
+const slugPart = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+function modelPages(vehicles: ServerVehicle[]): LocalSearch[] {
+  const groups = new Map<string, { make: string; model: string; n: number }>();
+  vehicles.forEach(v => {
+    const key = `${v.make}|${v.model}`;
+    const g = groups.get(key) || { make: v.make, model: v.model, n: 0 };
+    g.n++; groups.set(key, g);
+  });
+  return Array.from(groups.values())
+    .filter(g => g.n >= 2)
+    .sort((a, b) => b.n - a.n)
+    .map(({ make, model }) => {
+      const name = `${make} ${model}`;
+      return {
+        ...page(`${slugPart(make)}-${slugPart(model)}-halifax`, 'model', name, name,
+          `Every used ${name} we have in stock, updated daily.`,
+          v => v.make === make && v.model === model, byPrice, /s$/i.test(name) ? name : `${name}s`),
+        title: `Used ${name} for Sale in Halifax, NS`,
+        h1: `Used ${name} for Sale in Halifax & Dartmouth`,
+        make, model,
+      };
+    });
+}
+
 export function allLocalSearches(vehicles: ServerVehicle[]): LocalSearch[] {
-  return [...STATIC_PAGES, ...makePages(vehicles)];
+  return [...STATIC_PAGES, ...makePages(vehicles), ...modelPages(vehicles)];
 }
 
 export function findLocalSearch(slug: string, vehicles: ServerVehicle[]): LocalSearch | undefined {
@@ -98,7 +126,7 @@ export function resultsFor(p: LocalSearch, vehicles: ServerVehicle[]): ServerVeh
 const money = (n: number) => '$' + Math.round(n).toLocaleString('en-CA');
 const km = (n: number) => Math.round(n).toLocaleString('en-CA') + ' km';
 
-export type LocalStats = { count: number; minPrice: number; maxPrice: number; avgKm: number; topModels: string[]; cheapest?: ServerVehicle; newestYear?: number };
+export type LocalStats = { count: number; minPrice: number; maxPrice: number; avgKm: number; topModels: string[]; topTrims: string[]; cheapest?: ServerVehicle; newestYear?: number };
 
 export function statsFor(results: ServerVehicle[]): LocalStats {
   const priced = results.filter(v => v.price > 0);
@@ -110,6 +138,7 @@ export function statsFor(results: ServerVehicle[]): LocalStats {
     maxPrice: priced.length ? Math.max(...priced.map(v => v.price)) : 0,
     avgKm: results.length ? results.reduce((s, v) => s + (v.mileage || 0), 0) / results.length : 0,
     topModels: Array.from(models.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([m]) => m),
+    topTrims: Array.from(new Set(results.map(v => displayTrim(v.trim)).filter(Boolean))).slice(0, 4),
     cheapest: priced.slice().sort(byPrice)[0],
     newestYear: results.length ? Math.max(...results.map(v => v.year)) : undefined,
   };
@@ -121,7 +150,9 @@ export function introFor(p: LocalSearch, s: LocalStats): string {
     return `We don’t have any used ${p.many} in stock right now. Inventory changes daily — set up a free CarFinder alert below and we’ll let you know the moment one arrives at our Dartmouth lot.`;
   }
   const range = s.minPrice === s.maxPrice ? `at ${money(s.minPrice)}` : `from ${money(s.minPrice)} to ${money(s.maxPrice)}`;
-  const popular = p.make
+  const popular = p.model
+    ? (s.topTrims.length ? ` Trims in stock include the ${s.topTrims.join(', ')}.` : '')
+    : p.make
     ? (s.topModels.length ? ` Models in stock include the ${s.topModels.map(m => m.slice(p.make!.length + 1)).join(', ')}.` : '')
     : s.topModels.length > 1 ? ` Popular picks right now include the ${s.topModels.slice(0, 3).join(', ')}.` : '';
   return `Carson Exports has ${s.count} used ${s.count === 1 ? p.one : p.many} for sale at our lot on Windmill Road in Dartmouth, priced ${range} with an average of ${km(s.avgKm)}. ${p.blurb}${popular} Every listing shows real photos, the price and the kilometres, and the list is updated daily.`;

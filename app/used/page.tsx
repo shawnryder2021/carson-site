@@ -23,6 +23,7 @@ const GROUPS: { kind: LocalSearch['kind']; title: string }[] = [
   { kind: 'price', title: 'By price' },
   { kind: 'feature', title: 'By feature' },
   { kind: 'make', title: 'By make' },
+  { kind: 'model', title: 'By model' },
 ];
 
 export default async function UsedIndex() {
