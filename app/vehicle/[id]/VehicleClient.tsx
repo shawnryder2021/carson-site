@@ -444,9 +444,10 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
           </div>
         </div>
 
-        <div className="rg" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 40, alignItems: 'start' }}>
-          {/* Left column */}
-          <div>
+        {/* Gallery, details and sidebar are separate grid areas (globals.css .vdp-grid)
+            so on mobile the name and price come right after the photos. */}
+        <div className="rg vdp-grid" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', columnGap: 40, alignItems: 'start' }}>
+          <div className="vdp-gallery">
             {/* Gallery */}
             {(() => {
               const photos: string[] = (vehicle as any).images || [];
@@ -529,7 +530,9 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                 </>
               );
             })()}
+          </div>
 
+          <div className="vdp-details">
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--line)', marginBottom: 24 }}>
               {([['overview', 'Overview'], ['specs', 'Specifications']] as const).map(([key, label]) => (
@@ -616,7 +619,8 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
           </div>
 
           {/* Right column - sticky sidebar */}
-          <aside style={{ position: 'sticky', top: 90 }}>
+          <aside className="vdp-aside" style={{ position: 'sticky', top: 90 }}>
+            <div className="vdp-aside-top">
             <div style={{ marginBottom: 4, fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>{vehicle.year}</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, letterSpacing: '-.02em', margin: '0 0 14px', lineHeight: 1.1 }}>
               {vehicle.make} {vehicle.model}
@@ -741,7 +745,9 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               </button>
             </div>
             )}
+            </div>
 
+            <div className="vdp-aside-rest">
             {/* AI Q&A */}
             <div style={{ background: 'white', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 22px' }}>
               <div className="ai-pill" style={{ marginBottom: 12 }}>
@@ -798,6 +804,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                 </div>
               </div>
             )}
+            </div>
           </aside>
         </div>
 

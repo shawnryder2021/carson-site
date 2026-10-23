@@ -239,6 +239,19 @@ footer { border-top: 1px solid var(--line); }
   .rg { grid-template-columns: var(--gtc-m, 1fr) !important; }
 }
 
+/* Vehicle page: photos + details on the left, sticky price sidebar on the right.
+   On mobile: photos, then name/price/buttons, then description, then the rest. */
+.vdp-grid { grid-template-areas: "gallery aside" "details aside"; }
+.vdp-gallery { grid-area: gallery; min-width: 0; }
+.vdp-details { grid-area: details; min-width: 0; }
+.vdp-aside { grid-area: aside; }
+@media (max-width: 860px) {
+  .vdp-grid { grid-template-areas: "gallery" "top" "details" "rest"; }
+  .vdp-aside { display: contents; }
+  .vdp-aside-top { grid-area: top; margin-bottom: 28px; }
+  .vdp-aside-rest { grid-area: rest; margin-top: 28px; }
+}
+
 /* ───────── Mobile navigation ───────── */
 .nav-burger { display: none; background: none; border: none; cursor: pointer; color: var(--ink); padding: 6px; }
 
