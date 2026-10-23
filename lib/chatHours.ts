@@ -5,13 +5,13 @@ export type DayHours = { open: string; close: string } | null;
 export type ChatHours = DayHours[]; // length 7
 
 export const DEFAULT_CHAT_HOURS: ChatHours = [
-  { open: '11:00', close: '17:00' }, // Sun
-  { open: '09:00', close: '19:00' }, // Mon
+  null,                             // Sun (closed)
+  { open: '09:00', close: '18:00' }, // Mon
   { open: '09:00', close: '19:00' }, // Tue
   { open: '09:00', close: '19:00' }, // Wed
   { open: '09:00', close: '19:00' }, // Thu
-  { open: '09:00', close: '19:00' }, // Fri
-  { open: '10:00', close: '18:00' }, // Sat
+  { open: '09:00', close: '18:00' }, // Fri
+  { open: '09:00', close: '17:00' }, // Sat
 ];
 
 export const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

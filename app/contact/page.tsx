@@ -9,7 +9,7 @@ import { useSiteSettings } from '@/context/SiteSettingsContext';
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
-  const { contactPhone, contactEmail, contactAddress } = useSiteSettings();
+  const { contactPhone, contactEmail, contactAddress, hours } = useSiteSettings();
 
   const handleChange = (e: any) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -93,11 +93,8 @@ export default function ContactPage() {
             <div>
               <h3 style={{ fontFamily: 'var(--display)', fontSize: 24, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-.02em' }}>Hours</h3>
               <div style={{ display: 'grid', gap: 8 }}>
-                {[
-                  { day: 'Mon–Fri', time: '9 AM–7 PM' },
-                  { day: 'Saturday', time: '10 AM–6 PM' },
-                  { day: 'Sunday', time: '11 AM–5 PM' },
-                ].map(h => (
+                {/* From Admin → Settings (site_settings.hours). */}
+                {hours.map(h => (
                   <div key={h.day} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
                     <span style={{ fontWeight: 600 }}>{h.day}</span>
                     <span style={{ color: 'var(--muted)' }}>{h.time}</span>

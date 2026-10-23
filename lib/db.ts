@@ -373,9 +373,11 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   contactPhone: '',
   contactEmail: 'hello@carsonexports.com',
   hours: [
-    { day: 'Mon–Fri', time: '9 AM–7 PM' },
-    { day: 'Saturday', time: '10 AM–6 PM' },
-    { day: 'Sunday', time: '11 AM–5 PM' },
+    { day: 'Monday', time: '9 AM–6 PM' },
+    { day: 'Tue–Thu', time: '9 AM–7 PM' },
+    { day: 'Friday', time: '9 AM–6 PM' },
+    { day: 'Saturday', time: '9 AM–5 PM' },
+    { day: 'Sunday', time: 'Closed' },
   ],
 };
 
