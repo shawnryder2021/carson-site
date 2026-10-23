@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 // caller-chosen model to OpenRouter — an open version would let anyone bill the
 // owner for premium models. The allowlist mirrors the admin VehicleForm picker.
 const ALLOWED_MODELS = new Set([
+  'anthropic/claude-haiku-5.5',
   'openai/gpt-4o-mini', 'openai/gpt-4o', 'openai/gpt-4.1', 'openai/gpt-4.1-mini', 'openai/gpt-4.1-nano',
   'anthropic/claude-opus-4', 'anthropic/claude-sonnet-4', 'anthropic/claude-haiku-4', 'anthropic/claude-3.5-haiku',
   'google/gemini-2.5-flash', 'google/gemini-2.5-pro',
@@ -15,7 +16,7 @@ const ALLOWED_MODELS = new Set([
   'qwen/qwen3-235b-a22b', 'qwen/qwen3-32b',
   'x-ai/grok-3-mini', 'cohere/command-a', 'amazon/nova-pro-v1',
 ]);
-const DEFAULT_MODEL = 'openai/gpt-4o-mini';
+const DEFAULT_MODEL = 'anthropic/claude-haiku-5.5';
 const MAX_PROMPT = 4000;
 
 export async function POST(req: Request) {

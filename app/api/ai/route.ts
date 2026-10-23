@@ -1,19 +1,18 @@
-import { OpenAI } from 'openai';
 import { rateLimit } from '@/lib/ratelimit';
+import { llmComplete, llmConfigured } from '@/lib/llm';
 
 // Never statically evaluate this route at build time.
 export const dynamic = 'force-dynamic';
 
 // Public AI endpoint (car finder, trade-in, concierge, etc.). Caps protect
-// against runaway loops burning OpenAI credit; the model is fixed server-side.
+// against runaway loops burning AI credit; the model is fixed server-side (lib/llm.ts).
 const MAX_PROMPT = 8000;      // chars in a single-prompt request
 const MAX_MESSAGES = 20;      // conversation turns
 const MAX_MESSAGES_CHARS = 16000; // total chars across messages
 
 export async function POST(req: Request) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return Response.json({ reply: 'AI is not configured. Set OPENAI_API_KEY.' }, { status: 503 });
+  if (!llmConfigured()) {
+    return Response.json({ reply: 'AI is not configured. Set OPENROUTER_API_KEY.' }, { status: 503 });
   }
 
   // 30 requests / minute per IP (generous for real use, stops abuse loops).
@@ -40,21 +39,15 @@ export async function POST(req: Request) {
     return Response.json({ reply: 'No prompt provided.' }, { status: 400 });
   }
 
-  // Instantiate lazily, inside the handler — so a missing key doesn't break the build.
-  const openai = new OpenAI({ apiKey });
-
   try {
-    const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      messages: messages || [{ role: 'user', content: prompt }],
+    const reply = await llmComplete({
+      messages: Array.isArray(messages) ? messages : [{ role: 'user', content: prompt }],
       temperature: 0.7,
-      max_tokens: 500,
+      maxTokens: 500,
     });
-
-    const reply = response.choices[0]?.message?.content || 'I couldn\'t generate a response.';
-    return Response.json({ reply });
+    return Response.json({ reply: reply || 'I couldn\'t generate a response.' });
   } catch (error: any) {
-    console.error('OpenAI error:', error);
+    console.error('AI error:', error?.message || error);
     return Response.json({ reply: 'Error communicating with AI.' }, { status: 500 });
   }
 }

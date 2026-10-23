@@ -1,8 +1,8 @@
 // "Carson's take": a short original description per vehicle. The SM360
 // description is also syndicated to AutoTrader / CarGurus and was on the old
-// site, so vehicle pages need text of their own. Written by OpenAI strictly
+// site, so vehicle pages need text of their own. Written by Claude (lib/llm.ts) strictly
 // from the car's own record — no invented history, warranty or pricing claims.
-import { OpenAI } from 'openai';
+import { llmComplete } from './llm';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { displayTrim, htmlToText } from './sm360';
 
@@ -59,18 +59,9 @@ Rules:
 - No superlatives you can't support, no exclamation marks, no headings, no lists, no sign-off.`;
 }
 
-let client: OpenAI | null = null;
 export async function writeTake(v: VehicleRow): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY not set');
-  client ??= new OpenAI({ apiKey });
-  const res = await client.chat.completions.create({
-    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-    messages: [{ role: 'user', content: takePrompt(v) }],
-    temperature: 0.6,
-    max_tokens: 300,
-  });
-  return (res.choices[0]?.message?.content || '').trim().replace(/^["']|["']$/g, '');
+  const text = await llmComplete({ messages: [{ role: 'user', content: takePrompt(v) }], temperature: 0.6, maxTokens: 300 });
+  return text.replace(/^["']|["']$/g, '');
 }
 
 // Fill in missing takes for cars for sale, a few at a time (called after each

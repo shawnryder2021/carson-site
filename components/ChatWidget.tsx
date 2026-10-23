@@ -165,7 +165,7 @@ export function ChatWidget({ open, onClose }: { open: boolean; onClose: () => vo
           return (
             <div key={i} style={{ textAlign: mine ? 'right' : 'left' }}>
               {!mine && <div style={{ fontSize: 10.5, color: 'var(--muted)', marginBottom: 2, fontWeight: 700 }}>{m.role === 'agent' ? 'Carson team' : 'Carson AI'}</div>}
-              <div style={{ display: 'inline-block', background: mine ? 'var(--ink)' : (m.role === 'agent' ? 'var(--teal-tint)' : 'var(--bg-soft)'), color: mine ? 'white' : 'var(--ink)', padding: '10px 14px', borderRadius: 12, fontSize: 13.5, lineHeight: 1.5, maxWidth: '82%', textAlign: 'left' }}>
+              <div style={{ display: 'inline-block', whiteSpace: 'pre-wrap', background: mine ? 'var(--ink)' : (m.role === 'agent' ? 'var(--teal-tint)' : 'var(--bg-soft)'), color: mine ? 'white' : 'var(--ink)', padding: '10px 14px', borderRadius: 12, fontSize: 13.5, lineHeight: 1.5, maxWidth: '82%', textAlign: 'left' }}>
                 {mine ? m.text : renderText(m.text)}
               </div>
               {/* Vehicle suggestion cards */}

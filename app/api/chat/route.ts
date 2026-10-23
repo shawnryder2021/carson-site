@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { OpenAI } from 'openai';
+import { llmComplete, llmConfigured } from '@/lib/llm';
 import { SUPABASE_URL } from '@/lib/supabase/config';
 import { isChatOpen, DEFAULT_CHAT_HOURS } from '@/lib/chatHours';
 import { SITE_URL } from '@/lib/serverDb';
@@ -44,6 +44,16 @@ async function knowledgeContext(sb: SupabaseClient): Promise<string> {
   } catch { return ''; }
 }
 
+// Sales phone and showroom hours from Admin → Settings, so the AI never
+// sends a sales question to the service line.
+async function dealerContext(sb: SupabaseClient): Promise<string> {
+  try {
+    const { data } = await sb.from('site_settings').select('contact_phone, hours').eq('id', 1).maybeSingle();
+    const hours = Array.isArray(data?.hours) ? data!.hours.map((h: any) => `${h.day}: ${h.time}`).join('; ') : '';
+    return [data?.contact_phone && `Sales phone: ${data.contact_phone}.`, hours && `Sales hours: ${hours}.`].filter(Boolean).join(' ');
+  } catch { return ''; }
+}
+
 type SuggestVehicle = { id: string; year: number; make: string; model: string; price: number; mileage: number; body: string; fuel: string; drive: string; images: string[]; status: string; hidden_override?: boolean };
 
 // In-stock vehicles for the AI to reference (and for suggestion cards).
@@ -58,13 +68,14 @@ async function loadInventory(sb: SupabaseClient): Promise<SuggestVehicle[]> {
 
 function inventoryContext(inv: SuggestVehicle[]): string {
   if (inv.length === 0) return '';
-  const lines = inv.slice(0, 60).map(v =>
+  // Every car in stock (~120 short lines), so recommendations cover the whole lot.
+  const lines = inv.slice(0, 250).map(v =>
     `- ${v.year} ${v.make} ${v.model} — $${v.price.toLocaleString()}, ${v.mileage.toLocaleString()}km, ${v.body}, ${v.fuel}, ${v.drive} — ${SITE_URL}/vehicle/${v.id}`);
   return `# Current inventory in stock (${inv.length} vehicles; only recommend from this list):\n${lines.join('\n')}`;
 }
 
 // Pick up to 3 relevant vehicles from the conversation text (for cards).
-function suggestFromText(inv: SuggestVehicle[], text: string): SuggestVehicle[] {
+function suggestFromText(inv: SuggestVehicle[], text: string, n = 3): SuggestVehicle[] {
   const t = text.toLowerCase();
   if (!t.trim()) return [];
   // Optional price ceiling from "$25k", "under 30000", "25,000"
@@ -92,26 +103,35 @@ function suggestFromText(inv: SuggestVehicle[], text: string): SuggestVehicle[] 
     return { v, score };
   }).filter(x => x.score > 1).sort((a, b) => b.score - a.score || a.v.price - b.v.price);
 
-  return scored.slice(0, 3).map(x => x.v);
+  return scored.slice(0, n).map(x => x.v);
 }
 
 async function aiReply(sb: SupabaseClient, history: { role: string; text: string }[], inv: SuggestVehicle[]): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return "I'm here to help! Leave your name and number and a team member will reach out shortly.";
-  const kb = await knowledgeContext(sb);
-  const openai = new OpenAI({ apiKey });
+  if (!llmConfigured()) return "I'm here to help! Leave your name and number and a team member will reach out shortly.";
+  const [kb, dealer] = await Promise.all([knowledgeContext(sb), dealerContext(sb)]);
+  // The same matcher as the suggestion cards: a small model scanning 120 cars
+  // for budget + type misses some, so hand it the filtered shortlist first.
+  const visitorText = history.filter(m => m.role === 'visitor').map(m => m.text).join(' ');
+  const matches = suggestFromText(inv, visitorText, 6);
+  const shortlist = matches.length
+    ? `# Best matches for what this shopper asked (already filtered by their budget and type; recommend from these first):\n` +
+      matches.map(v => `- ${v.year} ${v.make} ${v.model} — $${v.price.toLocaleString()}, ${v.mileage.toLocaleString()}km, ${v.body}, ${v.fuel}, ${v.drive} — ${SITE_URL}/vehicle/${v.id}`).join('\n')
+    : '';
   const messages = [
     { role: 'system' as const, content:
       `You are Carson AI, the friendly assistant for Carson Exports, a family-run used-car dealership at 550 Windmill Rd, Dartmouth, NS. ` +
       `Help with vehicles, financing, trade-ins, service, and hours. Keep replies to 1-3 short sentences, warm and honest, never pushy. ` +
+      `Write plain text for a small chat box: no markdown, asterisks, headings or bullet lists. ` +
       `When a shopper describes what they want, recommend 1-3 specific vehicles ONLY from the inventory list below, mentioning the year/make/model and price, and include the vehicle link. ` +
-      `Never invent vehicles or prices. If nothing fits, say so and offer to take their info for when something arrives. Site: ${SITE_URL}.\n\n${inventoryContext(inv)}\n\n${kb}` },
+      `Never invent vehicles, prices or policies; if you don't know, say so and give the sales phone. If nothing fits, say so and offer to take their info for when something arrives. ` +
+      `Site: ${SITE_URL}. ${dealer}\n\n${shortlist}\n\n${inventoryContext(inv)}\n\n${kb}` },
     ...history.slice(-10).map(m => ({ role: m.role === 'visitor' ? 'user' as const : 'assistant' as const, content: m.text })),
   ];
   try {
-    const r = await openai.chat.completions.create({ model: process.env.OPENAI_MODEL || 'gpt-4o-mini', messages, temperature: 0.6, max_tokens: 320 });
-    return r.choices[0]?.message?.content || "Sorry, I didn't catch that — could you rephrase?";
-  } catch {
+    const reply = (await llmComplete({ messages, temperature: 0.6, maxTokens: 320 })).replace(/\*\*(.+?)\*\*/g, '$1');
+    return reply || "Sorry, I didn't catch that — could you rephrase?";
+  } catch (e: any) {
+    console.error('Chat AI error:', e?.message || e);
     return "I'm having trouble right now, but leave your contact and our team will follow up first thing.";
   }
 }
@@ -152,7 +172,7 @@ export async function POST(req: Request) {
       const { conversationId, token, text, name, contact } = body;
       if (!conversationId || !token || !text?.trim()) return Response.json({ error: 'bad request' }, { status: 400 });
       if (typeof text !== 'string' || text.length > MAX_CHAT_TEXT) return Response.json({ error: 'message too long' }, { status: 400 });
-      // Cap message rate per IP (each 'send' can trigger an OpenAI call).
+      // Cap message rate per IP (each 'send' can trigger an AI call).
       if (!(await rateLimit(req, 'chat-send', 30, 60))) {
         return Response.json({ error: 'rate_limited' }, { status: 429 });
       }

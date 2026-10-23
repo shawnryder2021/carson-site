@@ -9,6 +9,8 @@ import { getBrowserClient } from '@/lib/supabase/client';
 import { saveVehicle, uploadImage, getPriceHistory, isSupabaseConfigured, AdminVehicle, PricePoint, VehicleDisplayOptions } from '@/lib/db';
 
 const OR_MODELS = [
+  // Default for all site AI (lib/llm.ts)
+  { id: 'anthropic/claude-haiku-5.5', label: 'Claude Haiku 5.5' },
   // OpenAI
   { id: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
   { id: 'openai/gpt-4o', label: 'GPT-4o' },
