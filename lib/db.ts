@@ -57,6 +57,9 @@ function rowToVehicle(r: any): AdminVehicle {
     aiImage: r.ai_image ?? null,
     stockNo: r.stock_no ?? null,
     trim: r.trim ?? '',
+    vin: r.vin ?? null,
+    transmission: r.transmission ?? null,
+    carsonTake: r.carson_take ?? null,
   };
 }
 
@@ -140,6 +143,9 @@ export type AdminVehicle = Vehicle & {
   aiImage?: string | null;
   stockNo?: string | null;
   trim?: string;
+  vin?: string | null;
+  transmission?: string | null;
+  carsonTake?: string | null;
 };
 
 // Public lists show only cars for sale. Sold cars keep their own page (and

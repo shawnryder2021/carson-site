@@ -6,6 +6,7 @@ import { checkSyncSecret } from '@/lib/secretAuth';
 import { requireAdmin } from '@/lib/adminAuth';
 import { SUPABASE_URL } from '@/lib/supabase/config';
 import { revalidatePath } from 'next/cache';
+import { generateMissingTakes } from '@/lib/carsonTake';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -111,13 +112,18 @@ async function run(req: Request) {
     const errors = await applyPlan(sb, plan);
     await logRun(sb, { trigger, startedAt, plan, errors });
     // Cached pages (vehicles, /used, home, sitemap) should show the new stock now.
+    // New arrivals get their "Carson's take" description (best-effort, a few per run).
+    let takes = null;
+    if (plan.add.length) {
+      try { takes = await generateMissingTakes(sb, 8); } catch { /* never fail the sync */ }
+    }
     if (plan.add.length || plan.update.length || plan.markSold.length) revalidatePath('/', 'layout');
 
     let alerts = null;
     if (body.alerts) {
       try { alerts = await runMatchAlerts(sb, SITE_URL); } catch { /* best-effort; never fail the sync */ }
     }
-    return Response.json({ ok: errors.length === 0, summary, errors, alerts, at: new Date().toISOString() }, { status: errors.length ? 207 : 200 });
+    return Response.json({ ok: errors.length === 0, summary, errors, alerts, takes, at: new Date().toISOString() }, { status: errors.length ? 207 : 200 });
   } catch (e: any) {
     if (!dryRun) await logRun(sb, { trigger, startedAt, error: e?.message || 'Sync failed' });
     return Response.json({ error: e?.message || 'Sync failed' }, { status: 500 });

@@ -450,6 +450,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
             {/* Gallery */}
             {(() => {
               const photos: string[] = (vehicle as any).images || [];
+              const photoLabel = [vehicle.year, vehicle.make, vehicle.model, displayTrim((vehicle as any).trim)].filter(Boolean).join(' ');
               const hasPhotos = photos.length > 0;
               const mainSrc = hasPhotos ? sizedPhoto(photos[Math.min(activeImage, photos.length - 1)], 800)! : vehicleImageURL(vehicle, { size: 800 });
               return (
@@ -460,7 +461,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                   >
                     <SmartImage
                       src={mainSrc}
-                      alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                      alt={photoLabel}
                       sizes="(max-width: 860px) 100vw, 60vw"
                       priority
                       style={{ objectFit: 'cover', filter: isSold ? 'grayscale(.6)' : undefined }}
@@ -510,7 +511,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                               borderRadius: 10, overflow: 'hidden', padding: 0, cursor: 'pointer', aspectRatio: '4/3', position: 'relative',
                             }}
                           >
-                            <img src={sizedPhoto(url, 200)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={sizedPhoto(url, 200)} alt={`${photoLabel}, photo ${i + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             {isLast && (
                               <span style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.58)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800 }}>
                                 +{photos.length - 8} more
@@ -523,7 +524,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
                   )}
                   {!hasPhotos && <div style={{ marginBottom: 32 }} />}
                   {lightbox !== null && (
-                    <Lightbox photos={photos} index={lightbox} onIndex={setLightbox} onClose={() => setLightbox(null)} />
+                    <Lightbox photos={photos} index={lightbox} onIndex={setLightbox} onClose={() => setLightbox(null)} label={photoLabel} />
                   )}
                 </>
               );
@@ -531,7 +532,7 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
 
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--line)', marginBottom: 24 }}>
-              {([['overview', 'AI Overview'], ['specs', 'Specifications']] as const).map(([key, label]) => (
+              {([['overview', 'Overview'], ['specs', 'Specifications']] as const).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
@@ -558,11 +559,16 @@ Answer briefly (2-4 sentences) in a friendly, honest, helpful tone. Be specific 
               <div>
                 <div style={{ background: 'linear-gradient(135deg, rgba(0,124,146,0.06), rgba(90,138,255,0.04))', border: '1px solid var(--line)', borderRadius: 14, padding: '24px 28px', marginBottom: 20 }}>
                   <div className="ai-pill" style={{ marginBottom: 12 }}>
-                    <span className="ai-dot" /> Carson AI Overview
+                    <span className="ai-dot" /> Carson&apos;s take
                   </div>
-                  <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--ink)' }}>
-                    The {vehicle.year} {vehicle.make} {vehicle.model} is {(vehicle.aiSummary || 'a great find').toLowerCase()}. With {fmtMiles(vehicle.mileage)} on the clock and a {(vehicle.fuel || 'gas').toLowerCase()} {vehicle.drive} powertrain, it's well-suited for everyday driving. {isBelowMarket ? `At ${fmtPrice(vehicle.price)}, it's priced ${fmtPrice(savings)} below the typical market range for this vehicle in this condition.` : `At ${fmtPrice(vehicle.price)}, it's priced in line with the current market.`}
-                  </p>
+                  {/* Original description written from this car's record (lib/carsonTake.ts). */}
+                  {((vehicle as any).carsonTake as string | undefined)
+                    ? ((vehicle as any).carsonTake as string).split(/\n\s*\n/).map((para: string, i: number) => (
+                        <p key={i} style={{ fontSize: 15, lineHeight: 1.65, margin: i ? '12px 0 0' : 0, color: 'var(--ink)' }}>{para.trim()}</p>
+                      ))
+                    : <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--ink)' }}>
+                        This {vehicle.year} {vehicle.make} {vehicle.model} has {fmtMiles(vehicle.mileage)} and a {(vehicle.fuel || 'gas').toLowerCase()} {vehicle.drive} powertrain.
+                      </p>}
                 </div>
 
                 {(opts.showPros || opts.showThingsToKnow) && (

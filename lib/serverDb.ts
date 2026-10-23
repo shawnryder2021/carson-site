@@ -24,6 +24,8 @@ export type ServerVehicle = {
   aiSummary: string; images: string[]; status: string;
   aiImage?: string | null; // admin-approved AI illustration, used only while there are no real photos
   trim?: string;
+  vin?: string | null; stockNo?: string | null; transmission?: string | null;
+  carfaxUrl?: string | null; onHold?: boolean; carsonTake?: string | null;
 };
 
 export async function fetchVehicles(): Promise<ServerVehicle[]> {
@@ -39,6 +41,8 @@ export async function fetchVehicles(): Promise<ServerVehicle[]> {
         body: r.body, fuel: r.fuel, drive: r.drive, exterior: r.exterior ?? '', interior: r.interior ?? '',
         aiSummary: r.ai_summary ?? '', images: Array.isArray(r.images) ? r.images : [], status: r.status ?? 'available',
         aiImage: r.ai_image ?? null, trim: r.trim ?? '',
+        vin: r.vin ?? null, stockNo: r.stock_no ?? null, transmission: r.transmission ?? null,
+        carfaxUrl: r.carfax_url ?? null, onHold: !!r.on_hold, carsonTake: r.carson_take ?? null,
       }));
   } catch {
     return INVENTORY.map(v => ({ ...v, images: [], status: 'available' }));
@@ -60,6 +64,8 @@ export async function fetchVehicle(id: string): Promise<ServerVehicle | null> {
       body: data.body, fuel: data.fuel, drive: data.drive, exterior: data.exterior ?? '', interior: data.interior ?? '',
       aiSummary: data.ai_summary ?? '', images: Array.isArray(data.images) ? data.images : [], status: data.status ?? 'available',
       aiImage: data.ai_image ?? null, trim: data.trim ?? '',
+      vin: data.vin ?? null, stockNo: data.stock_no ?? null, transmission: data.transmission ?? null,
+      carfaxUrl: data.carfax_url ?? null, onHold: !!data.on_hold, carsonTake: data.carson_take ?? null,
     };
   } catch {
     return fallback();

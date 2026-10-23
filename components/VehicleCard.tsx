@@ -24,7 +24,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const photo = (vehicle as any).images?.[0] as string | undefined;
 
   // Cards show a teaser only — full description lives on the vehicle page.
-  const full = vehicle.aiSummary || '';
+  const full = ((vehicle as any).carsonTake as string | undefined) || vehicle.aiSummary || '';
   const shortDesc = full.length > 90 ? full.slice(0, 90).replace(/\s+\S*$/, '') + '…' : full;
 
   return (

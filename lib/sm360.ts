@@ -28,6 +28,7 @@ export type Sm360Car = {
   drive: Drive;
   exterior: string;
   interior: string;
+  transmission: string;
   description: string;
   images: string[];
   carfaxUrl: string;
@@ -132,6 +133,7 @@ export function mapSm360Vehicle(v: any): Sm360Car {
     drive: toDrive(v.driveTrain),
     exterior: v.exteriorColor?.colorEn || '',
     interior: v.interiorColor?.colorEn || '',
+    transmission: (v.transmission || v.transmissionDetails?.name || '').toString().trim(),
     description: htmlToText(v.description || ''),
     images: (v.multimedia?.pictures || []).map((p: string) => IMG_BASE + p),
     carfaxUrl: v.carfaxBadges?.VhrReportUrl || '',
@@ -143,7 +145,7 @@ export function mapSm360Vehicle(v: any): Sm360Car {
 
 export type ExistingVehicleRow = {
   id: string; year: number; make: string; model: string; price: number; mileage: number;
-  body: string; fuel: string; drive: string; exterior: string; interior: string;
+  body: string; fuel: string; drive: string; exterior: string; interior: string; transmission?: string | null;
   ai_summary: string; images: any[]; status: string;
   source?: string | null; source_id?: string | null; vin?: string | null; stock_no?: string | null;
   trim?: string | null; carfax_url?: string | null; on_hold?: boolean | null;
@@ -215,7 +217,7 @@ export function planSm360Sync(existing: ExistingVehicleRow[], cars: Sm360Car[], 
     const next = {
       year: car.year, make: car.make, model: car.model, trim: car.trim,
       price: car.price, mileage: car.mileage, body: car.body, fuel: car.fuel, drive: car.drive,
-      exterior: car.exterior, interior: car.interior, on_hold: car.onHold,
+      exterior: car.exterior, interior: car.interior, transmission: car.transmission || null, on_hold: car.onHold,
       source: 'sm360', source_id: car.sourceId, vin: car.vin, stock_no: car.stockNo, carfax_url: car.carfaxUrl || null,
     };
 
@@ -270,4 +272,4 @@ export function planSm360Sync(existing: ExistingVehicleRow[], cars: Sm360Car[], 
 }
 
 export const EXISTING_COLUMNS =
-  'id, year, make, model, price, mileage, body, fuel, drive, exterior, interior, ai_summary, images, status, source, source_id, vin, stock_no, trim, carfax_url, on_hold';
+  'id, year, make, model, price, mileage, body, fuel, drive, exterior, interior, ai_summary, images, status, source, source_id, vin, stock_no, trim, carfax_url, on_hold, transmission';

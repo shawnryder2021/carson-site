@@ -9,6 +9,12 @@ import type { AdminVehicle } from '@/lib/db';
 // Server wrapper: per-vehicle metadata + structured data for SEO.
 // All interactivity lives in VehicleClient.
 
+// First sentence of a description, capped for meta descriptions.
+const firstSentence = (t: string) => {
+  const s = (t.match(/^[^.!?]+[.!?]/)?.[0] || '').trim();
+  return s.length <= 150 ? s : s.slice(0, 147).replace(/\s+\S*$/, '') + '…';
+};
+
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const v = await fetchVehicle(params.id);
   if (!v) {
@@ -21,7 +27,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   const title = sold ? `SOLD — ${name}` : `${name} — $${v.price.toLocaleString()}`;
   const description = sold
     ? `This ${name} has sold. See similar ${v.body || 'vehicles'} available now at Carson Exports in Dartmouth, NS — or get alerted the moment a comparable one arrives.`
-    : `${v.aiSummary ? v.aiSummary.slice(0, 120) + '. ' : ''}${v.mileage.toLocaleString()} km · ${v.fuel} · ${v.drive}. ` +
+    : `${firstSentence(v.carsonTake || '') || (v.aiSummary ? v.aiSummary.slice(0, 120) + '.' : '')} ${v.mileage.toLocaleString()} km · ${v.fuel} · ${v.drive}. ` +
       `142-point inspected with a 7-day return at Carson Exports, Dartmouth NS.`;
   const image = v.images[0] || `${SITE_URL}/carson-logo.png`;
 
@@ -49,26 +55,42 @@ export default async function VehiclePage({ params }: { params: { id: string } }
     ? similarToVehicle(v as unknown as AdminVehicle, all as unknown as AdminVehicle[])
     : [];
 
+  // Vehicle listing structured data (Car + Product, as Google's vehicle listings expect).
+  const photos = (v?.images || []).filter((i: any) => typeof i === 'string') as string[];
+  const trim = v ? displayTrim(v.trim) : '';
   const jsonLd = v ? {
     '@context': 'https://schema.org',
-    '@type': 'Car',
-    name: `${v.year} ${v.make} ${v.model}`,
+    '@type': ['Car', 'Product'],
+    name: [v.year, v.make, v.model, trim].filter(Boolean).join(' '),
+    description: (v.carsonTake || v.aiSummary || '').slice(0, 500) || undefined,
     brand: { '@type': 'Brand', name: v.make },
     model: v.model,
+    vehicleConfiguration: trim || undefined,
     vehicleModelDate: String(v.year),
+    itemCondition: 'https://schema.org/UsedCondition',
     bodyType: v.body,
     fuelType: v.fuel,
     driveWheelConfiguration: v.drive,
+    vehicleTransmission: v.transmission || undefined,
     color: v.exterior || undefined,
-    image: v.images[0] || undefined,
+    vehicleInteriorColor: v.interior || undefined,
+    vehicleIdentificationNumber: v.vin || undefined,
+    sku: v.stockNo || undefined,
+    image: photos.length ? photos.slice(0, 10) : undefined,
     mileageFromOdometer: { '@type': 'QuantitativeValue', value: v.mileage, unitCode: 'KMT' },
     offers: {
       '@type': 'Offer',
       price: v.price,
       priceCurrency: 'CAD',
-      availability: v.status === 'sold' ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/UsedCondition',
+      availability: v.status === 'sold' ? 'https://schema.org/SoldOut'
+        : v.onHold ? 'https://schema.org/LimitedAvailability' : 'https://schema.org/InStock',
       url: `${SITE_URL}/vehicle/${v.id}`,
-      seller: { '@type': 'AutoDealer', name: 'Carson Exports' },
+      seller: {
+        '@type': 'AutoDealer',
+        name: 'Carson Exports',
+        address: { '@type': 'PostalAddress', streetAddress: '550 Windmill Road', addressLocality: 'Dartmouth', addressRegion: 'NS', postalCode: 'B3B 1B3', addressCountry: 'CA' },
+      },
     },
   } : null;
 

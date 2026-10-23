@@ -11,11 +11,13 @@ export function Lightbox({
   index,
   onIndex,
   onClose,
+  label,
 }: {
   photos: string[];
   index: number;
   onIndex: (i: number) => void;
   onClose: () => void;
+  label?: string; // e.g. "2025 Toyota Sienna XSE", used in each photo's alt text
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(false);
@@ -96,7 +98,7 @@ export function Lightbox({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photos[index]}
-          alt={`Photo ${index + 1} of ${photos.length}`}
+          alt={`${label ? `${label}, photo` : 'Photo'} ${index + 1} of ${photos.length}`}
           onClick={toggleZoom}
           style={{
             maxWidth: '92vw', maxHeight: '86vh', objectFit: 'contain', userSelect: 'none',
