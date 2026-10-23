@@ -101,7 +101,7 @@ export default function AdminSync() {
             <tbody>
               {runs.map(r => {
                 const d = r.details || {};
-                const hasDetails = !!(d.added?.length || d.updated?.length || d.sold?.length || r.error);
+                const hasDetails = !!(d.added?.length || d.updated?.length || d.sold?.length || d.missing?.length || r.error);
                 const isOpen = open === r.id;
                 return (
                   <Fragment key={r.id}>
@@ -129,6 +129,7 @@ export default function AdminSync() {
                           <DetailList title="Added" color="#0F6B2D" items={(d.added || []).map(a => ({ key: a.id, href: `/vehicle/${a.id}`, text: a.label, sub: fmtPrice(a.price) }))} />
                           <DetailList title="Updated" color="#8A5400" items={(d.updated || []).map(u => ({ key: u.id, href: `/vehicle/${u.id}`, text: u.label, sub: u.changes.map(fmtChange).join(' · ') || 'details only' }))} />
                           <DetailList title="Marked sold" color="#A8232C" items={(d.sold || []).map(s => ({ key: s.id, href: `/vehicle/${s.id}`, text: s.label }))} />
+                          <DetailList title="Missing from the feed (not sold yet)" color="#8A5400" items={(d.missing || []).map(s => ({ key: s.id, href: `/vehicle/${s.id}`, text: s.label }))} />
                         </td>
                       </tr>
                     )}

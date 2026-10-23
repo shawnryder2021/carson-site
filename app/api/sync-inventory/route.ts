@@ -43,8 +43,13 @@ async function applyPlan(sb: SupabaseClient, plan: SyncPlan) {
     const { error } = await sb.from('vehicles').update({ ...u.patch, updated_at: now }).eq('id', u.id);
     if (error) errors.push(`update ${u.id}: ${error.message}`);
   }
+  // First time missing from the feed: note when, don't mark sold yet.
+  if (plan.missing.length) {
+    const { error } = await sb.from('vehicles').update({ missing_since: now }).in('id', plan.missing.map(m => m.id)).is('missing_since', null);
+    if (error) errors.push(`flag missing: ${error.message}`);
+  }
   if (plan.markSold.length) {
-    const { error } = await sb.from('vehicles').update({ status: 'sold', updated_at: now }).in('id', plan.markSold.map(s => s.id));
+    const { error } = await sb.from('vehicles').update({ status: 'sold', missing_since: null, updated_at: now }).in('id', plan.markSold.map(s => s.id));
     if (error) errors.push(`mark sold: ${error.message}`);
   }
   return errors;
@@ -73,6 +78,7 @@ async function logRun(sb: SupabaseClient, run: {
         added: p.add.slice(0, 300).map(a => ({ id: a.row.id, label: a.label, price: a.row.price })),
         updated: p.update.slice(0, 300).map(u => ({ id: u.id, label: u.label, changes: vis(u) })),
         sold: p.markSold.slice(0, 300),
+        missing: p.missing.slice(0, 300),
         errors: run.errors || [],
       },
     });
@@ -99,7 +105,7 @@ async function run(req: Request) {
     const plan = planSm360Sync(rows, cars, expected);
     const summary = {
       fetched: plan.fetched, expected: plan.expected,
-      add: plan.add.length, update: plan.update.length, markSold: plan.markSold.length, unchanged: plan.unchanged,
+      add: plan.add.length, update: plan.update.length, markSold: plan.markSold.length, missing: plan.missing.length, unchanged: plan.unchanged,
     };
 
     if (dryRun) return Response.json({ dryRun: true, migrationNeeded, summary, plan });

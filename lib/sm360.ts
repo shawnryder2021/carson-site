@@ -148,7 +148,7 @@ export type ExistingVehicleRow = {
   body: string; fuel: string; drive: string; exterior: string; interior: string; transmission?: string | null;
   ai_summary: string; images: any[]; status: string;
   source?: string | null; source_id?: string | null; vin?: string | null; stock_no?: string | null;
-  trim?: string | null; carfax_url?: string | null; on_hold?: boolean | null;
+  trim?: string | null; carfax_url?: string | null; on_hold?: boolean | null; missing_since?: string | null;
 };
 
 export type FieldChange = { field: string; from: any; to: any };
@@ -159,6 +159,7 @@ export type SyncPlan = {
   add: { label: string; row: Record<string, any> }[];
   update: { id: string; label: string; matchedBy: 'source' | 'vin' | 'name'; changes: FieldChange[]; patch: Record<string, any> }[];
   markSold: { id: string; label: string }[];
+  missing: { id: string; label: string }[]; // gone from the feed, not sold yet (grace period)
   unchanged: number;
   hiddenNotInFeed: { id: string; label: string }[];
   blocked?: string;
@@ -180,8 +181,12 @@ function sameImages(a: string[], b: string[]) {
   return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
-export function planSm360Sync(existing: ExistingVehicleRow[], cars: Sm360Car[], expected = cars.length): SyncPlan {
-  const plan: SyncPlan = { fetched: cars.length, expected, add: [], update: [], markSold: [], unchanged: 0, hiddenNotInFeed: [] };
+// A car missing from the feed is only marked sold if it was already missing at a
+// sync at least this long ago, so one incomplete feed can't hide cars.
+export const SOLD_GRACE_MS = 12 * 60 * 60 * 1000;
+
+export function planSm360Sync(existing: ExistingVehicleRow[], cars: Sm360Car[], expected = cars.length, now = Date.now()): SyncPlan {
+  const plan: SyncPlan = { fetched: cars.length, expected, add: [], update: [], markSold: [], missing: [], unchanged: 0, hiddenNotInFeed: [] };
 
   // Guard: a broken or partial feed must never mark the whole lot sold.
   const availableNow = existing.filter(r => r.status === 'available').length;
@@ -259,17 +264,22 @@ export function planSm360Sync(existing: ExistingVehicleRow[], cars: Sm360Car[], 
       changes.push({ field: 'description', from: (row.ai_summary || '').length + ' chars', to: car.description.length + ' chars' });
     }
 
+    if (row.missing_since) patch.missing_since = null; // back in the feed
     if (Object.keys(patch).length === 0) { plan.unchanged++; continue; }
     plan.update.push({ id: row.id, label: label(car), matchedBy, changes, patch });
   }
 
   for (const r of existing) {
     if (matched.has(r.id)) continue;
-    if (r.status === 'available') plan.markSold.push({ id: r.id, label: label(r) });
+    if (r.status === 'available') {
+      const since = r.missing_since ? Date.parse(r.missing_since) : NaN;
+      if (!Number.isNaN(since) && now - since >= SOLD_GRACE_MS) plan.markSold.push({ id: r.id, label: label(r) });
+      else plan.missing.push({ id: r.id, label: label(r) });
+    }
     else if (r.status === 'hidden') plan.hiddenNotInFeed.push({ id: r.id, label: label(r) });
   }
   return plan;
 }
 
 export const EXISTING_COLUMNS =
-  'id, year, make, model, price, mileage, body, fuel, drive, exterior, interior, ai_summary, images, status, source, source_id, vin, stock_no, trim, carfax_url, on_hold, transmission';
+  'id, year, make, model, price, mileage, body, fuel, drive, exterior, interior, ai_summary, images, status, source, source_id, vin, stock_no, trim, carfax_url, on_hold, transmission, missing_since';

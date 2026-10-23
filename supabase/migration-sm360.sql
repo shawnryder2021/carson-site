@@ -14,3 +14,8 @@ alter table public.vehicles add column if not exists on_hold    boolean not null
 -- 2) One row per feed vehicle; fast VIN lookups
 create unique index if not exists vehicles_source_unique on public.vehicles (source, source_id) where source_id is not null;
 create index if not exists vehicles_vin_idx on public.vehicles (vin);
+
+-- 3) Grace period before marking sold: set when a car first goes missing from
+--    the feed, cleared when it reappears. Marked sold only if still missing at
+--    a sync 12+ hours later (one incomplete feed must not hide cars).
+alter table public.vehicles add column if not exists missing_since timestamptz;

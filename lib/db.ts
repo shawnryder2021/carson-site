@@ -269,6 +269,7 @@ export type SyncRun = {
     added?: { id: string; label: string; price: number }[];
     updated?: { id: string; label: string; changes: { field: string; from: any; to: any }[] }[];
     sold?: { id: string; label: string }[];
+    missing?: { id: string; label: string }[];
     errors?: string[];
   };
 };

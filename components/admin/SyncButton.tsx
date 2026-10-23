@@ -66,14 +66,15 @@ function SyncPreview({ data, busy, onApply, onCancel }: { data: any; busy: boole
     <div style={{ maxHeight: '65vh', overflowY: 'auto' }}>
       <p style={{ fontSize: 14, margin: '0 0 14px' }}>
         Found <strong>{summary.fetched}</strong> vehicles on carsonexports.com.
-        {' '}{summary.add} new · {summary.update} changed · {summary.markSold} to mark sold · {summary.unchanged} unchanged.
+        {' '}{summary.add} new · {summary.update} changed · {summary.markSold} to mark sold{summary.missing ? ` · ${summary.missing} missing (not sold yet)` : ''} · {summary.unchanged} unchanged.
       </p>
       {plan.blocked && <p style={{ color: '#A8232C', fontWeight: 600 }}>{plan.blocked}</p>}
       {migrationNeeded && <p style={{ color: '#A8232C', fontWeight: 600 }}>Run supabase/migration-sm360.sql in Supabase before applying.</p>}
       {section('New vehicles', '#0F6B2D', plan.add.map((a: any) => ({ key: a.row.id, text: a.label, sub: `${fmtPrice(a.row.price)} · ${fmtMiles(a.row.mileage)} · ${a.row.images.length} photos` })))}
       {section('Updated vehicles', '#8A5400', plan.update.filter((u: any) => u.changes.length).map((u: any) => ({ key: u.id, text: u.label, sub: u.changes.map(fmtChange).join(' · ') })))}
       {section('Linked only (no visible change)', 'var(--muted)', plan.update.filter((u: any) => !u.changes.length).map((u: any) => ({ key: u.id, text: u.label })))}
-      {section('Mark sold (no longer on carsonexports.com)', '#A8232C', plan.markSold.map((s: any) => ({ key: s.id, text: s.label })))}
+      {section('Mark sold (missing from carsonexports.com for 12+ hours)', '#A8232C', plan.markSold.map((s: any) => ({ key: s.id, text: s.label })))}
+      {section('Missing from carsonexports.com — marked sold only if still missing at the next sync', '#8A5400', (plan.missing || []).map((s: any) => ({ key: s.id, text: s.label })))}
       {section('Hidden drafts not in the feed (left alone)', 'var(--muted)', plan.hiddenNotInFeed.map((s: any) => ({ key: s.id, text: s.label })))}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
         <button onClick={onCancel} className="btn btn-ghost btn-sm">Cancel</button>
