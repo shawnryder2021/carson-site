@@ -13,6 +13,9 @@ KD = keyword difficulty (0–100), where known.
 | /used local search pages (body, price, feature, make) | used suvs/trucks/cars halifax, cars under $X halifax | — |
 | `/used` retitled "Used Cars for Sale in Nova Scotia" (was proposal #1) | used cars nova scotia | 1,300 (KD 5) |
 | `/used/classic-cars-nova-scotia` — 20+ year-old and exotic/collector makes (was proposal #2) | classic cars for sale nova scotia, antique cars for sale in nova scotia | 880 + 590 |
+| Model pages `/used/[make]-[model]-halifax` (was proposal #6) — 14 indexable (Wrangler, X1, RAV4, Seltos…) | used toyota rav4 halifax, toyota tacoma for sale nova scotia, … | 260+ each |
+| Vehicle pages: full Car+Product data (VIN, trim, transmission, photos), image alt text, image sitemap, richer AutoDealer data | Google vehicle listings / Images | — |
+| Original "Carson's take" description on all 121 vehicles (vs. syndicated SM360 copy) | all vehicle pages | — |
 
 ## Proposed — new pages and articles (priority order; #1–2 done, see above)
 | # | Piece | Type | Target keywords | Volume | Notes |
@@ -20,7 +23,6 @@ KD = keyword difficulty (0–100), where known.
 | 3 | **Car Detailing in Halifax & Dartmouth** | Service page | car detailing halifax, dartmouth auto detailing | 1,300 + 590 | Only if detailing is still offered (old site had a Detailing department). |
 | 4 | **Motor Vehicle Inspection (MVI) in Nova Scotia: What’s Checked & Buying Used** | Article | motor vehicle inspection nova scotia, nova scotia motor vehicle | 320 + 480 | Steady year-round demand; ties to "every car sold with a fresh MVI" if true. |
 | 5 | **Car Auctions in Nova Scotia vs Buying From a Dealer** | Article | car auction nova scotia, halifax car auction, car auctions nova scotia | 320 + 390 + 320 | Comparison piece, links to inventory and warranty info. |
-| 6 | **Model pages for high-intent models** (e.g. Toyota Tacoma, RAV4, F-150) | `/used/[make]-[model]-halifax`, generated when 3+ in stock | toyota tacoma for sale nova scotia, … | 260+ each | Extends lib/localSearch.ts. |
 | 7 | **Service & tires, local** | Strengthen `/p/service`, `/p/tire-centre` | mechanic halifax, car repair halifax, oil change dartmouth, tire shops dartmouth/halifax | 320 + 320 + 260 + 210–260 | Needs real service details (hours, services, brands of tires). |
 
 ## Proposed — refresh existing articles (near page one already)
