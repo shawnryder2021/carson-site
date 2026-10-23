@@ -119,11 +119,10 @@ async function run(req: Request) {
     await logRun(sb, { trigger, startedAt, plan, errors });
     // Cached pages (vehicles, /used, home, sitemap) should show the new stock now.
     // New arrivals get their "Carson's take" description (best-effort, a few per run).
+    // Every sync fills in descriptions still missing (new cars, or earlier failures).
     let takes = null;
-    if (plan.add.length) {
-      try { takes = await generateMissingTakes(sb, 8); } catch { /* never fail the sync */ }
-    }
-    if (plan.add.length || plan.update.length || plan.markSold.length) revalidatePath('/', 'layout');
+    try { takes = await generateMissingTakes(sb, 8); } catch { /* never fail the sync */ }
+    if (plan.add.length || plan.update.length || plan.markSold.length || takes?.written) revalidatePath('/', 'layout');
 
     let alerts = null;
     if (body.alerts) {
